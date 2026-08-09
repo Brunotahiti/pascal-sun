@@ -11,6 +11,13 @@ services:
       - UMAMI_USER=${UMAMI_USER:-admin}
       - UMAMI_PASSWORD=${UMAMI_PASSWORD:-}
       - UMAMI_WEBSITE_ID=${UMAMI_WEBSITE_ID:-}
+      - VAPID_PUBLIC=${VAPID_PUBLIC:-}
+      - VAPID_PRIVATE=${VAPID_PRIVATE:-}
+      - SMTP_HOST=${SMTP_HOST:-smtp.hostinger.com}
+      - SMTP_PORT=${SMTP_PORT:-465}
+      - SMTP_USER=${SMTP_USER:-contact@pascal-sun.com}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
     volumes:
       - pascal-sun-data:/app/data
     networks:
