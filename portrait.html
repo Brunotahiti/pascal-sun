@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portrait sur commande — Pascal Sun</title>
+  <meta name="description" content="Commandez votre portrait unique à Pascal Sun, peintre à Tahiti : fusain et acrylique, noir et blanc avec une touche de couleur. Proposition personnalisée sous 48 h.">
+  <link rel="canonical" href="https://pascal-sun.com/portrait.html">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=5">
+  <link rel="stylesheet" href="css/effects.css?v=5">
+  <script defer src="https://stats.pascal-sun.com/script.js" data-website-id="56116cc3-d031-4382-9868-905e305b96e5"></script>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#f7f3ec">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><circle cx=%2750%27 cy=%2750%27 r=%2726%27 fill=%27%23d4593a%27/><g fill=%27%23d4593a%27><path d=%27M81.5 44.4 96 50 81.5 55.6Z M76.2 68.4 82.5 82.5 68.4 76.2Z M55.6 81.5 50 96 44.4 81.5Z M31.6 76.2 17.5 82.5 23.8 68.4Z M18.5 55.6 4 50 18.5 44.4Z M23.8 31.6 17.5 17.5 31.6 23.8Z M44.4 18.5 50 4 55.6 18.5Z M68.4 23.8 82.5 17.5 76.2 31.6Z%27/></g></svg>">
+</head>
+<body data-page="portrait">
+
+  <header class="site-header" id="site-header"></header>
+
+  <main>
+    <div class="wrap">
+      <div class="page-head reveal is-in">
+        <span class="eyebrow" data-i18n="portrait_eyebrow"></span>
+        <h1 class="section-title" data-i18n="portrait_title"></h1>
+        <p class="lede" data-i18n="portrait_lede"></p>
+      </div>
+
+      <div class="cart-layout" style="padding-bottom: 60px;">
+        <form id="portrait-form" class="order-panel">
+          <div class="field">
+            <label for="pf-name" data-i18n="f_name"></label>
+            <input id="pf-name" name="name" required autocomplete="name">
+          </div>
+          <div class="field">
+            <label for="pf-email" data-i18n="f_email"></label>
+            <input id="pf-email" name="email" type="email" required autocomplete="email">
+          </div>
+          <div class="field">
+            <label for="pf-desc" data-i18n="f_desc"></label>
+            <textarea id="pf-desc" name="description" required data-i18n-ph="f_desc_ph"></textarea>
+          </div>
+          <div class="field">
+            <label for="pf-format" data-i18n="f_format"></label>
+            <input id="pf-format" name="format" data-i18n-ph="f_format_ph">
+          </div>
+          <div class="field">
+            <label for="pf-budget" data-i18n="f_budget"></label>
+            <input id="pf-budget" name="budget" data-i18n-ph="f_budget_ph">
+          </div>
+          <div class="field">
+            <label for="pf-photo" data-i18n="f_photo"></label>
+            <input id="pf-photo" name="photo" type="file" accept="image/*">
+          </div>
+          <button class="btn" type="submit" data-i18n="portrait_btn"></button>
+          <p class="news-msg" id="portrait-msg" style="color: var(--accent);"></p>
+        </form>
+
+        <aside>
+          <div class="value-card" style="margin-bottom: 30px;">
+            <h3 data-i18n="portrait_how_t"></h3>
+            <p style="margin-top:10px;">1 · <span data-i18n="portrait_how_1"></span></p>
+            <p style="margin-top:8px;">2 · <span data-i18n="portrait_how_2"></span></p>
+            <p style="margin-top:8px;">3 · <span data-i18n="portrait_how_3"></span></p>
+          </div>
+          <figure class="portrait" style="position: static; transform: rotate(.8deg); max-width: 380px;">
+            <img src="img/oeuvres/la-vahine-a-la-couronne-960.webp" alt="Portrait par Pascal Sun" loading="lazy">
+          </figure>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer" id="site-footer"></footer>
+
+  <script src="js/data.js?v=5"></script>
+  <script src="js/app.js?v=5"></script>
+  <script src="js/effects.js?v=5"></script>
+</body>
+</html>

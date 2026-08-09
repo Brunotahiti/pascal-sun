@@ -3,48 +3,39 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Œuvre — Pascal Sun</title>
-  <meta name="description" content="Découvrez cette œuvre originale de Pascal Sun, peintre de Polynésie. Toile unique, signée, livrée assurée dans le monde entier.">
+  <title>Journal de l'atelier — Pascal Sun</title>
+  <meta name="description" content="Le journal de l'atelier de Pascal Sun à Tahiti : toiles en cours, nouvelles créations et vie du fenua, au fil des jours.">
+  <link rel="canonical" href="https://pascal-sun.com/journal.html">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css?v=5">
   <link rel="stylesheet" href="css/effects.css?v=5">
-  <link rel="stylesheet" href="css/viewer.css?v=5">
   <script defer src="https://stats.pascal-sun.com/script.js" data-website-id="56116cc3-d031-4382-9868-905e305b96e5"></script>
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#f7f3ec">
   <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><circle cx=%2750%27 cy=%2750%27 r=%2726%27 fill=%27%23d4593a%27/><g fill=%27%23d4593a%27><path d=%27M81.5 44.4 96 50 81.5 55.6Z M76.2 68.4 82.5 82.5 68.4 76.2Z M55.6 81.5 50 96 44.4 81.5Z M31.6 76.2 17.5 82.5 23.8 68.4Z M18.5 55.6 4 50 18.5 44.4Z M23.8 31.6 17.5 17.5 31.6 23.8Z M44.4 18.5 50 4 55.6 18.5Z M68.4 23.8 82.5 17.5 76.2 31.6Z%27/></g></svg>">
 </head>
-<body data-page="artwork">
+<body data-page="journal">
 
   <header class="site-header" id="site-header"></header>
 
   <main>
     <div class="wrap">
-      <div class="artwork-layout">
-        <figure class="artwork-visual reveal is-in" id="artwork-visual" title="Cliquer pour agrandir"></figure>
-        <div class="artwork-info reveal is-in" id="artwork-info"></div>
+      <div class="page-head reveal is-in">
+        <span class="eyebrow" data-i18n="journal_eyebrow"></span>
+        <h1 class="section-title" data-i18n="journal_title"></h1>
+        <p class="lede" data-i18n="journal_lede"></p>
       </div>
-
-      <section class="section" style="padding-top: 0;">
-        <div class="section-head">
-          <h2 class="section-title" style="font-size: clamp(26px, 3vw, 38px);" data-i18n="related_title"></h2>
-          <a class="more" href="galerie.html" data-i18n="see_all"></a>
-        </div>
-        <div class="grid" id="related-grid"></div>
-      </section>
+      <div class="journal-list" id="journal-list" style="padding-bottom: 60px;"></div>
     </div>
   </main>
-
-  <div class="lightbox" id="lightbox" role="dialog" aria-label="Agrandissement de l'œuvre"></div>
 
   <footer class="site-footer" id="site-footer"></footer>
 
   <script src="js/data.js?v=5"></script>
   <script src="js/app.js?v=5"></script>
   <script src="js/effects.js?v=5"></script>
-  <script src="js/viewer.js?v=5"></script>
 </body>
 </html>

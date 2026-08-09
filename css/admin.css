@@ -416,6 +416,31 @@ button { font-family: var(--sans); cursor: pointer; }
 .ct-check, #ct-all { accent-color: var(--accent); width: 16px; height: 16px; }
 @media (max-width: 800px) { .ct-row { grid-template-columns: 30px 1fr 1.4fr; } .ct-row span:nth-child(n+4) { display: none; } }
 
+/* --------------------------------------------------- envoi newsletter -- */
+
+.compose-panel {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 22px 24px;
+  margin-bottom: 26px;
+  display: grid;
+  gap: 12px;
+}
+.compose-panel h3 { font-family: var(--serif); font-size: 22px; font-weight: 600; }
+.compose-note { font-size: 13px; color: var(--ink-faint); }
+.compose-panel input, .compose-panel textarea {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  padding: 11px 13px;
+  font-family: var(--sans);
+  font-size: 14.5px;
+  width: 100%;
+}
+.compose-panel textarea { resize: vertical; }
+.compose-status { font-size: 13px; color: var(--accent); font-weight: 700; }
+
 /* -------------------------------------------------------------- toast -- */
 
 .toast {

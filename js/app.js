@@ -69,6 +69,7 @@
           <a class="nav-link ${page === "home" ? "active" : ""}" href="index.html">${t("nav_home")}</a>
           <a class="nav-link ${page === "gallery" || page === "artwork" ? "active" : ""}" href="galerie.html">${t("nav_gallery")}</a>
           <a class="nav-link ${page === "expos" ? "active" : ""}" href="expositions.html">${t("nav_expos")}</a>
+          <a class="nav-link ${page === "journal" ? "active" : ""}" href="journal.html">${t("nav_journal")}</a>
           <a class="nav-link ${page === "artist" ? "active" : ""}" href="artiste.html">${t("nav_artist")}</a>
           <a class="nav-link ${page === "contact" ? "active" : ""}" href="contact.html">${t("nav_contact")}</a>
         </nav>
@@ -111,6 +112,8 @@
             <li><a href="index.html">${t("nav_home")}</a></li>
             <li><a href="galerie.html">${t("nav_gallery")}</a></li>
             <li><a href="expositions.html">${t("nav_expos")}</a></li>
+            <li><a href="journal.html">${t("nav_journal")}</a></li>
+            <li><a href="portrait.html">${t("portrait_home_btn")}</a></li>
             <li><a href="artiste.html">${t("nav_artist")}</a></li>
             <li><a href="contact.html">${t("nav_contact")}</a></li>
           </ul>
@@ -365,11 +368,58 @@
         <button class="btn" id="acquire-btn" ${selectedKey ? "" : "disabled"}>${selectedKey ? t("add_to_cart") : t("sold_out")}</button>
         <a class="btn ghost" href="galerie.html">${t("back_gallery")}</a>
       </div>
+      ${a.statut !== "disponible" ? `
+      <div class="notify-box">
+        <p>${t("notify_hint")}</p>
+        <form id="notify-form" class="news-form notify-form">
+          <input type="email" name="email" placeholder="${t("notify_ph")}" required>
+          <button type="submit">${t("notify_send")}</button>
+        </form>
+        <p class="news-msg" id="notify-msg"></p>
+      </div>` : ""}
       <ul class="assurances">
         <li><span class="dot">●</span>${t("assur1")}</li>
         <li><span class="dot">●</span>${t("assur2")}</li>
         <li><span class="dot">●</span>${t("assur3")}</li>
       </ul>`;
+
+    const nform = document.getElementById("notify-form");
+    if (nform) nform.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      try {
+        const r = await fetch("/api/notify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: new FormData(nform).get("email"), artworkId: a.id, titre: a.titre })
+        });
+        if (!r.ok) throw new Error();
+        document.getElementById("notify-msg").textContent = t("notify_ok");
+        nform.reset();
+      } catch { document.getElementById("notify-msg").textContent = t("news_err"); }
+    });
+
+    // Données structurées Product pour Google (prix, disponibilité)
+    const availability = a.statut === "disponible" ? "https://schema.org/InStock"
+      : a.statut === "reserve" ? "https://schema.org/PreOrder" : "https://schema.org/SoldOut";
+    const ld = document.createElement("script");
+    ld.type = "application/ld+json";
+    ld.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: a.titre,
+      image: "https://pascal-sun.com/" + imgLarge(a),
+      description: a.desc_fr,
+      brand: { "@type": "Person", name: "Pascal Sun" },
+      offers: (a.produits || []).filter((p) => p.actif !== false).map((p) => ({
+        "@type": "Offer",
+        price: p.prixEUR,
+        priceCurrency: "EUR",
+        availability: p.key === "original" ? availability
+          : (typeof p.stock === "number" && p.stock <= 0 ? "https://schema.org/SoldOut" : "https://schema.org/InStock"),
+        url: `https://pascal-sun.com/oeuvre.html?id=${a.id}`
+      }))
+    });
+    document.head.appendChild(ld);
 
     const btn = document.getElementById("acquire-btn");
     const options = document.getElementById("prod-options");
@@ -546,6 +596,55 @@
     past.innerHTML = gone.map((e) => itemHTML(e, true)).join("");
   }
 
+  function pageJournal() {
+    const list = document.getElementById("journal-list");
+    if (!list) return;
+    const posts = [...POSTS].filter((p) => p && p.date).sort((a, b) => b.date.localeCompare(a.date));
+    if (!posts.length) { list.innerHTML = `<p class="empty" style="padding:30px 0; color:var(--ink-faint); font-style:italic;">${t("journal_empty")}</p>`; return; }
+    list.innerHTML = posts.map((p) => `
+      <article class="post-card reveal">
+        ${p.image ? `<a class="post-img" href="${esc(p.image)}" target="_blank"><img src="${esc(p.image)}" alt="" loading="lazy" decoding="async"></a>` : ""}
+        <div class="post-body">
+          <div class="post-date">${new Date(p.date + (p.date.length === 10 ? "T00:00:00" : "")).toLocaleDateString(store.lang === "en" ? "en-GB" : "fr-FR", { day: "numeric", month: "long", year: "numeric" })}</div>
+          <h2>${esc(p.titre)}</h2>
+          <p>${esc(store.lang === "en" ? (p.texte_en || p.texte) : p.texte).replace(/\n/g, "<br>")}</p>
+        </div>
+      </article>`).join("");
+    observeReveals();
+  }
+
+  function pagePortrait() {
+    const form = document.getElementById("portrait-form");
+    if (!form) return;
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = form.querySelector("button[type=submit]");
+      btn.setAttribute("disabled", "");
+      try {
+        const r = await fetch("/api/commission", { method: "POST", body: new FormData(form) });
+        if (!r.ok) throw new Error();
+        form.reset();
+        toast(t("portrait_ok"));
+        document.getElementById("portrait-msg").textContent = t("portrait_ok");
+      } catch {
+        document.getElementById("portrait-msg").textContent = t("news_err");
+      } finally { btn.removeAttribute("disabled"); }
+    });
+  }
+
+  function homeExtras() {
+    // Avis de collectionneurs (si renseignés dans l'admin)
+    const avisWrap = document.getElementById("avis-section");
+    if (avisWrap && AVIS.length) {
+      avisWrap.hidden = false;
+      document.getElementById("avis-grid").innerHTML = AVIS.map((av) => `
+        <blockquote class="avis-card reveal">
+          <p>« ${esc(store.lang === "en" ? (av.texte_en || av.texte) : av.texte)} »</p>
+          <footer>${esc(av.nom)}${av.lieu ? ` · ${esc(av.lieu)}` : ""}</footer>
+        </blockquote>`).join("");
+    }
+  }
+
   function pageContact() {
     const form = document.getElementById("contact-form");
     if (!form) return;
@@ -568,6 +667,8 @@
       const data = await r.json();
       if (Array.isArray(data.artworks) && data.artworks.length) ARTWORKS = data.artworks;
       if (Array.isArray(data.events)) EVENTS = data.events;
+      if (Array.isArray(data.posts)) POSTS = data.posts;
+      if (Array.isArray(data.avis)) AVIS = data.avis;
       if (data.uiTexts) {
         ["fr", "en"].forEach((l) => {
           if (data.uiTexts[l]) I18N[l] = Object.assign({}, I18N[l], data.uiTexts[l]);
@@ -585,7 +686,9 @@
     applyI18n();
 
     switch (document.body.dataset.page) {
-      case "home":    pageHome(); break;
+      case "home":    pageHome(); homeExtras(); break;
+      case "journal": pageJournal(); break;
+      case "portrait": pagePortrait(); break;
       case "gallery": pageGallery(); break;
       case "artwork": pageArtwork(); break;
       case "cart":    pageCart(); break;

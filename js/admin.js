@@ -82,6 +82,8 @@
     await loadCatalogue();
     renderArtworks();
     renderEvents();
+    renderPosts();
+    renderAvis();
     renderTexts();
     wireChrome();
     markClean();
@@ -92,6 +94,8 @@
     catalogue = {
       artworks: (data && data.artworks) || JSON.parse(JSON.stringify(ARTWORKS)),
       events: (data && data.events) || JSON.parse(JSON.stringify(typeof EVENTS !== "undefined" ? EVENTS : [])),
+      posts: (data && data.posts) || [],
+      avis: (data && data.avis) || [],
       uiTexts: (data && data.uiTexts) || { fr: {}, en: {} }
     };
     catalogue.uiTexts.fr = catalogue.uiTexts.fr || {};
@@ -224,6 +228,42 @@
     $("#event-list").innerHTML = catalogue.events.map(eventCard).join("");
   }
 
+  /* ---------------------------------------------------- journal & avis -- */
+
+  function postCard(p, i) {
+    return `
+    <article class="aw-card" data-pi2="${i}" style="grid-template-columns: 180px 1fr;">
+      <div class="aw-photo">
+        <img src="${esc(p.image || "img/oeuvres/le-retour-de-peche-480.webp")}" alt="" style="aspect-ratio: 4/3;">
+        <button type="button" class="replace-btn" data-act="post-photo">Photo</button>
+        <input type="file" accept="image/*" hidden>
+      </div>
+      <div class="aw-fields" style="grid-template-columns: 1fr 1fr;">
+        <div class="f"><label>Titre</label><input data-pk2="titre" value="${esc(p.titre)}"></div>
+        <div class="f"><label>Date</label><input data-pk2="date" type="date" value="${esc(p.date)}"></div>
+        <div class="f span2"><label>Texte (FR)</label><textarea data-pk2="texte">${esc(p.texte)}</textarea></div>
+        <div class="f span2"><label>Texte (EN — optionnel)</label><textarea data-pk2="texte_en">${esc(p.texte_en || "")}</textarea></div>
+        <div class="aw-flags"><button type="button" class="aw-delete" data-act="post-del">Supprimer ce billet</button></div>
+      </div>
+    </article>`;
+  }
+
+  function avisCard(av, i) {
+    return `
+    <article class="aw-card" data-ai="${i}" style="grid-template-columns: 1fr;">
+      <div class="aw-fields" style="grid-template-columns: 1fr 1fr;">
+        <div class="f"><label>Nom</label><input data-ak="nom" value="${esc(av.nom)}"></div>
+        <div class="f"><label>Lieu (ville, pays)</label><input data-ak="lieu" value="${esc(av.lieu || "")}"></div>
+        <div class="f span2"><label>Avis (FR)</label><textarea data-ak="texte">${esc(av.texte)}</textarea></div>
+        <div class="f span2"><label>Avis (EN — optionnel)</label><textarea data-ak="texte_en">${esc(av.texte_en || "")}</textarea></div>
+        <div class="aw-flags"><button type="button" class="aw-delete" data-act="avis-del">Supprimer cet avis</button></div>
+      </div>
+    </article>`;
+  }
+
+  function renderPosts() { $("#post-list").innerHTML = catalogue.posts.map(postCard).join(""); }
+  function renderAvis() { $("#avis-list").innerHTML = catalogue.avis.map(avisCard).join(""); }
+
   /* ----------------------------------------------------------- textes -- */
 
   function renderTexts() {
@@ -278,6 +318,26 @@
         });
         toast("Statut de commande mis à jour ✓");
       }));
+
+    // Demandes de portrait sur commande
+    const commissions = await fetch("/api/commissions").then((r) => r.json()).catch(() => []);
+    if (commissions.length) {
+      el.insertAdjacentHTML("beforeend", `
+        <h3 style="font-family: var(--serif); font-size: 26px; font-weight: 500; margin: 30px 0 6px;">🎨 Demandes de portrait</h3>
+        ${commissions.map((cm) => `
+        <article class="aw-card" style="grid-template-columns: 1fr;">
+          <div>
+            <div class="order-head"><strong>${esc(cm.id)}</strong>
+              <span>${new Date(cm.date).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</span></div>
+            <div class="order-client">
+              <strong>${esc(cm.name)}</strong> · <a href="mailto:${esc(cm.email)}">${esc(cm.email)}</a>
+              ${cm.format ? " · Format : " + esc(cm.format) : ""}${cm.budget ? " · Budget : " + esc(cm.budget) : ""}
+              <div class="order-msg">« ${esc(cm.description)} »</div>
+              ${cm.photo ? `<a href="${esc(cm.photo)}" target="_blank" style="color:var(--accent);">Voir la photo de référence ↗</a>` : ""}
+            </div>
+          </div>
+        </article>`).join("")}`);
+    }
   }
 
   /* ---------------------------------------------------------- clients -- */
@@ -599,6 +659,86 @@
           markDirty();
         }
       }
+    });
+
+    /* ------ journal & avis ------ */
+    $("#add-post").addEventListener("click", () => {
+      catalogue.posts.unshift({ titre: "Nouveau billet", date: new Date().toISOString().slice(0, 10), texte: "", texte_en: "", image: "" });
+      renderPosts(); markDirty();
+    });
+    $("#add-avis").addEventListener("click", () => {
+      catalogue.avis.unshift({ nom: "", lieu: "", texte: "", texte_en: "" });
+      renderAvis(); markDirty();
+    });
+
+    const postList = $("#post-list");
+    postList.addEventListener("input", (e) => {
+      const card = e.target.closest("[data-pi2]"); const k = e.target.dataset.pk2;
+      if (card && k) { catalogue.posts[+card.dataset.pi2][k] = e.target.value; markDirty(); }
+    });
+    postList.addEventListener("click", (e) => {
+      const card = e.target.closest("[data-pi2]");
+      if (!card) return;
+      if (e.target.dataset.act === "post-photo") $("input[type=file]", card).click();
+      if (e.target.dataset.act === "post-del" && confirm("Supprimer ce billet ?")) {
+        catalogue.posts.splice(+card.dataset.pi2, 1); renderPosts(); markDirty();
+      }
+    });
+    postList.addEventListener("change", async (e) => {
+      if (e.target.type !== "file" || !e.target.files[0]) return;
+      const card = e.target.closest("[data-pi2]");
+      try {
+        const blob = await shrinkImage(e.target.files[0]);
+        const fd = new FormData();
+        fd.append("file", blob, "journal.webp");
+        const r = await fetch("/api/upload", { method: "POST", body: fd });
+        const { path } = await r.json();
+        catalogue.posts[+card.dataset.pi2].image = path;
+        $("img", card).src = path;
+        markDirty();
+      } catch { toast("Échec de l'envoi de la photo."); }
+    });
+
+    $("#avis-list").addEventListener("input", (e) => {
+      const card = e.target.closest("[data-ai]"); const k = e.target.dataset.ak;
+      if (card && k) { catalogue.avis[+card.dataset.ai][k] = e.target.value; markDirty(); }
+    });
+    $("#avis-list").addEventListener("click", (e) => {
+      if (e.target.dataset.act === "avis-del" && confirm("Supprimer cet avis ?")) {
+        catalogue.avis.splice(+e.target.closest("[data-ai]").dataset.ai, 1); renderAvis(); markDirty();
+      }
+    });
+
+    /* ------ newsletter ------ */
+    $("#compose-btn").addEventListener("click", async () => {
+      const panel = $("#compose-panel");
+      panel.hidden = !panel.hidden;
+      if (!panel.hidden) {
+        const st = await fetch("/api/mail-status").then((r) => r.json()).catch(() => ({ enabled: false }));
+        $("#compose-note").textContent = st.enabled
+          ? "L'email partira de contact@pascal-sun.com à tous les contacts, un par un."
+          : "⚠ L'envoi direct n'est pas encore activé (mot de passe email à configurer). En attendant, utilisez « Inviter la sélection » qui passe par votre application mail.";
+        $("#compose-send").disabled = !st.enabled;
+      }
+    });
+    $("#compose-send").addEventListener("click", async () => {
+      const subject = $("#compose-subject").value.trim();
+      const message = $("#compose-message").value.trim();
+      if (!subject || !message) { toast("Sujet et message requis."); return; }
+      if (!confirm(`Envoyer « ${subject} » à tous les contacts ?`)) return;
+      $("#compose-send").disabled = true;
+      $("#compose-status").textContent = "Envoi en cours…";
+      try {
+        const r = await fetch("/api/newsletter/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ subject, message })
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error();
+        $("#compose-status").textContent = `Envoyé à ${d.sent}/${d.total} contacts ✓`;
+      } catch { $("#compose-status").textContent = "Échec de l'envoi."; }
+      finally { $("#compose-send").disabled = false; }
     });
 
     $("#texts-grid").addEventListener("input", (e) => {

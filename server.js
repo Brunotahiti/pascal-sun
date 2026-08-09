@@ -179,6 +179,43 @@ app.get("/api/stats/overview", requireAuth, async (req, res) => {
   }
 });
 
+/* -------------------------------------------------------------- emails -- */
+/* SMTP Hostinger : s'active dès que SMTP_PASS est fourni en variable
+   d'environnement. Sans configuration, le site fonctionne à l'identique
+   (les emails sont simplement ignorés). */
+
+const nodemailer = require("nodemailer");
+const SMTP_HOST = process.env.SMTP_HOST || "smtp.hostinger.com";
+const SMTP_PORT = Number(process.env.SMTP_PORT || 465);
+const SMTP_USER = process.env.SMTP_USER || "contact@pascal-sun.com";
+const SMTP_PASS = process.env.SMTP_PASS || "";
+const MAIL_FROM = process.env.MAIL_FROM || `"Galerie Pascal Sun" <${SMTP_USER}>`;
+const ARTIST_NOTIFY = process.env.ARTIST_NOTIFY || SMTP_USER;
+
+const mailer = SMTP_PASS
+  ? nodemailer.createTransport({ host: SMTP_HOST, port: SMTP_PORT, secure: SMTP_PORT === 465, auth: { user: SMTP_USER, pass: SMTP_PASS } })
+  : null;
+
+const mailEnabled = () => Boolean(mailer);
+
+function sendMail(to, subject, text) {
+  if (!mailer || !to) return Promise.resolve(false);
+  return mailer.sendMail({ from: MAIL_FROM, to, subject, text })
+    .then(() => true)
+    .catch((e) => { console.error("mail:", e.message); return false; });
+}
+
+const COMMISSIONS_FILE = path.join(DATA_DIR, "commissions.json");
+const PRODUIT_FR = { original: "Œuvre originale", tirage: "Tirage d'art édition limitée", affiche: "Affiche" };
+
+function orderEmailText(order) {
+  const lignes = order.lines.map((l) =>
+    `  • ${l.titre} — ${PRODUIT_FR[l.key] || l.key}${l.qty > 1 ? ` × ${l.qty}` : ""} — ${l.prixEUR * l.qty} €`).join("\n");
+  const mode = order.mode === "retrait" ? "Retrait à Tahiti" : "Livraison (devis de transport à suivre)";
+  const paiement = { card: "Carte bancaire", virement: "Virement bancaire", paypal: "PayPal" }[order.payment] || order.payment;
+  return { lignes, mode, paiement };
+}
+
 /* ----------------------------------------------------- contacts (CRM) -- */
 
 function upsertContact({ email, name, country, source, orderTotalEUR }) {
@@ -301,6 +338,39 @@ app.post("/api/orders", (req, res) => {
 
   upsertContact({ email: order.client.email, name: order.client.name, country: order.client.country, source: "commande", orderTotalEUR: totalEUR });
 
+  // Emails automatiques (si SMTP configuré)
+  const { lignes, mode, paiement } = orderEmailText(order);
+  sendMail(order.client.email, `Votre commande ${order.id} — Galerie Pascal Sun`,
+`Ia ora na ${order.client.name},
+
+Māuruuru pour votre commande ! Elle est bien enregistrée sous la référence ${order.id}.
+
+${lignes}
+
+Total œuvres : ${totalEUR} €
+Réception : ${mode}
+Paiement choisi : ${paiement}
+
+Pascal vous écrit personnellement sous 48 h pour confirmer le paiement sécurisé
+et organiser la réception de votre œuvre (certificat d'authenticité inclus pour
+les originaux et tirages numérotés).
+
+À très vite,
+Pascal Sun — Tahiti
+https://pascal-sun.com`);
+
+  sendMail(ARTIST_NOTIFY, `🛒 Nouvelle commande ${order.id} — ${totalEUR} €`,
+`Nouvelle commande sur la galerie !
+
+${lignes}
+
+Total : ${totalEUR} €
+Client : ${order.client.name} <${order.client.email}> ${order.client.country ? "· " + order.client.country : ""}
+Réception : ${mode}
+Paiement : ${paiement}
+${order.client.message ? "\nMessage : « " + order.client.message + " »\n" : ""}
+→ Détails et statuts : https://pascal-sun.com/admin (onglet Commandes)`);
+
   res.json({ ok: true, orderId: order.id, totalEUR });
 });
 
@@ -314,6 +384,115 @@ app.post("/api/orders/statut", requireAuth, (req, res) => {
   if (["nouvelle", "payee", "expediee", "terminee", "annulee"].includes(statut)) o.statut = statut;
   writeJSON(ORDERS_FILE, orders);
   res.json({ ok: true });
+});
+
+/* ------------------------------------------- alerte « prévenez-moi » -- */
+
+app.post("/api/notify", (req, res) => {
+  const { email, artworkId, titre } = req.body || {};
+  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(email))) {
+    return res.status(400).json({ error: "email-invalide" });
+  }
+  upsertContact({ email: String(email).slice(0, 200), source: "alerte" });
+  const contacts = readJSON(NEWSLETTER_FILE, []);
+  const c = contacts.find((x) => x.email.toLowerCase() === String(email).toLowerCase());
+  if (c) {
+    const note = `Alerte œuvre : ${titre || artworkId} (${new Date().toISOString().slice(0, 10)})`;
+    if (!(c.notes || "").includes(note)) c.notes = ((c.notes || "") + "\n" + note).trim();
+    writeJSON(NEWSLETTER_FILE, contacts);
+  }
+  sendMail(ARTIST_NOTIFY, `🔔 Alerte œuvre — ${titre || artworkId}`,
+`${email} souhaite être prévenu(e) au sujet de « ${titre || artworkId} »
+(disponibilité, retirage ou œuvre similaire).
+
+Retrouvez ce contact dans l'admin, onglet Clients.`);
+  res.json({ ok: true });
+});
+
+/* -------------------------------------------- portrait sur commande -- */
+
+const commissionUpload = multer({
+  storage: multer.diskStorage({
+    destination: UPLOADS_DIR,
+    filename: (_req, file, cb) => {
+      const safe = file.originalname.toLowerCase().replace(/[^a-z0-9.]+/g, "-").slice(-60);
+      cb(null, `commission-${Date.now()}-${safe || "photo.jpg"}`);
+    }
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => cb(null, /^image\//.test(file.mimetype))
+});
+
+app.post("/api/commission", commissionUpload.single("photo"), (req, res) => {
+  const b = req.body || {};
+  if (!b.email || !b.name || !b.description) return res.status(400).json({ error: "champs-manquants" });
+  const commissions = readJSON(COMMISSIONS_FILE, []);
+  const cm = {
+    id: "PC-" + Date.now().toString(36).toUpperCase(),
+    date: new Date().toISOString(),
+    name: String(b.name).slice(0, 160),
+    email: String(b.email).slice(0, 200),
+    description: String(b.description).slice(0, 3000),
+    format: String(b.format || "").slice(0, 100),
+    budget: String(b.budget || "").slice(0, 100),
+    photo: req.file ? `/uploads/${req.file.filename}` : null,
+    statut: "nouvelle"
+  };
+  commissions.unshift(cm);
+  writeJSON(COMMISSIONS_FILE, commissions);
+  upsertContact({ email: cm.email, name: cm.name, source: "commande" });
+
+  sendMail(cm.email, `Votre demande de portrait ${cm.id} — Pascal Sun`,
+`Ia ora na ${cm.name},
+
+Merci pour votre demande de portrait sur commande (référence ${cm.id}).
+Pascal l'étudie et vous répond personnellement sous 48 h avec sa proposition.
+
+Votre demande :
+${cm.description}
+${cm.format ? "Format souhaité : " + cm.format : ""}
+${cm.budget ? "Budget : " + cm.budget : ""}
+
+À très vite,
+Pascal Sun — Tahiti`);
+  sendMail(ARTIST_NOTIFY, `🎨 Demande de portrait ${cm.id}`,
+`Nouvelle demande de portrait sur commande !
+
+De : ${cm.name} <${cm.email}>
+${cm.format ? "Format : " + cm.format : ""}
+${cm.budget ? "Budget : " + cm.budget : ""}
+${cm.photo ? "Photo de référence : https://pascal-sun.com" + cm.photo : ""}
+
+« ${cm.description} »
+
+→ https://pascal-sun.com/admin (onglet Commandes)`);
+
+  res.json({ ok: true, id: cm.id });
+});
+
+app.get("/api/commissions", requireAuth, (_req, res) => res.json(readJSON(COMMISSIONS_FILE, [])));
+
+/* -------------------------------------------- envoi de la newsletter -- */
+
+app.get("/api/mail-status", requireAuth, (_req, res) => res.json({ enabled: mailEnabled() }));
+
+app.post("/api/newsletter/send", requireAuth, async (req, res) => {
+  if (!mailEnabled()) return res.status(503).json({ error: "smtp-non-configure" });
+  const { subject, message } = req.body || {};
+  if (!subject || !message) return res.status(400).json({ error: "sujet-et-message-requis" });
+  const contacts = readJSON(NEWSLETTER_FILE, []);
+  let sent = 0;
+  for (const c of contacts) {
+    const ok = await sendMail(c.email, String(subject).slice(0, 200),
+`${message}
+
+—
+Vous recevez cet email car vous suivez la galerie Pascal Sun.
+https://pascal-sun.com`);
+    if (ok) sent++;
+    await new Promise((r) => setTimeout(r, 200)); // douceur avec le serveur SMTP
+  }
+  res.json({ ok: true, sent, total: contacts.length });
 });
 
 /* ------------------------------------------------ paiement carte (Stripe) -- */

@@ -761,6 +761,85 @@ a { color: inherit; text-decoration: none; }
 .video-frame.portrait video { aspect-ratio: 9 / 16; }
 .video-frame.landscape video { aspect-ratio: 16 / 9; }
 
+/* -------------------------------------------------- journal de l'atelier -- */
+
+.journal-list { display: grid; gap: clamp(24px, 4vw, 44px); max-width: 860px; }
+.post-card {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: clamp(18px, 3vw, 32px);
+  background: #fff;
+  border: 1px solid var(--line);
+  padding: clamp(16px, 2.4vw, 26px);
+}
+@media (max-width: 700px) { .post-card { grid-template-columns: 1fr; } }
+.post-img img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border: 1px solid var(--line); }
+.post-date { font-size: 11px; font-weight: 800; letter-spacing: .22em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+.post-body h2 { font-family: var(--serif); font-size: clamp(22px, 2.6vw, 30px); font-weight: 600; margin-bottom: 10px; }
+.post-body p { color: var(--ink-soft); font-size: 15px; }
+
+/* --------------------------------------------------- avis collectionneurs -- */
+
+.avis-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(18px, 3vw, 32px); }
+@media (max-width: 860px) { .avis-grid { grid-template-columns: 1fr; } }
+.avis-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  padding: clamp(20px, 3vw, 30px);
+  font-family: var(--serif);
+  font-size: 19px;
+  font-style: italic;
+  line-height: 1.5;
+}
+.avis-card footer {
+  margin-top: 16px;
+  font-family: var(--sans);
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* ------------------------------------------------------- portrait CTA -- */
+
+.portrait-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(20px, 4vw, 50px);
+  background: var(--ink);
+  color: var(--paper);
+  padding: clamp(28px, 4vw, 48px);
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+.portrait-cta .section-title { color: var(--paper); }
+.portrait-cta .lede { color: #b8b0a2; }
+.portrait-cta .btn { background: var(--accent); border-color: var(--accent); white-space: nowrap; }
+.portrait-cta .btn:hover { background: var(--paper); border-color: var(--paper); color: var(--ink); }
+
+/* ------------------------------------------------------ alerte œuvre -- */
+
+.notify-box {
+  background: #fff;
+  border: 1px dashed var(--accent-soft);
+  border-radius: 8px;
+  padding: 18px 20px;
+  margin-top: 24px;
+}
+.notify-box p { font-size: 13.5px; color: var(--ink-soft); }
+.notify-form { margin-top: 12px; }
+.notify-form input { background: var(--paper); border: 1px solid var(--line); color: var(--ink); }
+.notify-form input::placeholder { color: var(--ink-faint); }
+.notify-box .news-msg { color: var(--accent); }
+
+/* ------------------------------------------------- langue de la page -- */
+
+html[lang="en"] .only-fr { display: none !important; }
+html[lang="fr"] .only-en { display: none !important; }
+
 /* ---------------------------------------------------------- page heads -- */
 
 .page-head { padding: clamp(56px, 8vw, 100px) 0 clamp(30px, 4vw, 50px); }
