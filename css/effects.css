@@ -159,10 +159,8 @@
 .card.reveal.is-in .frame::before, .card:not(.reveal) .frame::before { transform: scaleY(0); }
 
 .card .frame img {
-  transition: transform 1.2s var(--ease), filter .6s;
-  transform: scale(1.001);
+  transition: filter .6s;
 }
-.card:hover .frame img { transform: scale(1.05); }
 
 /* (la parallaxe interne des toiles a été retirée : elle rognait les
    compositions et faisait « sauter » les photos au chargement) */
