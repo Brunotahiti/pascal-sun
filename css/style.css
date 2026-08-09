@@ -100,21 +100,22 @@ a { color: inherit; text-decoration: none; }
 
 .brand {
   font-family: var(--serif);
-  font-size: 24px;
-  font-weight: 600;
-  letter-spacing: .06em;
+  font-size: 31px;
+  font-weight: 700;
+  letter-spacing: .05em;
   white-space: nowrap;
+  line-height: 1;
 }
 .brand .sun { color: var(--accent); }
 .brand small {
   display: block;
   font-family: var(--sans);
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: .38em;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: .34em;
   text-transform: uppercase;
-  color: var(--ink-faint);
-  margin-top: 2px;
+  color: var(--ink-soft);
+  margin-top: 5px;
 }
 
 .nav { display: flex; align-items: center; gap: clamp(14px, 2.4vw, 30px); }
@@ -616,21 +617,22 @@ a { color: inherit; text-decoration: none; }
 
 .video-duo {
   display: grid;
-  grid-template-columns: 1.55fr 1fr;
-  gap: clamp(20px, 3vw, 36px);
+  grid-template-columns: 2.2fr 1fr;
+  gap: clamp(18px, 2.5vw, 28px);
   align-items: start;
   margin-top: clamp(28px, 4vw, 46px);
+  max-width: 760px;
 }
-@media (max-width: 800px) { .video-duo { grid-template-columns: 1fr; } }
+@media (max-width: 700px) { .video-duo { grid-template-columns: 1fr; } }
 
 .video-frame {
   background: #fff;
   border: 1px solid var(--line);
-  padding: 10px;
-  box-shadow: 0 26px 50px -30px rgba(22, 19, 15, .4);
+  padding: 8px;
+  box-shadow: 0 22px 44px -28px rgba(22, 19, 15, .4);
 }
 .video-frame video { width: 100%; display: block; background: #000; }
-.video-frame.portrait { max-width: 380px; }
+.video-frame.portrait { max-width: 210px; }
 .video-frame.portrait video { aspect-ratio: 9 / 16; }
 .video-frame.landscape video { aspect-ratio: 16 / 9; }
 

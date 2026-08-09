@@ -218,6 +218,116 @@
       </div>`).join("");
   }
 
+  /* ------------------------------------------------------ statistiques -- */
+
+  let statsLoadedDays = null;
+
+  function fmtNum(n) { return (Number(n) || 0).toLocaleString("fr-FR"); }
+
+  function flagEmoji(code) {
+    if (!code || code.length !== 2 || code === "XX") return "🌐";
+    return [...code.toUpperCase()].map((c) => String.fromCodePoint(127397 + c.charCodeAt(0))).join("");
+  }
+
+  function countryName(code) {
+    try { return new Intl.DisplayNames(["fr"], { type: "region" }).of(code.toUpperCase()) || code; }
+    catch { return code; }
+  }
+
+  function metricList(el, rows, labelFn) {
+    if (!rows || !rows.length) { el.innerHTML = `<p class="metric-empty">Pas encore de données sur cette période.</p>`; return; }
+    const max = Math.max(...rows.map((r) => r.y));
+    el.innerHTML = rows.map((r) => `
+      <div class="metric-row">
+        <span class="bar" style="transform: scaleX(${max ? r.y / max : 0})"></span>
+        <span class="lbl">${labelFn(r.x)}</span>
+        <span class="val">${fmtNum(r.y)}</span>
+      </div>`).join("");
+  }
+
+  function drawChart(series, unit) {
+    const box = $("#stats-chart");
+    const pts = (series && series.sessions && series.sessions.length ? series.sessions : (series && series.pageviews) || []);
+    if (!pts.length) { box.innerHTML = `<p class="chart-empty">Le graphique apparaîtra dès les premières visites.</p>`; return; }
+
+    const W = 640, H = 170, PAD = 8, BOT = 24;
+    const max = Math.max(1, ...pts.map((p) => p.y));
+    const step = (W - PAD * 2) / Math.max(1, pts.length - 1);
+    const X = (i) => PAD + i * step;
+    const Y = (v) => PAD + (H - BOT - PAD) * (1 - v / max);
+
+    const line = pts.map((p, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(p.y).toFixed(1)}`).join(" ");
+    const area = `${line} L${X(pts.length - 1).toFixed(1)},${H - BOT} L${X(0).toFixed(1)},${H - BOT} Z`;
+
+    const labels = pts.map((p, i) => {
+      if (pts.length > 10 && i % Math.ceil(pts.length / 8)) return "";
+      const d = new Date(p.x);
+      const txt = unit === "hour"
+        ? `${String(d.getHours()).padStart(2, "0")}h`
+        : d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+      return `<text x="${X(i).toFixed(1)}" y="${H - 6}" font-size="10" fill="#8c8478" text-anchor="middle" font-family="Manrope,sans-serif">${txt}</text>`;
+    }).join("");
+
+    const dots = pts.map((p, i) =>
+      `<circle cx="${X(i).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="3" fill="#d4593a"><title>${fmtNum(p.y)} visites</title></circle>`).join("");
+
+    box.innerHTML = `
+      <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#d4593a" stop-opacity=".28"/>
+          <stop offset="1" stop-color="#d4593a" stop-opacity="0"/>
+        </linearGradient></defs>
+        <path d="${area}" fill="url(#ag)"/>
+        <path d="${line}" fill="none" stroke="#d4593a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        ${dots}${labels}
+      </svg>`;
+  }
+
+  async function loadStats(days) {
+    statsLoadedDays = days;
+    $("#stats-loading").hidden = false;
+    $("#stats-error").hidden = true;
+    $("#stats-board").hidden = true;
+
+    let d;
+    try {
+      const r = await fetch(`/api/stats/overview?days=${days}`);
+      if (!r.ok) throw new Error();
+      d = await r.json();
+    } catch {
+      $("#stats-loading").hidden = true;
+      $("#stats-error").hidden = false;
+      return;
+    }
+    if (statsLoadedDays !== days) return; // une autre période a été demandée entre-temps
+
+    const st = d.stats || {};
+    const val = (o) => (o && typeof o === "object" ? o.value : o) || 0;
+    const visits = val(st.visits);
+    const totaltime = val(st.totaltime);
+    const avg = visits ? Math.round(totaltime / visits) : 0;
+
+    let activeN = 0;
+    if (Array.isArray(d.active)) activeN = d.active.length ? (d.active[0].x ?? d.active[0].y ?? d.active.length) : 0;
+    else if (d.active && typeof d.active === "object") activeN = d.active.x ?? d.active.visitors ?? 0;
+    else activeN = Number(d.active) || 0;
+
+    $("#k-active").textContent = fmtNum(activeN);
+    $("#k-visitors").textContent = fmtNum(val(st.visitors));
+    $("#k-visits").textContent = fmtNum(visits);
+    $("#k-pageviews").textContent = fmtNum(val(st.pageviews));
+    $("#k-time").textContent = avg >= 60 ? `${Math.floor(avg / 60)} min ${avg % 60} s` : `${avg} s`;
+
+    drawChart(d.series, d.unit);
+    metricList($("#m-countries"), d.countries, (c) => `${flagEmoji(c)} ${countryName(c)}`);
+    metricList($("#m-pages"), d.pages, (u) => u === "/" ? "/ (accueil)" : u);
+    metricList($("#m-referrers"), d.referrers, (r) => r || "Accès direct");
+    metricList($("#m-devices"), d.devices, (x) => ({ desktop: "🖥 Ordinateur", laptop: "💻 Portable", mobile: "📱 Mobile", tablet: "📱 Tablette" }[x] || x));
+
+    $("#stats-loading").hidden = true;
+    $("#stats-board").hidden = false;
+  }
+
   /* ---------------------------------------------------------- events -- */
 
   function wireChrome() {
@@ -225,7 +335,15 @@
       t.addEventListener("click", () => {
         document.querySelectorAll(".admin-tabs .tab").forEach((x) => x.classList.toggle("active", x === t));
         document.querySelectorAll(".pane").forEach((p) => p.classList.toggle("active", p.dataset.pane === t.dataset.tab));
+        if (t.dataset.tab === "stats" && statsLoadedDays === null) loadStats(7);
       }));
+
+    $("#period-chips").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-days]");
+      if (!b) return;
+      document.querySelectorAll("#period-chips button").forEach((x) => x.classList.toggle("active", x === b));
+      loadStats(+b.dataset.days);
+    });
 
     $("#logout-btn").addEventListener("click", async () => {
       await fetch("/api/logout", { method: "POST" });

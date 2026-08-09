@@ -86,6 +86,67 @@ app.put("/api/catalogue", requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
+/* ------------------------------------------------- statistiques (Umami) -- */
+/* Le serveur interroge Umami en interne (réseau Docker) et sert un résumé
+   à l'admin : l'utilisateur ne quitte jamais le site. */
+
+const UMAMI_URL = process.env.UMAMI_URL || "";
+const UMAMI_USER = process.env.UMAMI_USER || "admin";
+const UMAMI_PASSWORD = process.env.UMAMI_PASSWORD || "";
+const UMAMI_WEBSITE_ID = process.env.UMAMI_WEBSITE_ID || "";
+
+let umamiToken = null;
+
+async function umamiLogin() {
+  const r = await fetch(`${UMAMI_URL}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: UMAMI_USER, password: UMAMI_PASSWORD })
+  });
+  if (!r.ok) throw new Error(`umami login ${r.status}`);
+  umamiToken = (await r.json()).token;
+}
+
+async function umami(pathAndQuery) {
+  if (!umamiToken) await umamiLogin();
+  const call = () => fetch(`${UMAMI_URL}/api/websites/${UMAMI_WEBSITE_ID}/${pathAndQuery}`, {
+    headers: { Authorization: `Bearer ${umamiToken}` }
+  });
+  let r = await call();
+  if (r.status === 401) { await umamiLogin(); r = await call(); }
+  if (!r.ok) throw new Error(`umami ${r.status}`);
+  return r.json();
+}
+
+app.get("/api/stats/overview", requireAuth, async (req, res) => {
+  if (!UMAMI_URL || !UMAMI_WEBSITE_ID) {
+    return res.status(503).json({ error: "stats-not-configured" });
+  }
+  try {
+    const days = Math.max(1, Math.min(365, parseInt(req.query.days, 10) || 7));
+    const endAt = Date.now();
+    const startAt = endAt - days * 864e5;
+    const unit = days <= 2 ? "hour" : "day";
+    const q = `startAt=${startAt}&endAt=${endAt}`;
+    const tz = encodeURIComponent("Pacific/Tahiti");
+
+    const [stats, series, countries, pages, referrers, devices, active] = await Promise.all([
+      umami(`stats?${q}`),
+      umami(`pageviews?${q}&unit=${unit}&timezone=${tz}`),
+      umami(`metrics?${q}&type=country&limit=12`),
+      umami(`metrics?${q}&type=path&limit=10`),
+      umami(`metrics?${q}&type=referrer&limit=10`),
+      umami(`metrics?${q}&type=device&limit=6`),
+      umami("active")
+    ]);
+
+    res.json({ days, unit, stats, series, countries, pages, referrers, devices, active });
+  } catch (err) {
+    console.error("stats:", err.message);
+    res.status(502).json({ error: "stats-unavailable" });
+  }
+});
+
 /* --------------------------------------------------------------- upload -- */
 
 const upload = multer({

@@ -82,16 +82,40 @@
         <div class="pane-head">
           <div>
             <h2>Statistiques du site</h2>
-            <p>Visites en temps réel, pays, pages vues, appareils, sources de trafic — le tableau de bord complet de la galerie.</p>
+            <p>Visites, pays, pages vues, sources et appareils — tout est là, en direct.</p>
+          </div>
+          <div class="period-chips" id="period-chips">
+            <button data-days="1">24 h</button>
+            <button data-days="7" class="active">7 jours</button>
+            <button data-days="30">30 jours</button>
+            <button data-days="90">90 jours</button>
           </div>
         </div>
-        <a class="stats-card" href="https://stats.pascal-sun.com" target="_blank" rel="noopener">
-          <div class="stats-sun"></div>
-          <div>
-            <h3>Ouvrir le tableau de bord ↗</h3>
-            <p>stats.pascal-sun.com — identifiant <strong>admin</strong>, même mot de passe que cet espace.</p>
+
+        <div id="stats-loading" class="stats-note">Chargement des statistiques…</div>
+        <div id="stats-error" class="stats-note" hidden>Statistiques momentanément indisponibles.</div>
+
+        <div id="stats-board" hidden>
+          <div class="kpi-grid">
+            <div class="kpi live"><div class="kpi-num" id="k-active">–</div><div class="kpi-label"><span class="pulse"></span>En ligne maintenant</div></div>
+            <div class="kpi"><div class="kpi-num" id="k-visitors">–</div><div class="kpi-label">Visiteurs</div></div>
+            <div class="kpi"><div class="kpi-num" id="k-visits">–</div><div class="kpi-label">Visites</div></div>
+            <div class="kpi"><div class="kpi-num" id="k-pageviews">–</div><div class="kpi-label">Pages vues</div></div>
+            <div class="kpi"><div class="kpi-num" id="k-time">–</div><div class="kpi-label">Durée moyenne</div></div>
           </div>
-        </a>
+
+          <div class="chart-card">
+            <h3>Visites</h3>
+            <div id="stats-chart"></div>
+          </div>
+
+          <div class="metric-grid">
+            <div class="metric-card"><h3>🌍 Pays</h3><div id="m-countries"></div></div>
+            <div class="metric-card"><h3>🖼 Pages les plus vues</h3><div id="m-pages"></div></div>
+            <div class="metric-card"><h3>🧭 Sources</h3><div id="m-referrers"></div></div>
+            <div class="metric-card"><h3>📱 Appareils</h3><div id="m-devices"></div></div>
+          </div>
+        </div>
       </section>
     </main>
 

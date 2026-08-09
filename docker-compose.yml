@@ -7,6 +7,10 @@ services:
     environment:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:?admin password required}
       - APP_SECRET=${APP_SECRET:?app secret required}
+      - UMAMI_URL=${UMAMI_URL:-}
+      - UMAMI_USER=${UMAMI_USER:-admin}
+      - UMAMI_PASSWORD=${UMAMI_PASSWORD:-}
+      - UMAMI_WEBSITE_ID=${UMAMI_WEBSITE_ID:-}
     volumes:
       - pascal-sun-data:/app/data
     networks:
