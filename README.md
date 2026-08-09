@@ -47,3 +47,14 @@ npx serve .
 ```
 
 puis ouvrir http://localhost:3000
+
+## Mise en ligne — pascal-sun.com (Hostinger VPS)
+
+Le site est déployé sur le VPS Hostinger (srv1565699, IP `187.127.105.242`)
+en conteneur Docker **nginx** (gzip + cache 7 j) derrière **Traefik**
+(HTTPS Let's Encrypt automatique). Le DNS de `pascal-sun.com` pointe vers le VPS.
+
+- Code source : https://github.com/Brunotahiti/pascal-sun (branche `master`)
+- Pour publier une mise à jour : commit + push sur `master`, puis recréer le
+  projet Docker `pascal-sun` depuis le panneau Hostinger (ou via l'API VPS,
+  « Create new project » avec l'URL du dépôt — le projet existant est remplacé).
