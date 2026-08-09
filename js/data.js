@@ -7,7 +7,7 @@
    ➜ vendu : true pour afficher « Œuvre vendue ».
    ========================================================================= */
 
-const ARTWORKS = [
+var ARTWORKS = [
   {
     id: "retour-du-pecheur",
     titre: "Le retour du pêcheur",
@@ -221,7 +221,7 @@ const COLLECTIONS = {
 
 /* ---------------------------------------------------------------- i18n -- */
 
-const I18N = {
+var I18N = {
   fr: {
     nav_home: "Accueil",
     nav_gallery: "Galerie",
@@ -253,6 +253,8 @@ const I18N = {
     filter_all: "Toutes",
     artist_eyebrow: "L'univers",
     artist_title: "L'art de Pascal Sun est une invitation à ralentir",
+    atelier_video_t: "L'atelier en mouvement",
+    atelier_video_p: "Quelques minutes dans l'atelier de Pascal, à Tahiti : le geste, le silence, la toile qui prend vie.",
     sold: "Œuvre vendue",
     new: "Nouveauté",
     available: "Disponible",
@@ -343,6 +345,8 @@ const I18N = {
     filter_all: "All",
     artist_eyebrow: "The universe",
     artist_title: "Pascal Sun's art is an invitation to slow down",
+    atelier_video_t: "The studio in motion",
+    atelier_video_p: "A few minutes inside Pascal's studio in Tahiti: the gesture, the silence, the canvas coming to life.",
     sold: "Sold",
     new: "New",
     available: "Available",

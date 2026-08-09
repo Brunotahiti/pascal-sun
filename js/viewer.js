@@ -11,11 +11,9 @@
 (function () {
   "use strict";
 
-  if (!document.body || document.body.dataset.page !== "artwork") {
-    document.addEventListener("DOMContentLoaded", maybeInit);
-  } else {
-    document.addEventListener("DOMContentLoaded", maybeInit);
-  }
+  /* Attend le rendu du catalogue par app.js (événement ps-ready). */
+  if (window.PS_READY) { maybeInit(); }
+  else { document.addEventListener("ps-ready", maybeInit); }
 
   const T = {
     fr: {
@@ -154,7 +152,11 @@
     pane.dataset.ready = "1";
     const maxPx = Math.min(innerHeight * 0.52, innerWidth * 0.6, 460);
     const scale = maxPx / Math.max(dims.w, dims.h);
-    const W = dims.w * scale, H = dims.h * scale, D = Math.max(10, 4 * scale);
+    // Cadre en bois noir : 2 cm à l'échelle, tout autour de la toile.
+    const F = Math.max(4, 2 * scale);
+    const W = dims.w * scale + 2 * F, H = dims.h * scale + 2 * F;
+    const D = Math.max(12, 4.5 * scale);
+    const WOOD = "linear-gradient(135deg,#26201a 0%,#15100c 55%,#1d1712 100%)";
 
     pane.innerHTML = `
       <div class="v3d-presets">
@@ -164,12 +166,14 @@
       </div>
       <div class="v3d-scene" style="width:${W}px;height:${H}px">
         <div class="canvas3d" style="width:${W}px;height:${H}px">
-          <div class="face front" style="width:${W}px;height:${H}px;transform:translateZ(${D / 2}px);background-image:url('${art.image}');background-size:cover;background-position:center"></div>
+          <div class="face front" style="width:${W}px;height:${H}px;transform:translateZ(${D / 2}px);background:${WOOD}">
+            <div class="frame-inner" style="position:absolute;inset:${F}px;background-image:url('${art.image}');background-size:cover;background-position:center;box-shadow:inset 0 0 ${F * 3}px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.07)"></div>
+          </div>
           <div class="face back" style="width:${W}px;height:${H}px;transform:rotateY(180deg) translateZ(${D / 2}px)"></div>
-          <div class="face edge" style="width:${D}px;height:${H}px;left:${W - D / 2}px;transform:translateX(-50%) rotateY(90deg);background-image:url('${art.image}');background-size:${W}px ${H}px;background-position:right center"></div>
-          <div class="face edge" style="width:${D}px;height:${H}px;left:${-D / 2}px;transform:translateX(50%) rotateY(-90deg);background-image:url('${art.image}');background-size:${W}px ${H}px;background-position:left center"></div>
-          <div class="face edge" style="width:${W}px;height:${D}px;top:${-D / 2}px;transform:translateY(50%) rotateX(90deg);background-image:url('${art.image}');background-size:${W}px ${H}px;background-position:center top"></div>
-          <div class="face edge" style="width:${W}px;height:${D}px;top:${H - D / 2}px;transform:translateY(-50%) rotateX(-90deg);background-image:url('${art.image}');background-size:${W}px ${H}px;background-position:center bottom"></div>
+          <div class="face edge" style="width:${D}px;height:${H}px;left:${W - D / 2}px;transform:translateX(-50%) rotateY(90deg);background:${WOOD}"></div>
+          <div class="face edge" style="width:${D}px;height:${H}px;left:${-D / 2}px;transform:translateX(50%) rotateY(-90deg);background:${WOOD}"></div>
+          <div class="face edge" style="width:${W}px;height:${D}px;top:${-D / 2}px;transform:translateY(50%) rotateX(90deg);background:${WOOD}"></div>
+          <div class="face edge" style="width:${W}px;height:${D}px;top:${H - D / 2}px;transform:translateY(-50%) rotateX(-90deg);background:${WOOD}"></div>
         </div>
       </div>
       <div class="viewer-hint">${tr.in3d}</div>`;
@@ -247,6 +251,8 @@
           el.style.height = w * ratio + "px";
           el.style.left = x + "px";
           el.style.top = y + "px";
+          // cadre bois noir 2 cm à l'échelle de l'œuvre
+          el.style.borderWidth = Math.max(2, 2 * (w / dims.w)) + "px";
         }
         apply();
 
@@ -377,6 +383,14 @@
     artEl.style.top = top + "%";
     artEl.style.width = (wU / 1000) * 100 + "%";
     artEl.style.height = (hU / 620) * 100 + "%";
+
+    // cadre bois noir 2 cm à l'échelle du salon
+    const wrap = pane.querySelector(".room-wrap");
+    function setFrame() {
+      artEl.style.borderWidth = Math.max(2, wrap.clientWidth * (2 * pxPerCm / 1000)) + "px";
+    }
+    setFrame();
+    addEventListener("resize", setFrame);
   }
 
   function escapeHtml(s) {

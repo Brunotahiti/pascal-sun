@@ -12,7 +12,7 @@
   const store = {
     get lang()     { return localStorage.getItem("ps_lang") || "fr"; },
     set lang(v)    { localStorage.setItem("ps_lang", v); },
-    get currency() { return localStorage.getItem("ps_currency") || "EUR"; },
+    get currency() { return localStorage.getItem("ps_currency") || "XPF"; },
     set currency(v){ localStorage.setItem("ps_currency", v); },
     get cart()     { try { return JSON.parse(localStorage.getItem("ps_cart")) || []; } catch { return []; } },
     set cart(v)    { localStorage.setItem("ps_cart", JSON.stringify(v)); }
@@ -114,7 +114,7 @@
       </div>
       <div class="wrap bottom">
         <span>${t("footer_rights")}</span>
-        <span>${t("footer_made")}</span>
+        <span>${t("footer_made")} · <a href="/admin" rel="nofollow">Admin</a></span>
       </div>`;
   }
 
@@ -368,7 +368,25 @@
 
   /* ------------------------------------------------------------- init -- */
 
-  document.addEventListener("DOMContentLoaded", () => {
+  /* Catalogue dynamique : les modifications faites dans l'espace admin
+     (photos, textes, œuvres) remplacent les données embarquées. */
+  async function loadCatalogue() {
+    try {
+      const r = await fetch("/api/catalogue", { cache: "no-cache" });
+      if (!r.ok) return;
+      const data = await r.json();
+      if (Array.isArray(data.artworks) && data.artworks.length) ARTWORKS = data.artworks;
+      if (data.uiTexts) {
+        ["fr", "en"].forEach((l) => {
+          if (data.uiTexts[l]) I18N[l] = Object.assign({}, I18N[l], data.uiTexts[l]);
+        });
+      }
+    } catch { /* hors ligne ou serveur statique : données embarquées */ }
+  }
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    await loadCatalogue();
+
     renderHeader();
     renderFooter();
     applyI18n();
@@ -382,5 +400,7 @@
     }
 
     observeReveals();
+    document.dispatchEvent(new CustomEvent("ps-ready"));
+    window.PS_READY = true;
   });
 })();

@@ -4,6 +4,11 @@ services:
     image: pascal-sun:latest
     container_name: pascal-sun
     restart: unless-stopped
+    environment:
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:?admin password required}
+      - APP_SECRET=${APP_SECRET:?app secret required}
+    volumes:
+      - pascal-sun-data:/app/data
     networks:
       - traefik
     labels:
@@ -12,7 +17,10 @@ services:
       - traefik.http.routers.pascalsun.entrypoints=websecure
       - traefik.http.routers.pascalsun.rule=Host(`pascal-sun.com`) || Host(`www.pascal-sun.com`)
       - traefik.http.routers.pascalsun.tls.certresolver=letsencrypt
-      - traefik.http.services.pascalsun.loadbalancer.server.port=80
+      - traefik.http.services.pascalsun.loadbalancer.server.port=3000
+
+volumes:
+  pascal-sun-data:
 
 networks:
   traefik:

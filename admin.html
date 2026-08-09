@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Espace admin — Pascal Sun</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='38' fill='%2316130f'/></svg>">
+</head>
+<body>
+
+  <!-- Connexion -->
+  <div class="login-screen" id="login-screen">
+    <form class="login-card" id="login-form">
+      <div class="login-sun"></div>
+      <h1>Pascal <span>Sun</span></h1>
+      <p class="login-sub">Espace d'administration de la galerie</p>
+      <input type="password" id="login-password" placeholder="Mot de passe" autocomplete="current-password" required>
+      <button type="submit">Entrer dans l'atelier</button>
+      <p class="login-error" id="login-error"></p>
+    </form>
+  </div>
+
+  <!-- Application -->
+  <div class="admin-app" id="admin-app" hidden>
+    <header class="admin-header">
+      <div class="brand">Pascal <span>Sun</span> <small>· Admin</small></div>
+      <nav class="admin-tabs">
+        <button class="tab active" data-tab="oeuvres">Œuvres</button>
+        <button class="tab" data-tab="textes">Textes &amp; boutons</button>
+        <button class="tab" data-tab="stats">Statistiques</button>
+      </nav>
+      <div class="admin-actions">
+        <a class="ghost-btn" href="/" target="_blank">Voir le site ↗</a>
+        <button class="ghost-btn" id="logout-btn">Déconnexion</button>
+      </div>
+    </header>
+
+    <main class="admin-main">
+      <!-- ŒUVRES -->
+      <section class="pane active" data-pane="oeuvres">
+        <div class="pane-head">
+          <div>
+            <h2>Les œuvres</h2>
+            <p>Remplacez les photos par les vôtres, ajustez les prix, les descriptions, la disponibilité. Tout est enregistré d'un seul geste avec le bouton en bas de page.</p>
+          </div>
+          <button class="solid-btn" id="add-artwork">+ Nouvelle œuvre</button>
+        </div>
+        <div class="artwork-list" id="artwork-list"></div>
+      </section>
+
+      <!-- TEXTES -->
+      <section class="pane" data-pane="textes">
+        <div class="pane-head">
+          <div>
+            <h2>Textes &amp; boutons du site</h2>
+            <p>Modifiez ici les libellés visibles sur le site, en français et en anglais. Laissez un champ vide pour garder le texte d'origine.</p>
+          </div>
+        </div>
+        <div class="texts-grid" id="texts-grid"></div>
+      </section>
+
+      <!-- STATS -->
+      <section class="pane" data-pane="stats">
+        <div class="pane-head">
+          <div>
+            <h2>Statistiques du site</h2>
+            <p>Visites en temps réel, pays, pages vues, appareils, sources de trafic — le tableau de bord complet de la galerie.</p>
+          </div>
+        </div>
+        <a class="stats-card" href="https://stats.pascal-sun.com" target="_blank" rel="noopener">
+          <div class="stats-sun"></div>
+          <div>
+            <h3>Ouvrir le tableau de bord ↗</h3>
+            <p>stats.pascal-sun.com — identifiant <strong>admin</strong>, même mot de passe que cet espace.</p>
+          </div>
+        </a>
+      </section>
+    </main>
+
+    <footer class="save-bar">
+      <span class="save-status" id="save-status">Aucune modification</span>
+      <button class="solid-btn big" id="save-btn" disabled>Enregistrer les modifications</button>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

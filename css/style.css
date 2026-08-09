@@ -563,6 +563,28 @@ a { color: inherit; text-decoration: none; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 .toast .hl { color: var(--accent-soft); }
 
+/* --------------------------------------------------------------- vidéo -- */
+
+.video-duo {
+  display: grid;
+  grid-template-columns: 1.55fr 1fr;
+  gap: clamp(20px, 3vw, 36px);
+  align-items: start;
+  margin-top: clamp(28px, 4vw, 46px);
+}
+@media (max-width: 800px) { .video-duo { grid-template-columns: 1fr; } }
+
+.video-frame {
+  background: #fff;
+  border: 1px solid var(--line);
+  padding: 10px;
+  box-shadow: 0 26px 50px -30px rgba(22, 19, 15, .4);
+}
+.video-frame video { width: 100%; display: block; background: #000; }
+.video-frame.portrait { max-width: 380px; }
+.video-frame.portrait video { aspect-ratio: 9 / 16; }
+.video-frame.landscape video { aspect-ratio: 16 / 9; }
+
 /* ---------------------------------------------------------- page heads -- */
 
 .page-head { padding: clamp(56px, 8vw, 100px) 0 clamp(30px, 4vw, 50px); }

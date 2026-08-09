@@ -2,6 +2,7 @@
 .git
 tools
 img-originales
+node_modules
+data
 README.md
-Dockerfile
 docker-compose.yml

@@ -168,8 +168,9 @@
   user-select: none;
   -webkit-user-drag: none;
   box-shadow: 0 22px 60px -18px rgba(0, 0, 0, .65);
-  border: 6px solid #fff;
-  background: #fff;
+  border: 6px solid #1a140f;
+  border-image: linear-gradient(135deg, #26201a, #15100c, #1d1712) 1;
+  background: #1a140f;
 }
 .ar-art:active { cursor: grabbing; }
 .ar-art img { width: 100%; height: 100%; pointer-events: none; }
@@ -226,8 +227,8 @@
 .room-wrap svg { width: 100%; height: auto; display: block; border-radius: 6px; }
 .room-art {
   position: absolute;
-  border: 3px solid #fff;
-  background: #fff;
+  border: 3px solid #1a140f;
+  background: #1a140f;
   box-shadow: 0 18px 40px -16px rgba(0, 0, 0, .55);
 }
 .room-art img { width: 100%; height: 100%; display: block; }

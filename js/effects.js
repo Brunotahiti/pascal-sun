@@ -14,6 +14,7 @@
   document.addEventListener("DOMContentLoaded", () => {
     if (reduced) return;
 
+    introCurtain();
     mountChrome();
     splitHeroTitle();
     if (finePointer) {
@@ -22,6 +23,36 @@
       tiltCards();
     }
   });
+
+  /* ----------------------------------- rideau d'ouverture (accueil) -- */
+
+  function introCurtain() {
+    if (document.body.dataset.page !== "home") return;
+    if (sessionStorage.getItem("ps_intro_seen")) return;
+    sessionStorage.setItem("ps_intro_seen", "1");
+
+    const intro = document.createElement("div");
+    intro.className = "intro";
+    const name = "Pascal Sun";
+    const letters = [...name].map((c, i) =>
+      c === " " ? "<span style='width:.5em'></span>"
+        : `<span class="${i >= 7 ? "sun" : ""}" style="--i:${i}">${c}</span>`
+    ).join("");
+    intro.innerHTML = `
+      <div class="intro-scene">
+        <div class="intro-horizon"><div class="intro-sun"></div></div>
+        <div class="intro-name" aria-label="Pascal Sun">${letters}</div>
+        <div class="intro-tag">Peintre · Tahiti · Polynésie</div>
+      </div>`;
+    document.body.appendChild(intro);
+    document.body.classList.add("intro-lock");
+
+    setTimeout(() => {
+      intro.classList.add("done");
+      document.body.classList.remove("intro-lock");
+      setTimeout(() => intro.remove(), 1300);
+    }, 2300);
+  }
 
   /* ------------------------------------------- progrès + grain -- */
 
