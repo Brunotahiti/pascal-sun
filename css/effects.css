@@ -180,8 +180,8 @@
     animation-range: entry 0% cover 100%;
   }
   @keyframes card-par {
-    from { transform: scale(1.12) translateY(4%); }
-    to   { transform: scale(1.12) translateY(-4%); }
+    from { transform: scale(1.06) translateY(2%); }
+    to   { transform: scale(1.06) translateY(-2%); }
   }
   .card:hover .frame img { animation-play-state: paused; }
 
