@@ -261,7 +261,7 @@ a { color: inherit; text-decoration: none; }
   position: relative;
   padding: clamp(10px, 1.2vw, 16px);
   background: #f4efe6;
-  border: 6px solid #17120e;
+  border: 5px solid #17120e;
   box-shadow:
     0 3px 6px rgba(22, 19, 15, .24),
     0 40px 70px -34px rgba(22, 19, 15, .55);
@@ -366,11 +366,11 @@ a { color: inherit; text-decoration: none; }
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: clamp(22px, 3vw, 40px);
+  align-items: start;
   min-height: 40vh; /* réserve la place des toiles pendant leur chargement */
 }
-/* la place de l'image est réservée avant même son chargement */
-.card .frame img, .hero-art img { aspect-ratio: 4 / 5; background: var(--paper-deep); }
-.card .frame img.landscape, .hero-art img.landscape { aspect-ratio: 5 / 4; }
+/* fond neutre pendant le chargement (les dimensions viennent des attributs) */
+.card .frame img, .hero-art img { background: var(--paper-deep); }
 @media (max-width: 980px) { .grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 620px) { .grid { grid-template-columns: 1fr; } }
 
@@ -382,7 +382,7 @@ a { color: inherit; text-decoration: none; }
   --mat: clamp(8px, 1vw, 14px);        /* passe-partout fin */
   position: relative;
   background: #f4efe6;                 /* passe-partout */
-  border: 5px solid #17120e;           /* cadre bois noir fin */
+  border: 4px solid #17120e;           /* cadre bois noir fin */
   padding: var(--mat);
   box-shadow:
     0 2px 5px rgba(22, 19, 15, .25),
@@ -400,14 +400,12 @@ a { color: inherit; text-decoration: none; }
 }
 .card .frame img {
   width: 100%;
-  aspect-ratio: 4 / 5;
-  object-fit: cover;
-  /* fin biseau autour de l'œuvre */
+  height: auto;              /* proportions réelles de la toile */
+  display: block;
   box-shadow:
     0 0 0 1px rgba(22, 19, 15, .14),
     0 1px 8px rgba(22, 19, 15, .12) inset;
 }
-.card .frame img.landscape { aspect-ratio: 5 / 4; }
 
 /* --------------------------------------------------------- effet vitre -- */
 /* Comme une vitre de protection : reflets diagonaux discrets qui glissent
@@ -470,7 +468,7 @@ a { color: inherit; text-decoration: none; }
   position: sticky;
   top: 104px;
   background: #f4efe6;
-  border: 7px solid #17120e;
+  border: 6px solid #17120e;
   padding: clamp(10px, 1.3vw, 18px);
   box-shadow:
     0 3px 7px rgba(22, 19, 15, .26),
@@ -918,7 +916,7 @@ a { color: inherit; text-decoration: none; }
   max-width: 760px;
   margin-top: clamp(28px, 4vw, 46px);
   background: #f4efe6;
-  border: 5px solid #17120e;
+  border: 4px solid #17120e;
   padding: clamp(8px, 1vw, 14px);
   box-shadow:
     0 2px 5px rgba(22, 19, 15, .25),

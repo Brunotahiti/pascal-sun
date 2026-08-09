@@ -43,7 +43,17 @@
       ? `srcset="${a.images.small} 480w, ${a.images.medium} 960w, ${a.images.large} 1600w" sizes="${sizes}"`
       : "";
     const src = a.images ? a.images.medium : a.image;
-    return `<img class="${className}" src="${src}" ${srcset} alt="${esc(a.titre)} — Pascal Sun" ${loading} decoding="async">`;
+    // width/height : proportions réelles de la toile, pour réserver la place
+    // sans jamais rogner l'œuvre.
+    const m = String(a.dimensions || "").match(/(\d+)\s*[×x]\s*(\d+)/);
+    let dim = "";
+    if (m) {
+      let w = +m[1], h = +m[2];
+      if (a.orientation === "portrait" && w > h) [w, h] = [h, w];
+      if (a.orientation === "landscape" && h > w) [w, h] = [h, w];
+      dim = `width="${w}" height="${h}"`;
+    }
+    return `<img class="${className}" src="${src}" ${srcset} ${dim} alt="${esc(a.titre)} — Pascal Sun" ${loading} decoding="async">`;
   }
 
   /* Prix « jolis » : arrondis commerciaux propres à chaque devise. */
