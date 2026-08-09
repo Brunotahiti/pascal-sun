@@ -236,13 +236,39 @@
 
   function metricList(el, rows, labelFn) {
     if (!rows || !rows.length) { el.innerHTML = `<p class="metric-empty">Pas encore de données sur cette période.</p>`; return; }
-    const max = Math.max(...rows.map((r) => r.y));
-    el.innerHTML = rows.map((r) => `
+    const total = rows.reduce((s, r) => s + r.y, 0) || 1;
+    const max = Math.max(...rows.map((r) => r.y)) || 1;
+    el.innerHTML = rows.map((r) => {
+      const pct = Math.round((r.y / total) * 100);
+      return `
       <div class="metric-row">
-        <span class="bar" style="transform: scaleX(${max ? r.y / max : 0})"></span>
-        <span class="lbl">${labelFn(r.x)}</span>
-        <span class="val">${fmtNum(r.y)}</span>
-      </div>`).join("");
+        <div class="metric-top">
+          <span class="lbl">${labelFn(r.x)}</span>
+          <span class="val">${fmtNum(r.y)}<em>${pct}%</em></span>
+        </div>
+        <div class="gauge"><span style="width:${Math.max(3, (r.y / max) * 100)}%"></span></div>
+      </div>`;
+    }).join("");
+  }
+
+  const PAGE_NAMES = {
+    "/": "Accueil",
+    "/index.html": "Accueil",
+    "/galerie.html": "Galerie",
+    "/artiste.html": "L'artiste",
+    "/contact.html": "Contact",
+    "/panier.html": "Panier",
+    "/expositions.html": "Vernissages",
+    "/admin": "Espace admin"
+  };
+
+  function pageName(u) {
+    const [path, query] = String(u).split("?");
+    if (path === "/oeuvre.html") {
+      const id = new URLSearchParams(query || "").get("id");
+      return id ? `Œuvre — ${id.replace(/-/g, " ")}` : "Fiche œuvre";
+    }
+    return PAGE_NAMES[path] || u;
   }
 
   function drawChart(series, unit) {
@@ -319,10 +345,10 @@
     $("#k-time").textContent = avg >= 60 ? `${Math.floor(avg / 60)} min ${avg % 60} s` : `${avg} s`;
 
     drawChart(d.series, d.unit);
-    metricList($("#m-countries"), d.countries, (c) => `${flagEmoji(c)} ${countryName(c)}`);
-    metricList($("#m-pages"), d.pages, (u) => u === "/" ? "/ (accueil)" : u);
-    metricList($("#m-referrers"), d.referrers, (r) => r || "Accès direct");
-    metricList($("#m-devices"), d.devices, (x) => ({ desktop: "🖥 Ordinateur", laptop: "💻 Portable", mobile: "📱 Mobile", tablet: "📱 Tablette" }[x] || x));
+    metricList($("#m-countries"), d.countries, (c) => `<span class="flag">${flagEmoji(c)}</span> ${countryName(c)}`);
+    metricList($("#m-pages"), d.pages, pageName);
+    metricList($("#m-referrers"), d.referrers, (r) => r ? String(r).replace(/^www\./, "") : "Accès direct");
+    metricList($("#m-devices"), d.devices, (x) => ({ desktop: "Ordinateur", laptop: "Ordinateur portable", mobile: "Mobile", tablet: "Tablette" }[x] || x));
 
     $("#stats-loading").hidden = true;
     $("#stats-board").hidden = false;

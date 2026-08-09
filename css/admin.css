@@ -315,17 +315,53 @@ button { font-family: var(--sans); cursor: pointer; }
   border-radius: 6px;
   padding: 22px 24px;
 }
-.metric-row { position: relative; display: flex; justify-content: space-between; gap: 12px; padding: 8px 10px; border-radius: 4px; overflow: hidden; font-size: 14px; }
-.metric-row + .metric-row { margin-top: 4px; }
-.metric-row .bar {
-  position: absolute; inset: 0;
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  border-radius: 4px;
-  transform-origin: left;
+.metric-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 18px;
 }
-.metric-row .lbl, .metric-row .val { position: relative; }
-.metric-row .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.metric-row .val { font-weight: 700; }
+.metric-card .tick { width: 18px; height: 3px; background: var(--accent); border-radius: 2px; flex: none; }
+
+.metric-row { padding: 7px 0; }
+.metric-row + .metric-row { border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
+.metric-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 14px;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+.metric-top .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+.metric-top .lbl .flag { font-size: 16px; margin-right: 2px; }
+.metric-top .val { font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.metric-top .val em {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--ink-faint);
+  font-size: 12px;
+  margin-left: 7px;
+}
+.gauge {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--paper-deep);
+  overflow: hidden;
+}
+.gauge span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), #e08a63);
+  transition: width .7s var(--ease);
+}
 .metric-empty { color: var(--ink-faint); font-style: italic; font-size: 13.5px; }
 
 /* ---------------------------------------------------------- save bar -- */

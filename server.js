@@ -175,7 +175,11 @@ app.get("/admin", (_req, res) => res.sendFile(path.join(__dirname, "admin.html")
 app.use(express.static(__dirname, {
   maxAge: "7d",
   setHeaders(res, filePath) {
-    if (filePath.endsWith(".html")) res.setHeader("Cache-Control", "no-cache");
+    // HTML, JS et CSS : revalidation à chaque visite (déploiements pris en
+    // compte immédiatement, réponses 304 sinon). Médias : cache long.
+    if (/\.(html|js|css|webmanifest)$/.test(filePath)) {
+      res.setHeader("Cache-Control", "no-cache");
+    }
   }
 }));
 
