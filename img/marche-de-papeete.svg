@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000">
+  <rect width="800" height="1000" fill="#f6f1e8"/>
+  <!-- parasols -->
+  <g stroke="#1a1714" fill="none" stroke-linecap="round">
+    <path d="M120 300 Q 300 190 480 300" stroke-width="7"/>
+    <path d="M120 300 q 44 -22 90 -12 M 210 288 q 46 -30 96 -22 M 306 266 q 50 -14 92 8 M 398 274 q 44 4 82 26" stroke-width="4"/>
+    <path d="M300 246 V 300" stroke-width="5"/>
+    <path d="M440 340 Q 590 260 740 340" stroke-width="6" opacity=".85"/>
+    <path d="M590 300 V 340" stroke-width="4" opacity=".85"/>
+  </g>
+  <!-- étal -->
+  <path d="M140 620 H 660" stroke="#1a1714" stroke-width="7" stroke-linecap="round"/>
+  <path d="M180 620 V 760 M 620 620 V 760" stroke="#1a1714" stroke-width="6" stroke-linecap="round"/>
+  <!-- fruits en ligne -->
+  <g fill="#1a1714">
+    <circle cx="250" cy="596" r="18"/>
+    <circle cx="298" cy="596" r="18"/>
+    <circle cx="274" cy="566" r="18"/>
+    <circle cx="480" cy="598" r="14"/>
+    <circle cx="516" cy="598" r="14"/>
+    <circle cx="552" cy="598" r="14"/>
+  </g>
+  <!-- pastèque corail -->
+  <g transform="translate(392 560)">
+    <path d="M-58 36 A 58 58 0 0 1 58 36 Z" fill="#d4593a"/>
+    <path d="M-58 36 A 58 58 0 0 1 58 36" fill="none" stroke="#1a1714" stroke-width="6" stroke-linecap="round"/>
+    <path d="M-58 36 H 58" stroke="#1a1714" stroke-width="6" stroke-linecap="round"/>
+    <g fill="#1a1714">
+      <ellipse cx="-20" cy="18" rx="3.4" ry="5"/>
+      <ellipse cx="6" cy="10" rx="3.4" ry="5"/>
+      <ellipse cx="28" cy="22" rx="3.4" ry="5"/>
+    </g>
+  </g>
+  <!-- deux silhouettes -->
+  <g fill="#1a1714">
+    <circle cx="180" cy="430" r="16"/>
+    <path d="M164 452 q 16 -10 32 0 l 8 108 h -48 Z"/>
+    <circle cx="640" cy="440" r="15"/>
+    <path d="M626 460 q 14 -9 28 0 l 10 100 h -46 Z"/>
+    <path d="M652 480 q 26 18 20 52" stroke="#1a1714" stroke-width="9" fill="none" stroke-linecap="round"/>
+  </g>
+  <text x="660" y="940" font-family="Georgia, serif" font-size="26" font-style="italic" fill="#1a1714">PS</text>
+</svg>

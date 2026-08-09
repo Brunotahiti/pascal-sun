@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000">
+  <rect width="800" height="1000" fill="#f6f1e8"/>
+  <!-- deux troncs penchés l'un vers l'autre -->
+  <g stroke="#1a1714" fill="none" stroke-linecap="round">
+    <path d="M250 860 Q 260 560 350 330" stroke-width="12"/>
+    <path d="M560 860 Q 545 570 452 350" stroke-width="12"/>
+    <!-- anneaux des troncs -->
+    <path d="M266 760 q 14 -4 26 2 M 282 640 q 14 -4 26 2 M 306 520 q 14 -4 26 2 M 330 420 q 12 -4 24 2" stroke-width="4" opacity=".6"/>
+    <path d="M542 760 q -14 -4 -26 2 M 528 640 q -14 -4 -26 2 M 506 520 q -14 -4 -26 2 M 482 420 q -12 -4 -24 2" stroke-width="4" opacity=".6"/>
+    <!-- palmes gauche -->
+    <g stroke-width="6">
+      <path d="M350 330 q -70 -40 -130 -16"/>
+      <path d="M350 330 q -30 -66 -86 -80"/>
+      <path d="M350 330 q 14 -70 -20 -110"/>
+      <path d="M350 330 q 66 -44 122 -30"/>
+      <path d="M350 330 q 54 -8 84 34"/>
+      <path d="M350 330 q -20 44 -66 52"/>
+    </g>
+    <!-- palmes droite -->
+    <g stroke-width="6">
+      <path d="M452 350 q 70 -40 128 -14"/>
+      <path d="M452 350 q 32 -64 88 -76"/>
+      <path d="M452 350 q -12 -70 24 -108"/>
+      <path d="M452 350 q -64 -46 -120 -34"/>
+      <path d="M452 350 q -52 -6 -80 36"/>
+      <path d="M452 350 q 22 44 68 50"/>
+    </g>
+  </g>
+  <!-- cocos corail -->
+  <g fill="#d4593a" stroke="#1a1714" stroke-width="4">
+    <circle cx="352" cy="356" r="15"/>
+    <circle cx="380" cy="368" r="13"/>
+    <circle cx="440" cy="378" r="14"/>
+  </g>
+  <!-- chemin -->
+  <path d="M140 862 Q 400 846 660 862" stroke="#1a1714" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <path d="M240 900 h 80 M 460 894 h 100" stroke="#1a1714" stroke-width="3" stroke-linecap="round" opacity=".4"/>
+  <text x="660" y="960" font-family="Georgia, serif" font-size="26" font-style="italic" fill="#1a1714">PS</text>
+</svg>

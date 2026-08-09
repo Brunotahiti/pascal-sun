@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000">
+  <rect width="800" height="1000" fill="#f6f1e8"/>
+  <!-- oiseaux -->
+  <g stroke="#1a1714" stroke-width="3" fill="none" stroke-linecap="round" opacity=".7">
+    <path d="M520 180 q 14 -12 26 0 q 12 -12 26 0"/>
+    <path d="M600 220 q 10 -9 20 0 q 10 -9 20 0"/>
+  </g>
+  <!-- ligne d'eau lagon -->
+  <path d="M60 700 H 740" stroke="#2f9aa3" stroke-width="10" stroke-linecap="round" opacity=".85"/>
+  <path d="M120 738 h 90 M 300 752 h 60 M 560 740 h 110" stroke="#2f9aa3" stroke-width="4" stroke-linecap="round" opacity=".5"/>
+  <!-- va'a et rameur -->
+  <g>
+    <path d="M300 688 Q 400 674 520 682 Q 470 704 340 700 Q 306 696 300 688 Z" fill="#1a1714"/>
+    <path d="M356 690 L 300 716 M 452 690 L 396 716" stroke="#1a1714" stroke-width="4" stroke-linecap="round"/>
+    <path d="M282 718 Q 350 710 412 716" stroke="#1a1714" stroke-width="6" stroke-linecap="round" fill="none"/>
+    <g fill="#1a1714">
+      <circle cx="420" cy="618" r="10"/>
+      <path d="M412 630 q 8 -6 16 0 l 6 40 q -14 6 -28 0 Z"/>
+    </g>
+    <path d="M426 636 L 456 620 L 468 676" stroke="#1a1714" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <path d="M462 664 q 10 4 8 18" stroke="#1a1714" stroke-width="7" fill="none" stroke-linecap="round"/>
+  </g>
+  <!-- reflet -->
+  <path d="M340 780 h 120" stroke="#1a1714" stroke-width="3" stroke-linecap="round" opacity=".4"/>
+  <text x="660" y="940" font-family="Georgia, serif" font-size="26" font-style="italic" fill="#1a1714">PS</text>
+</svg>

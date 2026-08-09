@@ -1,0 +1,386 @@
+/* =========================================================================
+   Galerie Pascal Sun — moteur de l'application
+   Pages : accueil, galerie, œuvre, artiste, panier, contact.
+   Tout est rendu côté client depuis js/data.js (aucune dépendance).
+   ========================================================================= */
+
+(function () {
+  "use strict";
+
+  /* ------------------------------------------------------------ état -- */
+
+  const store = {
+    get lang()     { return localStorage.getItem("ps_lang") || "fr"; },
+    set lang(v)    { localStorage.setItem("ps_lang", v); },
+    get currency() { return localStorage.getItem("ps_currency") || "EUR"; },
+    set currency(v){ localStorage.setItem("ps_currency", v); },
+    get cart()     { try { return JSON.parse(localStorage.getItem("ps_cart")) || []; } catch { return []; } },
+    set cart(v)    { localStorage.setItem("ps_cart", JSON.stringify(v)); }
+  };
+
+  const t = (key) => (I18N[store.lang] && I18N[store.lang][key]) || I18N.fr[key] || key;
+  const byId = (id) => ARTWORKS.find((a) => a.id === id);
+  const colName = (key) => (COLLECTIONS[key] ? COLLECTIONS[key][store.lang] || COLLECTIONS[key].fr : key);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  /* Balise <img> optimisée : lazy + décodage asynchrone, et srcset
+     automatique si l'œuvre fournit des variantes responsives
+     (a.images = { small, medium, large } générées par tools/optimiser-images.sh). */
+  function imgTag(a, { eager = false, sizes = "(max-width: 620px) 92vw, (max-width: 980px) 46vw, 30vw", className = "" } = {}) {
+    const loading = eager ? 'fetchpriority="high"' : 'loading="lazy"';
+    const srcset = a.images
+      ? `srcset="${a.images.small} 480w, ${a.images.medium} 960w, ${a.images.large} 1600w" sizes="${sizes}"`
+      : "";
+    const src = a.images ? a.images.medium : a.image;
+    return `<img class="${className}" src="${src}" ${srcset} alt="${esc(a.titre)} — Pascal Sun" ${loading} decoding="async">`;
+  }
+
+  function fmtPrice(eur) {
+    const c = CURRENCIES[store.currency];
+    const value = eur * c.rate;
+    const rounded = store.currency === "XPF" ? Math.round(value / 100) * 100 : Math.round(value);
+    const num = rounded.toLocaleString(c.locale);
+    return c.position === "before" ? `${c.symbol}${num}` : `${num} ${c.symbol}`;
+  }
+
+  /* --------------------------------------------------- header / footer -- */
+
+  function renderHeader() {
+    const page = document.body.dataset.page || "";
+    const el = document.getElementById("site-header");
+    if (!el) return;
+    el.innerHTML = `
+      <div class="wrap bar">
+        <a class="brand" href="index.html">Pascal <span class="sun">Sun</span>
+          <small>Peintre · Tahiti</small>
+        </a>
+        <nav class="nav" id="main-nav" aria-label="Navigation principale">
+          <a class="nav-link ${page === "home" ? "active" : ""}" href="index.html">${t("nav_home")}</a>
+          <a class="nav-link ${page === "gallery" || page === "artwork" ? "active" : ""}" href="galerie.html">${t("nav_gallery")}</a>
+          <a class="nav-link ${page === "artist" ? "active" : ""}" href="artiste.html">${t("nav_artist")}</a>
+          <a class="nav-link ${page === "contact" ? "active" : ""}" href="contact.html">${t("nav_contact")}</a>
+        </nav>
+        <div class="header-tools">
+          <select class="tool-select" id="lang-select" aria-label="Langue / Language">
+            <option value="fr">FR</option><option value="en">EN</option>
+          </select>
+          <select class="tool-select" id="currency-select" aria-label="Devise / Currency">
+            <option value="EUR">EUR €</option><option value="USD">USD $</option><option value="XPF">XPF F</option>
+          </select>
+          <a class="cart-btn" href="panier.html" id="cart-link">
+            ${t("nav_cart")} <span class="cart-count" id="cart-count">0</span>
+          </a>
+          <button class="burger" id="burger" aria-label="Menu"><span></span><span></span><span></span></button>
+        </div>
+      </div>`;
+
+    el.querySelector("#lang-select").value = store.lang;
+    el.querySelector("#currency-select").value = store.currency;
+    el.querySelector("#lang-select").addEventListener("change", (e) => { store.lang = e.target.value; location.reload(); });
+    el.querySelector("#currency-select").addEventListener("change", (e) => { store.currency = e.target.value; location.reload(); });
+    el.querySelector("#burger").addEventListener("click", () => {
+      el.querySelector("#main-nav").classList.toggle("open");
+    });
+    updateCartCount();
+  }
+
+  function renderFooter() {
+    const el = document.getElementById("site-footer");
+    if (!el) return;
+    el.innerHTML = `
+      <div class="wrap top">
+        <div>
+          <a class="brand" href="index.html">Pascal <span class="sun">Sun</span><small>Peintre · Tahiti</small></a>
+          <p>${t("footer_tag")}</p>
+        </div>
+        <div>
+          <h4>${t("footer_nav")}</h4>
+          <ul>
+            <li><a href="index.html">${t("nav_home")}</a></li>
+            <li><a href="galerie.html">${t("nav_gallery")}</a></li>
+            <li><a href="artiste.html">${t("nav_artist")}</a></li>
+            <li><a href="contact.html">${t("nav_contact")}</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>${t("footer_info")}</h4>
+          <ul>
+            <li>${t("footer_ship")}</li>
+            <li>${t("footer_cert")}</li>
+            <li>${t("footer_secure")}</li>
+            <li><a href="mailto:${ARTIST_EMAIL}">${ARTIST_EMAIL}</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="wrap bottom">
+        <span>${t("footer_rights")}</span>
+        <span>${t("footer_made")}</span>
+      </div>`;
+  }
+
+  /* ----------------------------------------------------------- panier -- */
+
+  function updateCartCount() {
+    const el = document.getElementById("cart-count");
+    if (!el) return;
+    const n = store.cart.length;
+    el.textContent = n;
+    el.classList.toggle("empty", n === 0);
+  }
+
+  function addToCart(id) {
+    const cart = store.cart;
+    if (!cart.includes(id)) {
+      cart.push(id);
+      store.cart = cart;
+      updateCartCount();
+      toast(`<span class="hl">« ${esc(byId(id).titre)} »</span> ${t("toast_added")}`);
+    }
+  }
+
+  function removeFromCart(id) {
+    store.cart = store.cart.filter((x) => x !== id);
+    updateCartCount();
+    toast(`« ${esc(byId(id).titre)} » ${t("toast_removed")}`);
+  }
+
+  let toastTimer;
+  function toast(html) {
+    let el = document.querySelector(".toast");
+    if (!el) { el = document.createElement("div"); el.className = "toast"; document.body.appendChild(el); }
+    el.innerHTML = html;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("show"), 2800);
+  }
+
+  /* ------------------------------------------------------------ cartes -- */
+
+  function cardHTML(a) {
+    const badge = a.vendu
+      ? `<span class="badge-sold">${t("sold")}</span>`
+      : a.nouveaute ? `<span class="badge-new">${t("new")}</span>` : "";
+    const price = a.vendu
+      ? `<span class="price sold">${t("sold")}</span>`
+      : `<span class="price">${fmtPrice(a.prixEUR)}</span>`;
+    return `
+      <article class="card reveal">
+        <a href="oeuvre.html?id=${a.id}" aria-label="${esc(a.titre)}">
+          ${badge}
+          <div class="frame">${imgTag(a, { className: a.orientation })}</div>
+          <div class="card-meta">
+            <div>
+              <h3>${esc(a.titre)}</h3>
+              <div class="sub">${colName(a.collection)} · ${a.dimensions}</div>
+            </div>
+            ${price}
+          </div>
+        </a>
+      </article>`;
+  }
+
+  function observeReveals() {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("is-in"); io.unobserve(e.target); } });
+    }, { threshold: 0.08 });
+    document.querySelectorAll(".reveal:not(.is-in)").forEach((el) => io.observe(el));
+  }
+
+  /* ------------------------------------------------------------- i18n -- */
+
+  function applyI18n() {
+    document.documentElement.lang = store.lang;
+    document.querySelectorAll("[data-i18n]").forEach((el) => { el.innerHTML = t(el.dataset.i18n); });
+    document.querySelectorAll("[data-i18n-ph]").forEach((el) => { el.placeholder = t(el.dataset.i18nPh); });
+  }
+
+  /* ------------------------------------------------------------ pages -- */
+
+  function pageHome() {
+    const featured = ARTWORKS.filter((a) => !a.vendu).slice(0, 3);
+    const grid = document.getElementById("featured-grid");
+    if (grid) grid.innerHTML = featured.map(cardHTML).join("");
+
+    const hero = ARTWORKS.find((a) => a.id === "retour-du-pecheur") || ARTWORKS[0];
+    const heroFig = document.getElementById("hero-art");
+    if (heroFig) {
+      heroFig.innerHTML = `
+        <a href="oeuvre.html?id=${hero.id}">
+          ${imgTag(hero, { eager: true, sizes: "(max-width: 900px) 92vw, 45vw" })}
+          <figcaption><strong>${esc(hero.titre)}</strong><span>${hero.dimensions} — ${hero.annee}</span></figcaption>
+        </a>`;
+    }
+  }
+
+  function pageGallery() {
+    const grid = document.getElementById("gallery-grid");
+    const filters = document.getElementById("filters");
+    if (!grid || !filters) return;
+
+    const keys = ["all", ...Object.keys(COLLECTIONS)];
+    filters.innerHTML = keys.map((k) =>
+      `<button class="chip ${k === "all" ? "active" : ""}" data-filter="${k}">
+        ${k === "all" ? t("filter_all") : colName(k)}
+      </button>`).join("");
+
+    function draw(filter) {
+      const list = filter === "all" ? ARTWORKS : ARTWORKS.filter((a) => a.collection === filter);
+      grid.innerHTML = list.map(cardHTML).join("");
+      const count = document.getElementById("gallery-count");
+      if (count) count.textContent = `${list.length} ${list.length > 1 ? t("works_count") : t("work_count")}`;
+      observeReveals();
+    }
+
+    filters.addEventListener("click", (e) => {
+      const btn = e.target.closest(".chip");
+      if (!btn) return;
+      filters.querySelectorAll(".chip").forEach((c) => c.classList.remove("active"));
+      btn.classList.add("active");
+      draw(btn.dataset.filter);
+    });
+
+    draw("all");
+  }
+
+  function pageArtwork() {
+    const id = new URLSearchParams(location.search).get("id");
+    const a = byId(id) || ARTWORKS[0];
+    document.title = `${a.titre} — Pascal Sun`;
+
+    const visual = document.getElementById("artwork-visual");
+    const info = document.getElementById("artwork-info");
+    if (!visual || !info) return;
+
+    visual.innerHTML = imgTag(a, { eager: true, sizes: "(max-width: 900px) 94vw, 55vw" });
+    visual.addEventListener("click", () => {
+      const lb = document.getElementById("lightbox");
+      lb.innerHTML = `<img src="${a.image}" alt="${esc(a.titre)}">`;
+      lb.classList.add("open");
+    });
+    document.getElementById("lightbox").addEventListener("click", function () { this.classList.remove("open"); });
+
+    const inCart = store.cart.includes(a.id);
+    const desc = store.lang === "en" ? a.desc_en : a.desc_fr;
+    const technique = store.lang === "en" ? a.technique_en : a.technique_fr;
+
+    info.innerHTML = `
+      <span class="eyebrow">${colName(a.collection)}</span>
+      <h1>${esc(a.titre)}</h1>
+      <div class="price-line">${a.vendu ? `<span class="sold-label">${t("sold")}</span>` : fmtPrice(a.prixEUR)}</div>
+      <p class="story">${desc}</p>
+      <dl class="spec-list">
+        <div><dt>${t("spec_year")}</dt><dd>${a.annee}</dd></div>
+        <div><dt>${t("spec_technique")}</dt><dd>${technique}</dd></div>
+        <div><dt>${t("spec_dimensions")}</dt><dd>${a.dimensions}</dd></div>
+        <div><dt>${t("spec_collection")}</dt><dd>${colName(a.collection)}</dd></div>
+        <div><dt>${t("spec_availability")}</dt><dd>${a.vendu ? t("sold") : t("available")}</dd></div>
+      </dl>
+      <div class="btn-row">
+        <button class="btn" id="acquire-btn" ${a.vendu || inCart ? "disabled" : ""}>
+          ${a.vendu ? t("sold") : inCart ? t("in_cart") : t("add_to_cart")}
+        </button>
+        <a class="btn ghost" href="galerie.html">${t("back_gallery")}</a>
+      </div>
+      <ul class="assurances">
+        <li><span class="dot">●</span>${t("assur1")}</li>
+        <li><span class="dot">●</span>${t("assur2")}</li>
+        <li><span class="dot">●</span>${t("assur3")}</li>
+      </ul>`;
+
+    const btn = document.getElementById("acquire-btn");
+    if (btn && !a.vendu && !inCart) {
+      btn.addEventListener("click", () => {
+        addToCart(a.id);
+        btn.textContent = t("in_cart");
+        btn.setAttribute("disabled", "");
+      });
+    }
+
+    const related = ARTWORKS.filter((x) => x.id !== a.id && x.collection === a.collection).slice(0, 3);
+    const pool = related.length ? related : ARTWORKS.filter((x) => x.id !== a.id).slice(0, 3);
+    const relGrid = document.getElementById("related-grid");
+    if (relGrid) relGrid.innerHTML = pool.map(cardHTML).join("");
+  }
+
+  function pageCart() {
+    const listEl = document.getElementById("cart-list");
+    const panel = document.getElementById("order-panel");
+    const emptyEl = document.getElementById("cart-empty");
+    if (!listEl) return;
+
+    function draw() {
+      const items = store.cart.map(byId).filter(Boolean);
+      const has = items.length > 0;
+      listEl.parentElement.style.display = has ? "" : "none";
+      emptyEl.style.display = has ? "none" : "";
+      if (!has) return;
+
+      listEl.innerHTML = items.map((a) => `
+        <div class="cart-item">
+          <a class="thumb" href="oeuvre.html?id=${a.id}"><img src="${a.image}" alt="${esc(a.titre)}"></a>
+          <div>
+            <h3>${esc(a.titre)}</h3>
+            <div class="sub">${colName(a.collection)} · ${a.dimensions} · ${a.annee}</div>
+            <button class="remove-btn" data-remove="${a.id}">${t("remove")}</button>
+          </div>
+          <div class="price">${fmtPrice(a.prixEUR)}</div>
+        </div>`).join("");
+
+      const total = items.reduce((s, a) => s + a.prixEUR, 0);
+      document.getElementById("order-subtotal").textContent = fmtPrice(total);
+      document.getElementById("order-total").textContent = fmtPrice(total);
+    }
+
+    listEl.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-remove]");
+      if (!btn) return;
+      removeFromCart(btn.dataset.remove);
+      draw();
+    });
+
+    const form = document.getElementById("order-form");
+    if (form) form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const items = store.cart.map(byId).filter(Boolean);
+      const total = items.reduce((s, a) => s + a.prixEUR, 0);
+      const data = new FormData(form);
+      const lines = items.map((a) => `• ${a.titre} — ${a.dimensions} — ${fmtPrice(a.prixEUR)}`).join("\n");
+      const body =
+        `${t("order_title")}\n\n${lines}\n\n${t("order_total")}: ${fmtPrice(total)}\n\n` +
+        `${t("f_name")}: ${data.get("name")}\n${t("f_email")}: ${data.get("email")}\n` +
+        `${t("f_country")}: ${data.get("country")}\n\n${data.get("message") || ""}`;
+      location.href = `mailto:${ARTIST_EMAIL}?subject=${encodeURIComponent(t("order_mail_subject"))}&body=${encodeURIComponent(body)}`;
+    });
+
+    draw();
+  }
+
+  function pageContact() {
+    const form = document.getElementById("contact-form");
+    if (!form) return;
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const data = new FormData(form);
+      const body = `${data.get("message")}\n\n—\n${data.get("name")} · ${data.get("email")}`;
+      location.href = `mailto:${ARTIST_EMAIL}?subject=${encodeURIComponent(data.get("subject") || "Message — pascalsun-art")}&body=${encodeURIComponent(body)}`;
+    });
+  }
+
+  /* ------------------------------------------------------------- init -- */
+
+  document.addEventListener("DOMContentLoaded", () => {
+    renderHeader();
+    renderFooter();
+    applyI18n();
+
+    switch (document.body.dataset.page) {
+      case "home":    pageHome(); break;
+      case "gallery": pageGallery(); break;
+      case "artwork": pageArtwork(); break;
+      case "cart":    pageCart(); break;
+      case "contact": pageContact(); break;
+    }
+
+    observeReveals();
+  });
+})();

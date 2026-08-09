@@ -1,0 +1,19 @@
+services:
+  web:
+    build: .
+    image: pascal-sun:latest
+    container_name: pascal-sun
+    restart: unless-stopped
+    networks:
+      - traefik
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - traefik.http.routers.pascalsun.entrypoints=websecure
+      - traefik.http.routers.pascalsun.rule=Host(`pascal-sun.com`) || Host(`www.pascal-sun.com`)
+      - traefik.http.routers.pascalsun.tls.certresolver=letsencrypt
+      - traefik.http.services.pascalsun.loadbalancer.server.port=80
+
+networks:
+  traefik:
+    external: true

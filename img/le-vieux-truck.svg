@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 800">
+  <rect width="1000" height="800" fill="#f6f1e8"/>
+  <!-- sol -->
+  <path d="M80 620 H 920" stroke="#1a1714" stroke-width="3" stroke-linecap="round"/>
+  <!-- benne à passagers -->
+  <g stroke="#1a1714" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M180 560 V 420 H 610 V 560"/>
+    <path d="M180 420 L 210 340 H 580 L 610 420"/>
+    <path d="M255 420 V 340 M 330 420 V 340 M 405 420 V 340 M 480 420 V 340"/>
+    <path d="M180 486 H 610"/>
+  </g>
+  <!-- cabine turquoise -->
+  <path d="M610 560 V 430 q 0 -14 14 -14 h 96 q 14 0 22 12 l 52 78 q 8 12 8 26 v 28 Z"
+        fill="#2f9aa3" stroke="#1a1714" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M642 430 h 70 l 36 56 h -106 Z" fill="#f6f1e8" stroke="#1a1714" stroke-width="5" stroke-linejoin="round"/>
+  <!-- roues -->
+  <g fill="#1a1714">
+    <circle cx="280" cy="600" r="44"/>
+    <circle cx="540" cy="600" r="44"/>
+    <circle cx="720" cy="600" r="44"/>
+  </g>
+  <g fill="#f6f1e8">
+    <circle cx="280" cy="600" r="16"/>
+    <circle cx="540" cy="600" r="16"/>
+    <circle cx="720" cy="600" r="16"/>
+  </g>
+  <!-- passagers suggérés -->
+  <g fill="#1a1714">
+    <circle cx="292" cy="452" r="12"/>
+    <circle cx="368" cy="452" r="12"/>
+    <circle cx="520" cy="452" r="12"/>
+  </g>
+  <!-- fumée -->
+  <path d="M156 560 q -30 -8 -26 -34 q 4 -20 -14 -30" stroke="#1a1714" stroke-width="4" fill="none" stroke-linecap="round" opacity=".5"/>
+  <!-- cocotier lointain -->
+  <g stroke="#1a1714" stroke-linecap="round" fill="none" opacity=".8">
+    <path d="M868 620 q 10 -90 -6 -140" stroke-width="5"/>
+    <path d="M862 480 q -40 -16 -66 4 M 862 480 q 6 -34 -18 -52 M 862 480 q 40 -20 62 -2 M 862 480 q 30 -28 22 -54" stroke-width="4"/>
+  </g>
+  <text x="880" y="750" font-family="Georgia, serif" font-size="26" font-style="italic" fill="#1a1714">PS</text>
+</svg>

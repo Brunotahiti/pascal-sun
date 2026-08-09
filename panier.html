@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panier — Pascal Sun</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/effects.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='38' fill='%23d4593a'/></svg>">
+</head>
+<body data-page="cart">
+
+  <header class="site-header" id="site-header"></header>
+
+  <main>
+    <div class="wrap">
+      <div class="page-head reveal is-in">
+        <span class="eyebrow" data-i18n="nav_cart"></span>
+        <h1 class="section-title" data-i18n="cart_title"></h1>
+        <p class="lede" data-i18n="cart_lede"></p>
+      </div>
+
+      <div class="empty-state" id="cart-empty" style="display:none;">
+        <h2 class="section-title" style="font-size: clamp(24px, 3vw, 34px);" data-i18n="cart_empty_t"></h2>
+        <p data-i18n="cart_empty_p"></p>
+        <a class="btn" href="galerie.html" data-i18n="hero_cta"></a>
+      </div>
+
+      <div class="cart-layout" style="padding-bottom: 40px;">
+        <div id="cart-list"></div>
+
+        <aside class="order-panel" id="order-panel">
+          <h2 data-i18n="order_title"></h2>
+          <div class="totals">
+            <div><span data-i18n="order_sub"></span><span id="order-subtotal">—</span></div>
+            <div><span data-i18n="order_ship"></span><span data-i18n="order_ship_val"></span></div>
+            <div class="grand"><span data-i18n="order_total"></span><span id="order-total">—</span></div>
+          </div>
+          <form id="order-form">
+            <div class="field">
+              <label for="of-name" data-i18n="f_name"></label>
+              <input id="of-name" name="name" required autocomplete="name">
+            </div>
+            <div class="field">
+              <label for="of-email" data-i18n="f_email"></label>
+              <input id="of-email" name="email" type="email" required autocomplete="email">
+            </div>
+            <div class="field">
+              <label for="of-country" data-i18n="f_country"></label>
+              <input id="of-country" name="country" required autocomplete="country-name">
+            </div>
+            <div class="field">
+              <label for="of-message" data-i18n="f_message"></label>
+              <textarea id="of-message" name="message" data-i18n-ph="f_message_ph"></textarea>
+            </div>
+            <button class="btn" type="submit" style="width:100%; justify-content:center;" data-i18n="order_btn"></button>
+            <p class="form-note" data-i18n="order_note"></p>
+          </form>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer" id="site-footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/effects.js"></script>
+</body>
+</html>

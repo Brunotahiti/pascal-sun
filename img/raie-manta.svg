@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000">
+  <rect width="800" height="1000" fill="#f6f1e8"/>
+  <!-- rayons de lumière -->
+  <g stroke="#1a1714" stroke-width="2.5" opacity=".25" stroke-linecap="round">
+    <path d="M240 80 L 200 320 M 400 60 L 400 300 M 560 80 L 600 320"/>
+  </g>
+  <!-- raie manta -->
+  <g transform="translate(400 520) rotate(-8)">
+    <path d="M0 -60
+             Q 130 -110 250 -40
+             Q 160 10 90 30
+             Q 40 44 0 90
+             Q -40 44 -90 30
+             Q -160 10 -250 -40
+             Q -130 -110 0 -60 Z" fill="#1a1714"/>
+    <path d="M0 88 Q 14 190 -8 260" stroke="#1a1714" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <path d="M-34 -78 q -12 -26 4 -44 M 34 -78 q 12 -26 -4 -44" stroke="#1a1714" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <circle cx="-46" cy="-52" r="6" fill="#f6f1e8"/>
+    <circle cx="46" cy="-52" r="6" fill="#f6f1e8"/>
+  </g>
+  <!-- petit poisson corail -->
+  <g transform="translate(560 300)">
+    <path d="M0 0 q 34 -14 60 0 q -26 14 -60 0 Z" fill="#d4593a"/>
+    <path d="M60 0 l 22 -12 v 24 Z" fill="#d4593a"/>
+    <circle cx="12" cy="-3" r="3" fill="#1a1714"/>
+  </g>
+  <!-- bulles -->
+  <g fill="none" stroke="#1a1714" stroke-width="3" opacity=".4">
+    <circle cx="620" cy="240" r="8"/>
+    <circle cx="648" cy="200" r="5"/>
+    <circle cx="600" cy="170" r="4"/>
+  </g>
+  <!-- fond marin -->
+  <path d="M140 900 q 70 -20 130 0 q 80 -24 160 0 q 70 -18 130 0" stroke="#1a1714" stroke-width="3.5" fill="none" stroke-linecap="round" opacity=".5"/>
+  <text x="660" y="960" font-family="Georgia, serif" font-size="26" font-style="italic" fill="#1a1714">PS</text>
+</svg>

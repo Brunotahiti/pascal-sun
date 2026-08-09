@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 800">
+  <rect width="1000" height="800" fill="#f6f1e8"/>
+  <!-- toit pandanus ocre -->
+  <path d="M330 320 L 470 210 L 610 320 Z" fill="#c98a3d" stroke="#1a1714" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M370 290 h 200 M 350 306 h 240" stroke="#1a1714" stroke-width="3" opacity=".5"/>
+  <!-- murs et pilotis -->
+  <g stroke="#1a1714" stroke-width="6" fill="none" stroke-linecap="round">
+    <path d="M360 320 V 470 H 580 V 320"/>
+    <path d="M448 470 V 380 H 500 V 470"/>
+    <path d="M380 500 V 470 M 560 500 V 470 M 470 505 V 470"/>
+  </g>
+  <!-- ponton -->
+  <path d="M580 470 H 760 M 700 500 V 470 M 750 502 V 470" stroke="#1a1714" stroke-width="5" stroke-linecap="round"/>
+  <!-- cocotier penché -->
+  <g stroke="#1a1714" stroke-linecap="round" fill="none">
+    <path d="M250 520 Q 240 380 296 300" stroke-width="8"/>
+    <path d="M296 300 q -52 -26 -92 -2 M 296 300 q -6 -48 -44 -66 M 296 300 q 50 -30 88 -8 M 296 300 q 40 -40 30 -76 M 296 300 q -14 40 8 62" stroke-width="5"/>
+  </g>
+  <!-- ligne d'eau -->
+  <path d="M120 520 H 880" stroke="#1a1714" stroke-width="3" stroke-linecap="round"/>
+  <!-- reflets -->
+  <g stroke="#1a1714" stroke-width="3" stroke-linecap="round" opacity=".45">
+    <path d="M380 560 h 180 M 420 596 h 110 M 610 566 h 120 M 250 566 h 46"/>
+  </g>
+  <path d="M420 630 h 90" stroke="#c98a3d" stroke-width="4" stroke-linecap="round" opacity=".7"/>
+  <text x="880" y="750" font-family="Georgia, serif" font-size="26" font-style="italic" fill="#1a1714">PS</text>
+</svg>

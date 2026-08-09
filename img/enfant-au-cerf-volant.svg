@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000">
+  <rect width="800" height="1000" fill="#f6f1e8"/>
+  <!-- cerf-volant soleil -->
+  <g transform="translate(560 220) rotate(18)">
+    <path d="M0 -70 L 52 0 L 0 70 L -52 0 Z" fill="#e8a13a" stroke="#1a1714" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M0 -70 V 70 M -52 0 H 52" stroke="#1a1714" stroke-width="4"/>
+  </g>
+  <!-- queue du cerf-volant -->
+  <path d="M560 290 q -20 60 8 96 q 24 32 -4 76" stroke="#1a1714" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <g fill="#1a1714">
+    <path d="M566 340 l 16 -10 -2 20 Z"/>
+    <path d="M568 430 l 16 -10 -2 20 Z"/>
+  </g>
+  <!-- fil -->
+  <path d="M542 268 Q 380 480 262 700" stroke="#1a1714" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <!-- enfant qui court -->
+  <g fill="#1a1714">
+    <circle cx="240" cy="700" r="15"/>
+    <path d="M228 718 q 12 -8 24 0 l 6 56 q -18 8 -34 0 Z"/>
+  </g>
+  <g stroke="#1a1714" stroke-width="6" fill="none" stroke-linecap="round">
+    <path d="M248 726 L 264 702"/>
+    <path d="M232 726 L 208 742"/>
+    <path d="M238 772 L 214 816 M 250 772 L 276 810"/>
+  </g>
+  <!-- plage -->
+  <path d="M100 830 Q 400 812 700 830" stroke="#1a1714" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <path d="M150 872 h 70 M 420 866 h 90" stroke="#1a1714" stroke-width="3" stroke-linecap="round" opacity=".4"/>
+  <text x="660" y="940" font-family="Georgia, serif" font-size="26" font-style="italic" fill="#1a1714">PS</text>
+</svg>

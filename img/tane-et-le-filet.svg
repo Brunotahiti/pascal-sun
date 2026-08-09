@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 800">
+  <rect width="1000" height="800" fill="#f6f1e8"/>
+  <!-- soleil levant corail, là où retombe le filet -->
+  <circle cx="660" cy="360" r="60" fill="#d4593a"/>
+  <!-- filet : arcs pointillés -->
+  <g stroke="#1a1714" fill="none" stroke-linecap="round" stroke-dasharray="2 14" stroke-width="4">
+    <path d="M330 300 Q 560 120 800 320"/>
+    <path d="M350 340 Q 570 190 780 360"/>
+    <path d="M380 380 Q 580 260 750 400"/>
+  </g>
+  <path d="M800 320 Q 810 380 780 430 M 330 300 Q 320 350 350 396" stroke="#1a1714" stroke-width="3" fill="none" stroke-linecap="round" stroke-dasharray="2 12"/>
+  <!-- pêcheur en plein lancer -->
+  <g fill="#1a1714">
+    <circle cx="300" cy="352" r="16"/>
+    <path d="M284 372 q 16 -10 32 0 l 10 96 q -8 10 -26 10 t -26 -10 Z"/>
+  </g>
+  <g stroke="#1a1714" stroke-width="8" fill="none" stroke-linecap="round">
+    <path d="M308 384 Q 348 340 336 300"/>
+    <path d="M292 384 Q 254 404 240 446"/>
+    <path d="M292 470 L 268 560 M 310 470 L 342 552"/>
+  </g>
+  <!-- rocher -->
+  <path d="M220 588 q 90 -34 180 0 q -14 30 -90 30 t -90 -30 Z" fill="#1a1714"/>
+  <!-- mer -->
+  <path d="M100 620 H 900" stroke="#1a1714" stroke-width="3" stroke-linecap="round"/>
+  <path d="M480 660 h 100 M 640 684 h 70 M 200 668 h 60" stroke="#1a1714" stroke-width="3" stroke-linecap="round" opacity=".4"/>
+  <path d="M620 650 h 80" stroke="#d4593a" stroke-width="4" stroke-linecap="round" opacity=".7"/>
+  <text x="880" y="750" font-family="Georgia, serif" font-size="26" font-style="italic" fill="#1a1714">PS</text>
+</svg>

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000">
+  <rect width="800" height="1000" fill="#f6f1e8"/>
+  <!-- fenêtre sur le lagon -->
+  <g stroke="#1a1714" stroke-width="5" fill="none">
+    <rect x="470" y="150" width="230" height="260"/>
+    <path d="M480 330 H 690" stroke-width="3"/>
+    <path d="M500 360 h 60 M 600 372 h 70" stroke-width="3" opacity=".5"/>
+    <circle cx="640" cy="240" r="26" fill="#d4593a" stroke="none"/>
+  </g>
+  <!-- chevalet -->
+  <g stroke="#1a1714" stroke-width="7" fill="none" stroke-linecap="round">
+    <path d="M210 830 L 300 300 M 470 830 L 380 300"/>
+    <path d="M340 300 V 220"/>
+    <path d="M228 700 H 452"/>
+  </g>
+  <!-- toile sur le chevalet -->
+  <rect x="230" y="380" width="220" height="300" fill="#fff" stroke="#1a1714" stroke-width="6"/>
+  <!-- l'œuvre en cours : pirogue esquissée -->
+  <g transform="translate(240 390) scale(.5)">
+    <path d="M60 400 H 380" stroke="#1a1714" stroke-width="5" stroke-linecap="round"/>
+    <path d="M140 390 Q 220 376 320 384 Q 280 404 170 400 Q 146 396 140 390 Z" fill="#1a1714"/>
+    <circle cx="330" cy="300" r="40" fill="#d4593a"/>
+  </g>
+  <!-- le peintre, de dos -->
+  <g fill="#1a1714">
+    <circle cx="570" cy="540" r="26"/>
+    <path d="M540 572 q 30 -16 60 0 l 14 180 q -44 14 -88 0 Z"/>
+    <path d="M556 752 l -10 78 h 20 l 8 -70 M 592 752 l 10 78 h -20 l -8 -70"/>
+  </g>
+  <!-- bras tendu vers la toile, pinceau -->
+  <path d="M552 590 Q 500 600 470 570" stroke="#1a1714" stroke-width="10" fill="none" stroke-linecap="round"/>
+  <path d="M470 570 L 448 552" stroke="#1a1714" stroke-width="5" stroke-linecap="round"/>
+  <path d="M448 552 L 438 544" stroke="#d4593a" stroke-width="6" stroke-linecap="round"/>
+  <!-- sol -->
+  <path d="M120 840 H 700" stroke="#1a1714" stroke-width="3" stroke-linecap="round"/>
+  <text x="660" y="950" font-family="Georgia, serif" font-size="26" font-style="italic" fill="#1a1714">PS</text>
+</svg>

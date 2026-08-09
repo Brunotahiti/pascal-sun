@@ -1,0 +1,248 @@
+/* ==========================================================================
+   Pascal Sun — couche d'effets « nouvelle génération »
+   Curseur, grain, parallaxe, tilt 3D, marquee, transitions de page,
+   animations pilotées par le scroll. Tout est désactivable par
+   prefers-reduced-motion.
+   ========================================================================== */
+
+/* ------------------------------------------------ transitions de page -- */
+
+@view-transition { navigation: auto; }
+
+::view-transition-old(root) {
+  animation: vt-out .45s cubic-bezier(.55, 0, .55, .2) both;
+}
+::view-transition-new(root) {
+  animation: vt-in .65s cubic-bezier(.22, .61, .21, 1) both;
+}
+@keyframes vt-out { to { opacity: 0; transform: translateY(-18px); } }
+@keyframes vt-in  { from { opacity: 0; transform: translateY(26px); } }
+
+/* --------------------------------------------------- barre de progrès -- */
+
+.scroll-progress {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%;
+  height: 3px;
+  z-index: 120;
+  background: var(--accent);
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------ grain film -- */
+
+.grain {
+  position: fixed;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
+  z-index: 85;
+  pointer-events: none;
+  opacity: .06;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain-shift .9s steps(4) infinite;
+}
+@keyframes grain-shift {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(-2%, 1.4%); }
+  50%  { transform: translate(1.6%, -1%); }
+  75%  { transform: translate(-1%, -1.8%); }
+  100% { transform: translate(0, 0); }
+}
+
+/* ------------------------------------------------- curseur personnalisé -- */
+
+@media (pointer: fine) {
+  body.fx-cursor, body.fx-cursor a, body.fx-cursor button,
+  body.fx-cursor .frame, body.fx-cursor select { cursor: none; }
+
+  .cursor-dot, .cursor-ring {
+    position: fixed;
+    top: 0; left: 0;
+    z-index: 999;
+    pointer-events: none;
+    border-radius: 50%;
+    will-change: transform;
+  }
+  .cursor-dot {
+    width: 8px; height: 8px;
+    margin: -4px 0 0 -4px;
+    background: var(--accent);
+  }
+  .cursor-ring {
+    width: 38px; height: 38px;
+    margin: -19px 0 0 -19px;
+    border: 1.5px solid var(--ink);
+    opacity: .55;
+    transition: width .3s var(--ease), height .3s var(--ease),
+                margin .3s var(--ease), opacity .3s, border-color .3s,
+                background-color .3s;
+  }
+  .cursor-ring.is-hover {
+    width: 64px; height: 64px;
+    margin: -32px 0 0 -32px;
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    opacity: 1;
+  }
+  .cursor-ring.is-down { transform: scale(.8); }
+}
+
+/* --------------------------------------------------- textes découpés -- */
+
+.split-ready .w { display: inline-block; overflow: hidden; vertical-align: bottom; }
+.split-ready .wi {
+  display: inline-block;
+  transform: translateY(115%) rotate(2.5deg);
+  animation: word-in .9s var(--ease) forwards;
+  animation-delay: calc(var(--i) * 70ms);
+}
+@keyframes word-in { to { transform: none; } }
+
+/* ---------------------------------------------------- hero vivant -- */
+
+.hero::before {
+  content: "";
+  position: absolute;
+  right: -12%;
+  top: -18%;
+  width: 55vw;
+  height: 55vw;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 14%, transparent) 0%, transparent 65%);
+  animation: breathe 9s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: .8; }
+  50%      { transform: scale(1.12); opacity: 1; }
+}
+
+.hero-art { animation: art-float 8s ease-in-out infinite; }
+@keyframes art-float {
+  0%, 100% { transform: rotate(.6deg) translateY(0); }
+  50%      { transform: rotate(-.4deg) translateY(-12px); }
+}
+.hero-art:hover { animation-play-state: paused; }
+
+/* ------------------------------------------------------- cartes 3D -- */
+
+.card { perspective: 900px; }
+.card .frame {
+  transform-style: preserve-3d;
+  transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(var(--lift, 0px));
+  transition: transform .18s ease-out, box-shadow .45s var(--ease);
+}
+.card:hover .frame { --lift: -6px; box-shadow: 0 30px 55px -25px rgba(22, 19, 15, .45); }
+
+/* reflet qui suit la souris */
+.card .frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%),
+              rgba(255, 255, 255, .55), transparent 45%);
+  opacity: 0;
+  transition: opacity .4s;
+  mix-blend-mode: soft-light;
+}
+.card:hover .frame::after { opacity: 1; }
+
+/* rideau de révélation */
+.card .frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: var(--paper-deep);
+  transform-origin: 50% 0;
+  transition: transform 1s var(--ease) .1s;
+}
+.card.reveal.is-in .frame::before, .card:not(.reveal) .frame::before { transform: scaleY(0); }
+
+.card .frame img {
+  transition: transform 1.2s var(--ease), filter .6s;
+  transform: scale(1.001);
+}
+.card:hover .frame img { transform: scale(1.05); }
+
+/* parallaxe interne au défilement (navigateurs récents) */
+@supports (animation-timeline: view()) {
+  .card .frame img {
+    animation: card-par linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 100%;
+  }
+  @keyframes card-par {
+    from { transform: scale(1.12) translateY(4%); }
+    to   { transform: scale(1.12) translateY(-4%); }
+  }
+  .card:hover .frame img { animation-play-state: paused; }
+
+  .page-head, .quote-block { animation: rise-fade linear both; animation-timeline: view(); animation-range: entry 0% entry 80%; }
+  @keyframes rise-fade {
+    from { opacity: 0; transform: translateY(46px); }
+    to   { opacity: 1; transform: none; }
+  }
+}
+
+/* --------------------------------------------------------- marquee -- */
+
+.marquee {
+  overflow: hidden;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 26px 0;
+  background: var(--paper);
+  white-space: nowrap;
+}
+.marquee-track {
+  display: inline-flex;
+  gap: 0;
+  animation: marquee 32s linear infinite;
+  will-change: transform;
+}
+.marquee:hover .marquee-track { animation-play-state: paused; }
+.marquee-track span {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: clamp(24px, 3.2vw, 40px);
+  color: var(--ink);
+  padding-right: 18px;
+}
+.marquee-track .sun-dot { color: var(--accent); font-style: normal; }
+@keyframes marquee { to { transform: translateX(-50%); } }
+
+/* ---------------------------------------------- boutons magnétiques -- */
+
+.btn { will-change: transform; }
+.btn .btn-label { display: inline-block; will-change: transform; }
+
+/* ------------------------------------------------- lightbox zoomée -- */
+
+.lightbox.open img { animation: lb-in .5s var(--ease); }
+@keyframes lb-in {
+  from { opacity: 0; transform: scale(.86) translateY(20px); }
+}
+
+/* ------------------------------------------------ apparition douce -- */
+
+body { animation: page-in .7s var(--ease); }
+@keyframes page-in { from { opacity: 0; } }
+
+/* --------------------------------------------------- reduced motion -- */
+
+@media (prefers-reduced-motion: reduce) {
+  .grain, .cursor-dot, .cursor-ring, .scroll-progress { display: none !important; }
+  .hero::before, .hero-art, .marquee-track, body { animation: none !important; }
+  .split-ready .wi { animation: none; transform: none; }
+  .card .frame::before { transform: scaleY(0); transition: none; }
+  .card .frame img { animation: none !important; }
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+}

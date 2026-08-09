@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 800">
+  <rect width="1000" height="800" fill="#f6f1e8"/>
+  <!-- vague calligraphique -->
+  <path d="M110 560
+           Q 320 540 470 420
+           Q 610 310 640 210
+           Q 700 320 660 400
+           Q 730 380 780 320
+           Q 780 440 660 510
+           Q 500 600 300 596
+           Q 180 592 110 560 Z"
+        fill="#1a1714"/>
+  <!-- creux intérieur -->
+  <path d="M250 560 Q 430 520 540 430 Q 620 366 640 300 Q 650 380 600 440 Q 500 546 320 570 Z" fill="#f6f1e8"/>
+  <!-- crête lagon -->
+  <path d="M640 210 Q 700 320 660 400 Q 730 380 780 320" fill="none" stroke="#2f9aa3" stroke-width="12" stroke-linecap="round"/>
+  <!-- embruns -->
+  <g fill="#2f9aa3">
+    <circle cx="668" cy="176" r="9"/>
+    <circle cx="712" cy="230" r="7"/>
+    <circle cx="800" cy="284" r="8"/>
+    <circle cx="626" cy="150" r="5"/>
+  </g>
+  <!-- ligne d'eau -->
+  <path d="M110 640 H 890" stroke="#1a1714" stroke-width="3" stroke-linecap="round"/>
+  <path d="M200 676 h 80 M 500 672 h 120 M 740 682 h 60" stroke="#1a1714" stroke-width="3" stroke-linecap="round" opacity=".4"/>
+  <text x="880" y="750" font-family="Georgia, serif" font-size="26" font-style="italic" fill="#1a1714">PS</text>
+</svg>

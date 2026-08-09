@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000">
+  <rect width="800" height="1000" fill="#f6f1e8"/>
+  <!-- soleil couchant -->
+  <circle cx="530" cy="620" r="92" fill="#d4593a"/>
+  <rect x="420" y="620" width="240" height="100" fill="#f6f1e8"/>
+  <!-- horizon -->
+  <path d="M80 620 H 720" stroke="#1a1714" stroke-width="3" stroke-linecap="round"/>
+  <!-- musicien assis de profil -->
+  <g fill="#1a1714">
+    <circle cx="264" cy="420" r="20"/>
+    <path d="M242 444 q 22 -12 44 0 q 14 60 6 96 l -80 6 q 8 -66 30 -102 Z"/>
+    <path d="M212 546 q 60 -14 110 0 l -8 26 q -50 -10 -94 0 Z"/>
+  </g>
+  <!-- bras -->
+  <path d="M282 462 Q 330 490 344 520 M 246 470 Q 240 510 268 528" stroke="#1a1714" stroke-width="9" fill="none" stroke-linecap="round"/>
+  <!-- ukulélé -->
+  <g transform="translate(322 528) rotate(24)">
+    <circle cx="0" cy="0" r="34" fill="#1a1714"/>
+    <circle cx="0" cy="0" r="24" fill="#f6f1e8"/>
+    <circle cx="0" cy="0" r="9" fill="#d4593a"/>
+    <rect x="26" y="-6" width="72" height="12" rx="5" fill="#1a1714"/>
+    <rect x="94" y="-9" width="14" height="18" rx="3" fill="#1a1714"/>
+  </g>
+  <!-- notes suggérées -->
+  <g fill="#1a1714" opacity=".6">
+    <circle cx="420" cy="380" r="6"/>
+    <path d="M426 380 V 344 l 18 -8" stroke="#1a1714" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <circle cx="470" cy="330" r="5"/>
+    <path d="M475 330 V 300" stroke="#1a1714" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  <!-- reflets -->
+  <path d="M480 668 h 100 M 510 700 h 56" stroke="#d4593a" stroke-width="4" stroke-linecap="round" opacity=".7"/>
+  <path d="M180 660 h 70 M 300 690 h 50" stroke="#1a1714" stroke-width="3" stroke-linecap="round" opacity=".4"/>
+  <text x="660" y="940" font-family="Georgia, serif" font-size="26" font-style="italic" fill="#1a1714">PS</text>
+</svg>
