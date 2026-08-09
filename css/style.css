@@ -259,13 +259,20 @@ a { color: inherit; text-decoration: none; }
 
 .hero-art {
   position: relative;
-  padding: clamp(10px, 1.6vw, 18px);
-  background: #fff;
-  border: 1px solid var(--line);
-  box-shadow: 0 30px 60px -30px rgba(22, 19, 15, .35);
+  padding: clamp(11px, 1.5vw, 17px);
+  background: linear-gradient(150deg, #2a231c, #14100c 55%, #1e1912);
+  box-shadow:
+    0 3px 6px rgba(22, 19, 15, .3),
+    0 40px 70px -34px rgba(22, 19, 15, .62);
   transform: rotate(.6deg);
 }
-.hero-art img { width: 100%; }
+.hero-art img {
+  width: 100%;
+  box-shadow:
+    0 0 0 1px rgba(247, 243, 236, .22),
+    inset 0 0 34px rgba(22, 19, 15, .16);
+}
+.hero-art figcaption { background: var(--paper); margin: 11px -11px -11px; padding: 12px 14px 8px; }
 .hero-art figcaption {
   padding: 14px 6px 4px;
   display: flex;
@@ -367,21 +374,36 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 980px) { .grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 620px) { .grid { grid-template-columns: 1fr; } }
 
+/* Une toile encadrée, pas une affiche : cadre bois noir fin, léger biseau
+   intérieur et ombre portée qui décolle le tableau du mur. */
 .card { position: relative; }
 .card .frame {
   position: relative;
-  background: #fff;
-  border: 1px solid var(--line);
-  padding: 12px;
+  background: linear-gradient(150deg, #2a231c, #14100c 55%, #1e1912);
+  padding: 10px;
+  box-shadow:
+    0 2px 4px rgba(22, 19, 15, .28),
+    0 18px 34px -22px rgba(22, 19, 15, .55);
   transition: transform .45s var(--ease), box-shadow .45s var(--ease);
   overflow: hidden;
 }
 .card:hover .frame {
   transform: translateY(-6px);
-  box-shadow: 0 28px 50px -28px rgba(22, 19, 15, .4);
+  box-shadow:
+    0 3px 6px rgba(22, 19, 15, .3),
+    0 34px 56px -26px rgba(22, 19, 15, .6);
 }
-.card .frame img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; }
+.card .frame img {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  /* liseré clair = tranche de la toile vue sous le cadre */
+  box-shadow:
+    0 0 0 1px rgba(247, 243, 236, .22),
+    inset 0 0 26px rgba(22, 19, 15, .16);
+}
 .card .frame img.landscape { aspect-ratio: 5 / 4; }
+@media (min-width: 900px) { .card .frame { padding: 12px; } }
 
 .badge-sold, .badge-new {
   position: absolute;
@@ -419,11 +441,17 @@ a { color: inherit; text-decoration: none; }
 .artwork-visual {
   position: sticky;
   top: 104px;
-  background: #fff;
-  border: 1px solid var(--line);
-  padding: clamp(12px, 1.8vw, 22px);
-  box-shadow: 0 34px 70px -40px rgba(22, 19, 15, .45);
+  background: linear-gradient(150deg, #2a231c, #14100c 55%, #1e1912);
+  padding: clamp(13px, 1.7vw, 20px);
+  box-shadow:
+    0 3px 7px rgba(22, 19, 15, .32),
+    0 46px 80px -38px rgba(22, 19, 15, .65);
   cursor: zoom-in;
+}
+.artwork-visual img {
+  box-shadow:
+    0 0 0 1px rgba(247, 243, 236, .22),
+    inset 0 0 40px rgba(22, 19, 15, .16);
 }
 @media (max-width: 900px) { .artwork-visual { position: static; } }
 
