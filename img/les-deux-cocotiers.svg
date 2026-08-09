@@ -35,5 +35,8 @@
   <!-- chemin -->
   <path d="M140 862 Q 400 846 660 862" stroke="#1a1714" stroke-width="3.5" fill="none" stroke-linecap="round"/>
   <path d="M240 900 h 80 M 460 894 h 100" stroke="#1a1714" stroke-width="3" stroke-linecap="round" opacity=".4"/>
+  <!-- frise tapa -->
+  <path d="M150 946 l10 -14 10 14z m30 0 l10 -14 10 14z m30 0 l10 -14 10 14z m30 0 l10 -14 10 14z m30 0 l10 -14 10 14z m30 0 l10 -14 10 14z m30 0 l10 -14 10 14z"
+        fill="#1a1714" opacity=".8"/>
   <text x="660" y="960" font-family="Georgia, serif" font-size="26" font-style="italic" fill="#1a1714">PS</text>
 </svg>

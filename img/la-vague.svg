@@ -1,28 +1,33 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 800">
   <rect width="1000" height="800" fill="#f6f1e8"/>
-  <!-- vague calligraphique -->
+  <!-- houle : un seul geste d'encre, souple et pacifique -->
   <path d="M110 560
-           Q 320 540 470 420
-           Q 610 310 640 210
-           Q 700 320 660 400
-           Q 730 380 780 320
-           Q 780 440 660 510
-           Q 500 600 300 596
-           Q 180 592 110 560 Z"
+           Q 300 545 460 470
+           Q 620 395 680 280
+           Q 720 380 660 460
+           Q 560 580 340 600
+           Q 200 608 110 560 Z"
         fill="#1a1714"/>
-  <!-- creux intérieur -->
-  <path d="M250 560 Q 430 520 540 430 Q 620 366 640 300 Q 650 380 600 440 Q 500 546 320 570 Z" fill="#f6f1e8"/>
-  <!-- crête lagon -->
-  <path d="M640 210 Q 700 320 660 400 Q 730 380 780 320" fill="none" stroke="#2f9aa3" stroke-width="12" stroke-linecap="round"/>
-  <!-- embruns -->
-  <g fill="#2f9aa3">
-    <circle cx="668" cy="176" r="9"/>
-    <circle cx="712" cy="230" r="7"/>
-    <circle cx="800" cy="284" r="8"/>
-    <circle cx="626" cy="150" r="5"/>
+  <path d="M240 565 Q 420 530 550 445 Q 630 390 665 320 Q 670 400 610 470 Q 500 570 320 585 Z" fill="#f6f1e8"/>
+  <!-- crête lagon, douce -->
+  <path d="M680 280 Q 720 380 660 460" fill="none" stroke="#2f9aa3" stroke-width="12" stroke-linecap="round"/>
+  <path d="M655 300 q -10 46 -40 84" fill="none" stroke="#2f9aa3" stroke-width="5" stroke-linecap="round" opacity=".6"/>
+  <!-- va'a qui surfe la houle -->
+  <g transform="translate(790 505) rotate(-14)">
+    <path d="M-70 0 Q 0 -12 80 -4 Q 40 14 -40 10 Q -64 8 -70 0 Z" fill="#1a1714"/>
+    <path d="M-30 4 L -70 26 M 30 0 L -10 24" stroke="#1a1714" stroke-width="4" stroke-linecap="round"/>
+    <path d="M-84 28 Q -40 20 8 26" stroke="#1a1714" stroke-width="6" stroke-linecap="round" fill="none"/>
+    <g fill="#1a1714">
+      <circle cx="18" cy="-42" r="9"/>
+      <path d="M11 -32 q 7 -5 14 0 l 5 30 q -12 5 -24 0 Z"/>
+    </g>
+    <path d="M23 -26 L 48 -40 L 58 6" stroke="#1a1714" stroke-width="4" fill="none" stroke-linecap="round"/>
   </g>
   <!-- ligne d'eau -->
   <path d="M110 640 H 890" stroke="#1a1714" stroke-width="3" stroke-linecap="round"/>
   <path d="M200 676 h 80 M 500 672 h 120 M 740 682 h 60" stroke="#1a1714" stroke-width="3" stroke-linecap="round" opacity=".4"/>
+  <!-- frise tapa -->
+  <path d="M120 736 l11 -15 11 15z m33 0 l11 -15 11 15z m33 0 l11 -15 11 15z m33 0 l11 -15 11 15z m33 0 l11 -15 11 15z m33 0 l11 -15 11 15z"
+        fill="#1a1714" opacity=".8"/>
   <text x="880" y="750" font-family="Georgia, serif" font-size="26" font-style="italic" fill="#1a1714">PS</text>
 </svg>

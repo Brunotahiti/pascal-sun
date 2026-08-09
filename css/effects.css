@@ -198,8 +198,13 @@
   overflow: hidden;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
-  padding: 26px 0;
-  background: var(--paper);
+  padding: 30px 0;
+  background-color: var(--paper);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='8'%3E%3Cpath d='M0 0 5.5 8 11 0Z M11 0 16.5 8 22 0Z' fill='%23d4593a' opacity='.35'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='8'%3E%3Cpath d='M0 8 5.5 0 11 8Z M11 8 16.5 0 22 8Z' fill='%23d4593a' opacity='.35'/%3E%3C/svg%3E");
+  background-position: top center, bottom center;
+  background-repeat: repeat-x, repeat-x;
   white-space: nowrap;
 }
 .marquee-track {
@@ -269,11 +274,9 @@ body { animation: page-in .7s var(--ease); }
   position: absolute;
   left: 50%;
   bottom: -60px;
-  width: 120px;
-  height: 120px;
-  margin-left: -60px;
-  border-radius: 50%;
-  background: var(--accent);
+  width: 132px;
+  height: 132px;
+  margin-left: -66px;
   animation: intro-sunrise 1.4s cubic-bezier(.22, .61, .21, 1) .25s both;
 }
 @keyframes intro-sunrise {

@@ -39,5 +39,8 @@
     <path d="M626 460 q 14 -9 28 0 l 10 100 h -46 Z"/>
     <path d="M652 480 q 26 18 20 52" stroke="#1a1714" stroke-width="9" fill="none" stroke-linecap="round"/>
   </g>
+  <!-- frise tapa -->
+  <path d="M150 916 l10 -14 10 14z m30 0 l10 -14 10 14z m30 0 l10 -14 10 14z m30 0 l10 -14 10 14z m30 0 l10 -14 10 14z m30 0 l10 -14 10 14z m30 0 l10 -14 10 14z"
+        fill="#1a1714" opacity=".8"/>
   <text x="660" y="940" font-family="Georgia, serif" font-size="26" font-style="italic" fill="#1a1714">PS</text>
 </svg>

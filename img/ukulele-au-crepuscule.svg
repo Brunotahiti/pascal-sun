@@ -1,7 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000">
   <rect width="800" height="1000" fill="#f6f1e8"/>
-  <!-- soleil couchant -->
+  <!-- soleil couchant à rayons polynésiens -->
   <circle cx="530" cy="620" r="92" fill="#d4593a"/>
+  <g fill="#d4593a">
+    <path d="M514 517 L546 517 L530 480 Z"/>
+    <path d="M464.6 539.2 L492.7 522.9 L460 498.8 Z"/>
+    <path d="M595.4 539.2 L567.3 522.9 L600 498.8 Z"/>
+    <path d="M432.9 582.7 L449.2 554.6 L408.8 550 Z"/>
+    <path d="M627.1 582.7 L610.8 554.6 L651.2 550 Z"/>
+  </g>
   <rect x="420" y="620" width="240" height="100" fill="#f6f1e8"/>
   <!-- horizon -->
   <path d="M80 620 H 720" stroke="#1a1714" stroke-width="3" stroke-linecap="round"/>

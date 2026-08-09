@@ -50,6 +50,16 @@ a { color: inherit; text-decoration: none; }
   text-transform: uppercase;
   color: var(--accent);
 }
+/* frise tapa (niho — dents de requin) devant chaque étiquette de section */
+.eyebrow::before {
+  content: "";
+  display: inline-block;
+  width: 30px;
+  height: 7px;
+  margin-right: 11px;
+  vertical-align: 6%;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7'%3E%3Cpath d='M0 7 5 0 10 7Z' fill='%23d4593a'/%3E%3C/svg%3E") repeat-x;
+}
 
 .section-title {
   font-family: var(--serif);
@@ -292,7 +302,17 @@ a { color: inherit; text-decoration: none; }
 /* ------------------------------------------------------------- gallery -- */
 
 .section { padding: clamp(64px, 9vw, 120px) 0; }
-.section.tinted { background: var(--paper-deep); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.section.tinted {
+  background-color: var(--paper-deep);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  /* lisières tapa en haut et en bas de la section */
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='9'%3E%3Cpath d='M0 0 5.5 9 11 0Z M11 0 16.5 9 22 0Z' fill='%2316130f' opacity='.13'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='9'%3E%3Cpath d='M0 9 5.5 0 11 9Z M11 9 16.5 0 22 9Z' fill='%2316130f' opacity='.13'/%3E%3C/svg%3E");
+  background-position: top center, bottom center;
+  background-repeat: repeat-x, repeat-x;
+}
 
 .section-head {
   display: flex;
@@ -462,7 +482,15 @@ a { color: inherit; text-decoration: none; }
 
 .values { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(18px, 3vw, 36px); margin-top: clamp(40px, 6vw, 70px); }
 @media (max-width: 760px) { .values { grid-template-columns: 1fr; } }
-.value-card { border-top: 2px solid var(--ink); padding-top: 18px; }
+.value-card { padding-top: 0; }
+.value-card::before {
+  content: "";
+  display: block;
+  width: 66px;
+  height: 8px;
+  margin-bottom: 16px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='8'%3E%3Cpath d='M0 8 5.5 0 11 8Z' fill='%2316130f'/%3E%3C/svg%3E") repeat-x;
+}
 .value-card h3 { font-family: var(--serif); font-size: 24px; font-weight: 600; margin-bottom: 8px; }
 .value-card p { font-size: 14.5px; color: var(--ink-soft); }
 .value-card .num { font-size: 11px; font-weight: 800; letter-spacing: .25em; color: var(--accent); }
@@ -518,6 +546,13 @@ a { color: inherit; text-decoration: none; }
 /* -------------------------------------------------------------- footer -- */
 
 .site-footer { background: var(--ink); color: #cfc8bc; margin-top: clamp(60px, 9vw, 110px); }
+/* lisière tapa : le papier se déchire en dents sur l'encre */
+.site-footer::before {
+  content: "";
+  display: block;
+  height: 12px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='12'%3E%3Cpath d='M0 0 12 12 24 0Z' fill='%23f7f3ec'/%3E%3C/svg%3E") repeat-x;
+}
 .site-footer .top {
   display: grid;
   grid-template-columns: 1.2fr .8fr .8fr;

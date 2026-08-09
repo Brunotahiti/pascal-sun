@@ -38,9 +38,18 @@
       c === " " ? "<span style='width:.5em'></span>"
         : `<span class="${i >= 7 ? "sun" : ""}" style="--i:${i}">${c}</span>`
     ).join("");
+    // Soleil à rayons de tatouage polynésien (niho)
+    const SUN_RAYS = `<svg class="intro-sun" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="50" r="26" fill="#d4593a"/>
+      <g fill="#d4593a">
+        <path d="M81.5 44.4 96 50 81.5 55.6Z"/><path d="M76.2 68.4 82.5 82.5 68.4 76.2Z"/>
+        <path d="M55.6 81.5 50 96 44.4 81.5Z"/><path d="M31.6 76.2 17.5 82.5 23.8 68.4Z"/>
+        <path d="M18.5 55.6 4 50 18.5 44.4Z"/><path d="M23.8 31.6 17.5 17.5 31.6 23.8Z"/>
+        <path d="M44.4 18.5 50 4 55.6 18.5Z"/><path d="M68.4 23.8 82.5 17.5 76.2 31.6Z"/>
+      </g></svg>`;
     intro.innerHTML = `
       <div class="intro-scene">
-        <div class="intro-horizon"><div class="intro-sun"></div></div>
+        <div class="intro-horizon">${SUN_RAYS}</div>
         <div class="intro-name" aria-label="Pascal Sun">${letters}</div>
         <div class="intro-tag">Peintre · Tahiti · Polynésie</div>
       </div>`;

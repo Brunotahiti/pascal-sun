@@ -177,7 +177,7 @@ app.use(express.static(__dirname, {
   setHeaders(res, filePath) {
     // HTML, JS et CSS : revalidation à chaque visite (déploiements pris en
     // compte immédiatement, réponses 304 sinon). Médias : cache long.
-    if (/\.(html|js|css|webmanifest)$/.test(filePath)) {
+    if (/\.(html|js|css|svg|webmanifest)$/.test(filePath)) {
       res.setHeader("Cache-Control", "no-cache");
     }
   }
