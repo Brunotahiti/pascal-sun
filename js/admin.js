@@ -81,6 +81,7 @@
     $("#admin-app").hidden = false;
     await loadCatalogue();
     renderArtworks();
+    renderEvents();
     renderTexts();
     wireChrome();
     markClean();
@@ -90,6 +91,7 @@
     const data = await fetch("/api/catalogue").then((r) => r.json()).catch(() => null);
     catalogue = {
       artworks: (data && data.artworks) || JSON.parse(JSON.stringify(ARTWORKS)),
+      events: (data && data.events) || JSON.parse(JSON.stringify(typeof EVENTS !== "undefined" ? EVENTS : [])),
       uiTexts: (data && data.uiTexts) || { fr: {}, en: {} }
     };
     catalogue.uiTexts.fr = catalogue.uiTexts.fr || {};
@@ -181,6 +183,30 @@
     }
   }
 
+  /* ------------------------------------------------------ vernissages -- */
+
+  function eventCard(ev, i) {
+    return `
+    <article class="aw-card" data-ei="${i}" style="grid-template-columns: 1fr;">
+      <div class="aw-fields">
+        <div class="f span2"><label>Titre de l'événement</label><input data-k="titre" value="${esc(ev.titre)}"></div>
+        <div class="f"><label>Date</label><input data-k="date" type="date" value="${esc(ev.date)}"></div>
+        <div class="f"><label>Heure</label><input data-k="heure" value="${esc(ev.heure)}" placeholder="18h00"></div>
+        <div class="f span2"><label>Lieu</label><input data-k="lieu" value="${esc(ev.lieu)}" placeholder="Galerie, salle…"></div>
+        <div class="f span2"><label>Ville / Île</label><input data-k="ville" value="${esc(ev.ville)}" placeholder="Papeete, Tahiti"></div>
+        <div class="f span4"><label>Description (FR)</label><textarea data-k="desc_fr">${esc(ev.desc_fr)}</textarea></div>
+        <div class="f span4"><label>Description (EN)</label><textarea data-k="desc_en">${esc(ev.desc_en)}</textarea></div>
+        <div class="aw-flags">
+          <button type="button" class="aw-delete" data-act="delete-event">Supprimer cet événement</button>
+        </div>
+      </div>
+    </article>`;
+  }
+
+  function renderEvents() {
+    $("#event-list").innerHTML = catalogue.events.map(eventCard).join("");
+  }
+
   /* ----------------------------------------------------------- textes -- */
 
   function renderTexts() {
@@ -253,6 +279,40 @@
     list.addEventListener("change", (e) => {
       if (e.target.type === "file" && e.target.files[0]) {
         uploadPhoto(e.target.closest(".aw-card"), e.target.files[0]);
+      }
+    });
+
+    $("#add-event").addEventListener("click", () => {
+      catalogue.events.unshift({
+        id: "vernissage-" + Date.now().toString(36),
+        titre: "Nouveau vernissage",
+        lieu: "",
+        ville: "",
+        date: new Date().toISOString().slice(0, 10),
+        heure: "18h00",
+        desc_fr: "",
+        desc_en: ""
+      });
+      renderEvents();
+      markDirty();
+    });
+
+    const evList = $("#event-list");
+    evList.addEventListener("input", (e) => {
+      const card = e.target.closest("[data-ei]");
+      const k = e.target.dataset.k;
+      if (!card || !k) return;
+      catalogue.events[+card.dataset.ei][k] = e.target.value;
+      markDirty();
+    });
+    evList.addEventListener("click", (e) => {
+      if (e.target.dataset.act === "delete-event") {
+        const card = e.target.closest("[data-ei]");
+        if (confirm("Supprimer cet événement ?")) {
+          catalogue.events.splice(+card.dataset.ei, 1);
+          renderEvents();
+          markDirty();
+        }
       }
     });
 

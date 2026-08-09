@@ -3,48 +3,48 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Œuvre — Pascal Sun</title>
-  <meta name="description" content="Découvrez cette œuvre originale de Pascal Sun, peintre de Polynésie. Toile unique, signée, livrée assurée dans le monde entier.">
+  <title>Vernissages &amp; expositions — Pascal Sun</title>
+  <meta name="description" content="La feuille de route des vernissages et expositions de Pascal Sun : les prochains rendez-vous pour rencontrer l'artiste et ses toiles, à Tahiti et ailleurs.">
+  <link rel="canonical" href="https://pascal-sun.com/expositions.html">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/effects.css">
-  <link rel="stylesheet" href="css/viewer.css">
   <script defer src="https://stats.pascal-sun.com/script.js" data-website-id="56116cc3-d031-4382-9868-905e305b96e5"></script>
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#f7f3ec">
   <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='38' fill='%23d4593a'/></svg>">
 </head>
-<body data-page="artwork">
+<body data-page="expos">
 
   <header class="site-header" id="site-header"></header>
 
   <main>
     <div class="wrap">
-      <div class="artwork-layout">
-        <figure class="artwork-visual reveal is-in" id="artwork-visual" title="Cliquer pour agrandir"></figure>
-        <div class="artwork-info reveal is-in" id="artwork-info"></div>
+      <div class="page-head reveal is-in">
+        <span class="eyebrow" data-i18n="expos_eyebrow"></span>
+        <h1 class="section-title" data-i18n="expos_title"></h1>
+        <p class="lede" data-i18n="expos_lede"></p>
       </div>
 
-      <section class="section" style="padding-top: 0;">
-        <div class="section-head">
-          <h2 class="section-title" style="font-size: clamp(26px, 3vw, 38px);" data-i18n="related_title"></h2>
-          <a class="more" href="galerie.html" data-i18n="see_all"></a>
-        </div>
-        <div class="grid" id="related-grid"></div>
+      <section style="padding-bottom: 30px;">
+        <h2 class="eyebrow" style="margin-bottom: 26px;" data-i18n="expos_upcoming"></h2>
+        <div class="timeline" id="expos-upcoming"></div>
+      </section>
+
+      <section style="padding: 30px 0 60px;">
+        <h2 class="eyebrow" style="margin-bottom: 26px;" data-i18n="expos_past"></h2>
+        <div class="timeline past" id="expos-past"></div>
       </section>
     </div>
   </main>
-
-  <div class="lightbox" id="lightbox" role="dialog" aria-label="Agrandissement de l'œuvre"></div>
 
   <footer class="site-footer" id="site-footer"></footer>
 
   <script src="js/data.js"></script>
   <script src="js/app.js"></script>
   <script src="js/effects.js"></script>
-  <script src="js/viewer.js"></script>
 </body>
 </html>

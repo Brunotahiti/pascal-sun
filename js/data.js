@@ -202,6 +202,43 @@ var ARTWORKS = [
   }
 ];
 
+/* --------------------------------------------------------- vernissages -- */
+/* Feuille de route des expositions — modifiable dans l'espace admin.
+   date au format AAAA-MM-JJ ; les dates futures s'affichent en « À venir ». */
+
+var EVENTS = [
+  {
+    id: "vernissage-lagon",
+    titre: "Vernissage — Collection Lagon",
+    lieu: "Galerie d'art, front de mer",
+    ville: "Papeete, Tahiti",
+    date: "2026-09-18",
+    heure: "18h00",
+    desc_fr: "Présentation des nouvelles toiles de la collection Océan & pirogues, en présence de l'artiste. Cocktail au coucher du soleil.",
+    desc_en: "Unveiling of the new Ocean & canoes collection, in the artist's presence. Sunset cocktail."
+  },
+  {
+    id: "expo-fenua",
+    titre: "Exposition collective — Artistes du Fenua",
+    lieu: "Salle d'exposition municipale",
+    ville: "Punaauia, Tahiti",
+    date: "2026-11-06",
+    heure: "17h30",
+    desc_fr: "Pascal Sun expose aux côtés des peintres et sculpteurs du fenua. Trois toiles inédites.",
+    desc_en: "Pascal Sun exhibits alongside painters and sculptors of the fenua. Three new canvases."
+  },
+  {
+    id: "marche-artisans-moorea",
+    titre: "Rencontre au marché des artisans",
+    lieu: "Marché artisanal",
+    ville: "Moorea",
+    date: "2026-05-30",
+    heure: "09h00",
+    desc_fr: "Démonstration de peinture en plein air et rencontres autour des scènes de vie polynésiennes.",
+    desc_en: "Open-air painting demonstration and conversations around Polynesian scenes of life."
+  }
+];
+
 /* ------------------------------------------------------------ devises -- */
 
 const CURRENCIES = {
@@ -255,6 +292,15 @@ var I18N = {
     artist_title: "L'art de Pascal Sun est une invitation à ralentir",
     atelier_video_t: "L'atelier en mouvement",
     atelier_video_p: "Quelques minutes dans l'atelier de Pascal, à Tahiti : le geste, le silence, la toile qui prend vie.",
+    nav_expos: "Vernissages",
+    expos_eyebrow: "Feuille de route",
+    expos_title: "Vernissages & expositions",
+    expos_lede: "Rencontrer les toiles en vrai, échanger avec Pascal, partager un moment autour de l'art du fenua : voici les prochains rendez-vous de la galerie.",
+    expos_upcoming: "À venir",
+    expos_past: "Déjà passés",
+    expos_rsvp: "Je serai là",
+    expos_rsvp_subject: "Présence au vernissage",
+    expos_empty: "Les prochaines dates seront annoncées ici très bientôt.",
     sold: "Œuvre vendue",
     new: "Nouveauté",
     available: "Disponible",
@@ -347,6 +393,15 @@ var I18N = {
     artist_title: "Pascal Sun's art is an invitation to slow down",
     atelier_video_t: "The studio in motion",
     atelier_video_p: "A few minutes inside Pascal's studio in Tahiti: the gesture, the silence, the canvas coming to life.",
+    nav_expos: "Exhibitions",
+    expos_eyebrow: "Roadmap",
+    expos_title: "Openings & exhibitions",
+    expos_lede: "Meet the canvases in person, talk with Pascal, share a moment around the art of the fenua: here are the gallery's upcoming events.",
+    expos_upcoming: "Upcoming",
+    expos_past: "Past events",
+    expos_rsvp: "I'll be there",
+    expos_rsvp_subject: "Attending the opening",
+    expos_empty: "Upcoming dates will be announced here very soon.",
     sold: "Sold",
     new: "New",
     available: "Available",

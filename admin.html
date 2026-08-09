@@ -31,6 +31,7 @@
       <div class="brand">Pascal <span>Sun</span> <small>· Admin</small></div>
       <nav class="admin-tabs">
         <button class="tab active" data-tab="oeuvres">Œuvres</button>
+        <button class="tab" data-tab="expos">Vernissages</button>
         <button class="tab" data-tab="textes">Textes &amp; boutons</button>
         <button class="tab" data-tab="stats">Statistiques</button>
       </nav>
@@ -51,6 +52,18 @@
           <button class="solid-btn" id="add-artwork">+ Nouvelle œuvre</button>
         </div>
         <div class="artwork-list" id="artwork-list"></div>
+      </section>
+
+      <!-- VERNISSAGES -->
+      <section class="pane" data-pane="expos">
+        <div class="pane-head">
+          <div>
+            <h2>Feuille de route des vernissages</h2>
+            <p>Ajoutez vos prochains vernissages et expositions : ils s'affichent automatiquement sur la page « Vernissages », les dates passées glissent dans l'historique.</p>
+          </div>
+          <button class="solid-btn" id="add-event">+ Nouveau vernissage</button>
+        </div>
+        <div class="artwork-list" id="event-list"></div>
       </section>
 
       <!-- TEXTES -->

@@ -57,6 +57,7 @@
         <nav class="nav" id="main-nav" aria-label="Navigation principale">
           <a class="nav-link ${page === "home" ? "active" : ""}" href="index.html">${t("nav_home")}</a>
           <a class="nav-link ${page === "gallery" || page === "artwork" ? "active" : ""}" href="galerie.html">${t("nav_gallery")}</a>
+          <a class="nav-link ${page === "expos" ? "active" : ""}" href="expositions.html">${t("nav_expos")}</a>
           <a class="nav-link ${page === "artist" ? "active" : ""}" href="artiste.html">${t("nav_artist")}</a>
           <a class="nav-link ${page === "contact" ? "active" : ""}" href="contact.html">${t("nav_contact")}</a>
         </nav>
@@ -98,6 +99,7 @@
           <ul>
             <li><a href="index.html">${t("nav_home")}</a></li>
             <li><a href="galerie.html">${t("nav_gallery")}</a></li>
+            <li><a href="expositions.html">${t("nav_expos")}</a></li>
             <li><a href="artiste.html">${t("nav_artist")}</a></li>
             <li><a href="contact.html">${t("nav_contact")}</a></li>
           </ul>
@@ -355,6 +357,47 @@
     draw();
   }
 
+  function pageExpos() {
+    const up = document.getElementById("expos-upcoming");
+    const past = document.getElementById("expos-past");
+    if (!up || !past) return;
+
+    const today = new Date().toISOString().slice(0, 10);
+    const months = store.lang === "en"
+      ? ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+      : ["Janv", "Févr", "Mars", "Avr", "Mai", "Juin", "Juil", "Août", "Sept", "Oct", "Nov", "Déc"];
+
+    function itemHTML(ev, isPast) {
+      const [y, m, d] = ev.date.split("-").map(Number);
+      const desc = store.lang === "en" ? (ev.desc_en || ev.desc_fr) : ev.desc_fr;
+      const rsvp = isPast ? "" : `
+        <a class="btn" href="mailto:${ARTIST_EMAIL}?subject=${encodeURIComponent(t("expos_rsvp_subject") + " — " + ev.titre)}">
+          ${t("expos_rsvp")}</a>`;
+      return `
+        <div class="tl-item reveal">
+          <div class="tl-date">
+            <div class="day">${String(d).padStart(2, "0")}</div>
+            <div class="my">${months[m - 1]} ${y}</div>
+            ${ev.heure ? `<div class="hour">${esc(ev.heure)}</div>` : ""}
+          </div>
+          <div class="tl-card">
+            <h3>${esc(ev.titre)}</h3>
+            <div class="place">${esc(ev.lieu)} · ${esc(ev.ville)}</div>
+            <p>${esc(desc || "")}</p>
+            ${rsvp}
+          </div>
+        </div>`;
+    }
+
+    const sorted = [...EVENTS].filter((e) => e && e.date);
+    const upcoming = sorted.filter((e) => e.date >= today).sort((a, b) => a.date.localeCompare(b.date));
+    const gone = sorted.filter((e) => e.date < today).sort((a, b) => b.date.localeCompare(a.date));
+
+    up.innerHTML = upcoming.length ? upcoming.map((e) => itemHTML(e, false)).join("")
+      : `<p class="empty">${t("expos_empty")}</p>`;
+    past.innerHTML = gone.map((e) => itemHTML(e, true)).join("");
+  }
+
   function pageContact() {
     const form = document.getElementById("contact-form");
     if (!form) return;
@@ -376,6 +419,7 @@
       if (!r.ok) return;
       const data = await r.json();
       if (Array.isArray(data.artworks) && data.artworks.length) ARTWORKS = data.artworks;
+      if (Array.isArray(data.events)) EVENTS = data.events;
       if (data.uiTexts) {
         ["fr", "en"].forEach((l) => {
           if (data.uiTexts[l]) I18N[l] = Object.assign({}, I18N[l], data.uiTexts[l]);
@@ -397,10 +441,16 @@
       case "artwork": pageArtwork(); break;
       case "cart":    pageCart(); break;
       case "contact": pageContact(); break;
+      case "expos":   pageExpos(); break;
     }
 
     observeReveals();
     document.dispatchEvent(new CustomEvent("ps-ready"));
     window.PS_READY = true;
+
+    // PWA : enregistrement du service worker (hors admin)
+    if ("serviceWorker" in navigator && location.protocol === "https:") {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
   });
 })();
