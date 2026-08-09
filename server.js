@@ -222,26 +222,51 @@ app.get("/api/stats/overview", requireAuth, async (req, res) => {
    d'environnement. Sans configuration, le site fonctionne à l'identique
    (les emails sont simplement ignorés). */
 
+/* Le mot de passe email est stocké sur le volume persistant (data/mail.json,
+   saisi une fois dans l'admin) : il survit à tous les redéploiements.
+   Les variables d'environnement restent prioritaires si présentes. */
 const nodemailer = require("nodemailer");
+const MAIL_CONF_FILE = path.join(DATA_DIR, "mail.json");
 const SMTP_HOST = process.env.SMTP_HOST || "smtp.hostinger.com";
 const SMTP_PORT = Number(process.env.SMTP_PORT || 465);
 const SMTP_USER = process.env.SMTP_USER || "contact@pascal-sun.com";
-const SMTP_PASS = process.env.SMTP_PASS || "";
-const MAIL_FROM = process.env.MAIL_FROM || `"Galerie Pascal Sun" <${SMTP_USER}>`;
-const ARTIST_NOTIFY = process.env.ARTIST_NOTIFY || SMTP_USER;
 
-const mailer = SMTP_PASS
-  ? nodemailer.createTransport({ host: SMTP_HOST, port: SMTP_PORT, secure: SMTP_PORT === 465, auth: { user: SMTP_USER, pass: SMTP_PASS } })
-  : null;
+let mailer = null;
+let ARTIST_NOTIFY = SMTP_USER;
+
+function initMailer() {
+  const conf = readJSON(MAIL_CONF_FILE, {});
+  const pass = process.env.SMTP_PASS || conf.pass || "";
+  const user = process.env.SMTP_USER || conf.user || SMTP_USER;
+  ARTIST_NOTIFY = process.env.ARTIST_NOTIFY || conf.notify || user;
+  mailer = pass
+    ? nodemailer.createTransport({ host: SMTP_HOST, port: SMTP_PORT, secure: SMTP_PORT === 465, auth: { user, pass } })
+    : null;
+  if (mailer) mailer.__from = `"Galerie Pascal Sun" <${user}>`;
+  return Boolean(mailer);
+}
+initMailer();
 
 const mailEnabled = () => Boolean(mailer);
 
 function sendMail(to, subject, text) {
   if (!mailer || !to) return Promise.resolve(false);
-  return mailer.sendMail({ from: MAIL_FROM, to, subject, text })
+  return mailer.sendMail({ from: mailer.__from, to, subject, text })
     .then(() => true)
     .catch((e) => { console.error("mail:", e.message); return false; });
 }
+
+/* Saisie du mot de passe email depuis l'admin (jamais renvoyé en clair). */
+app.post("/api/mail-config", requireAuth, async (req, res) => {
+  const { pass } = req.body || {};
+  if (!pass || String(pass).length < 4) return res.status(400).json({ error: "mot-de-passe-requis" });
+  writeJSON(MAIL_CONF_FILE, { user: SMTP_USER, pass: String(pass), notify: SMTP_USER });
+  const ok = initMailer();
+  if (!ok) return res.status(500).json({ error: "configuration-invalide" });
+  const test = await sendMail(ARTIST_NOTIFY, "✅ Emails de la galerie activés",
+    "La configuration email de pascal-sun.com fonctionne : ce message en est la preuve.\n\nElle est désormais conservée de façon permanente, même après les mises à jour du site.");
+  res.json({ ok: true, testSent: test });
+});
 
 const COMMISSIONS_FILE = path.join(DATA_DIR, "commissions.json");
 const PRODUIT_FR = { original: "Œuvre originale", tirage: "Tirage d'art édition limitée", affiche: "Affiche" };

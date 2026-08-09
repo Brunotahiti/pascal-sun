@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/admin.css?v=12">
+  <link rel="stylesheet" href="css/admin.css?v=13">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='38' fill='%2316130f'/></svg>">
 </head>
 <body>
@@ -189,6 +189,15 @@
             <button class="ghost-btn" id="report-btn">📊 Voir le rapport du mois</button>
           </div>
         </div>
+        <div class="compose-panel" style="margin-bottom: 22px;">
+          <h3>✉️ Emails automatiques</h3>
+          <p class="compose-note" id="mail-note"></p>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <input id="mail-pass" type="password" placeholder="Mot de passe de contact@pascal-sun.com" style="flex:1; min-width:240px;" autocomplete="new-password">
+            <button class="solid-btn" id="mail-save">Activer les emails</button>
+          </div>
+          <p class="compose-note">Le mot de passe est conservé de façon chiffrée sur le serveur, jamais dans le code du site. Une fois saisi ici, il survit à toutes les mises à jour.</p>
+        </div>
         <pre class="report-box" id="report-box" hidden></pre>
         <h3 style="font-family:var(--serif); font-size:22px; font-weight:600; margin:26px 0 12px;">Sauvegardes automatiques</h3>
         <div id="backup-list"></div>
@@ -255,7 +264,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="js/data.js?v=12"></script>
-  <script src="js/admin.js?v=12"></script>
+  <script src="js/data.js?v=13"></script>
+  <script src="js/admin.js?v=13"></script>
 </body>
 </html>

@@ -174,7 +174,7 @@
       <div class="v3d-scene" style="width:${W}px;height:${H}px">
         <div class="canvas3d" style="width:${W}px;height:${H}px">
           <div class="face front" style="width:${W}px;height:${H}px;transform:translateZ(${D / 2}px);background:${WOOD}">
-            <div class="frame-inner" style="position:absolute;inset:${F}px;background-image:url('${art.imageHD}');background-size:cover;background-position:center;box-shadow:inset 0 0 ${F * 2}px rgba(0,0,0,.3), 0 0 0 1px rgba(247,243,236,.18)"></div>
+            <div class="frame-inner" style="position:absolute;inset:${F}px;background-image:linear-gradient(112deg, rgba(255,255,255,0) 34%, rgba(255,255,255,.16) 44%, rgba(255,255,255,0) 54%), url('${art.imageHD}');background-size:cover;background-position:center;box-shadow:inset 0 0 ${F * 2}px rgba(0,0,0,.3), 0 0 0 1px rgba(247,243,236,.18)"></div>
           </div>
           <div class="face back" style="width:${W}px;height:${H}px;transform:rotateY(180deg) translateZ(${D / 2}px)"></div>
           <div class="face edge" style="width:${D}px;height:${H}px;left:${W - D / 2}px;transform:translateX(-50%) rotateY(90deg);background:${WOOD}"></div>

@@ -304,7 +304,7 @@
       <article class="card reveal">
         <a href="oeuvre.html?id=${a.id}" aria-label="${esc(a.titre)}">
           ${badge}
-          <div class="frame">${imgTag(a, { className: a.orientation })}</div>
+          <div class="frame">${imgTag(a, { className: a.orientation })}<span class="glass" aria-hidden="true"></span></div>
           <div class="card-meta">
             <div>
               <h3>${esc(a.titre)}</h3>
@@ -344,6 +344,7 @@
       heroFig.innerHTML = `
         <a href="oeuvre.html?id=${hero.id}">
           ${imgTag(hero, { eager: true, sizes: "(max-width: 900px) 92vw, 45vw" })}
+          <span class="glass" aria-hidden="true"></span>
           <figcaption><strong>${esc(hero.titre)}</strong><span>${hero.dimensions} — ${hero.annee}</span></figcaption>
         </a>`;
     }
@@ -388,7 +389,7 @@
     const info = document.getElementById("artwork-info");
     if (!visual || !info) return;
 
-    visual.innerHTML = imgTag(a, { eager: true, sizes: "(max-width: 900px) 94vw, 55vw" });
+    visual.innerHTML = imgTag(a, { eager: true, sizes: "(max-width: 900px) 94vw, 55vw" }) + '<span class="glass" aria-hidden="true"></span>';
     visual.addEventListener("click", () => {
       const lb = document.getElementById("lightbox");
       lb.innerHTML = `<img src="${imgLarge(a)}" alt="${esc(a.titre)}">`;

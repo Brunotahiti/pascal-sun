@@ -811,8 +811,33 @@
         if (t.dataset.tab === "commandes") renderOrders();
         if (t.dataset.tab === "clients") renderClients();
         if (t.dataset.tab === "idees") renderIdees();
-        if (t.dataset.tab === "donnees") renderBackups();
+        if (t.dataset.tab === "donnees") { renderBackups(); refreshMailNote(); }
       }));
+
+    async function refreshMailNote() {
+      const st = await fetch("/api/mail-status").then((r) => r.json()).catch(() => ({ enabled: false }));
+      $("#mail-note").textContent = st.enabled
+        ? "✅ Les emails automatiques sont actifs (confirmations, alertes, newsletter, rapport mensuel)."
+        : "⚠️ Emails inactifs : saisissez le mot de passe de la boîte contact@pascal-sun.com pour tout activer.";
+    }
+    $("#mail-save").addEventListener("click", async () => {
+      const pass = $("#mail-pass").value;
+      if (!pass) { toast("Saisissez le mot de passe de la boîte email."); return; }
+      $("#mail-save").disabled = true;
+      try {
+        const r = await fetch("/api/mail-config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pass })
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error();
+        $("#mail-pass").value = "";
+        toast(d.testSent ? "Emails activés — un message de test vient d'arriver dans la boîte ✓" : "Enregistré, mais l'envoi de test a échoué : vérifiez le mot de passe.");
+        refreshMailNote();
+      } catch { toast("Échec : vérifiez le mot de passe et réessayez."); }
+      finally { $("#mail-save").disabled = false; }
+    });
 
     $("#report-btn").addEventListener("click", showReport);
     $("#ship-free").addEventListener("input", (e) => {
