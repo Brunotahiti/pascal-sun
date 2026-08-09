@@ -3,41 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vernissages &amp; expositions — Pascal Sun</title>
-  <meta name="description" content="La feuille de route des vernissages et expositions de Pascal Sun : les prochains rendez-vous pour rencontrer l'artiste et ses toiles, à Tahiti et ailleurs.">
-  <link rel="canonical" href="https://pascal-sun.com/expositions.html">
+  <title>Merci — Pascal Sun</title>
+  <meta name="robots" content="noindex">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css?v=4">
   <link rel="stylesheet" href="css/effects.css?v=4">
-  <script defer src="https://stats.pascal-sun.com/script.js" data-website-id="56116cc3-d031-4382-9868-905e305b96e5"></script>
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#f7f3ec">
-  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><circle cx=%2750%27 cy=%2750%27 r=%2726%27 fill=%27%23d4593a%27/><g fill=%27%23d4593a%27><path d=%27M81.5 44.4 96 50 81.5 55.6Z M76.2 68.4 82.5 82.5 68.4 76.2Z M55.6 81.5 50 96 44.4 81.5Z M31.6 76.2 17.5 82.5 23.8 68.4Z M18.5 55.6 4 50 18.5 44.4Z M23.8 31.6 17.5 17.5 31.6 23.8Z M44.4 18.5 50 4 55.6 18.5Z M68.4 23.8 82.5 17.5 76.2 31.6Z%27/></g></svg>">
 </head>
-<body data-page="expos">
+<body data-page="merci">
 
   <header class="site-header" id="site-header"></header>
 
   <main>
     <div class="wrap">
-      <div class="page-head reveal is-in">
-        <span class="eyebrow" data-i18n="expos_eyebrow"></span>
-        <h1 class="section-title" data-i18n="expos_title"></h1>
-        <p class="lede" data-i18n="expos_lede"></p>
+      <div class="empty-state" style="padding: clamp(70px, 10vw, 140px) 0;">
+        <span class="eyebrow" data-i18n="order_success"></span>
+        <h1 class="section-title" style="margin-top: 16px;" data-i18n="merci_title"></h1>
+        <p class="lede" style="margin: 18px auto 30px; max-width: 56ch;" data-i18n="merci_lede"></p>
+        <p class="form-note" id="order-ref" style="margin-bottom: 26px;"></p>
+        <a class="btn" href="galerie.html" data-i18n="merci_back"></a>
       </div>
-
-      <section style="padding-bottom: 30px;">
-        <h2 class="eyebrow" style="margin-bottom: 26px;" data-i18n="expos_upcoming"></h2>
-        <div class="timeline" id="expos-upcoming"></div>
-      </section>
-
-      <section style="padding: 30px 0 60px;">
-        <h2 class="eyebrow" style="margin-bottom: 26px;" data-i18n="expos_past"></h2>
-        <div class="timeline past" id="expos-past"></div>
-      </section>
     </div>
   </main>
 
@@ -46,5 +35,11 @@
   <script src="js/data.js?v=4"></script>
   <script src="js/app.js?v=4"></script>
   <script src="js/effects.js?v=4"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const cmd = new URLSearchParams(location.search).get("cmd");
+      if (cmd) document.getElementById("order-ref").textContent = "Référence : " + cmd;
+    });
+  </script>
 </body>
 </html>

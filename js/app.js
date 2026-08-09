@@ -14,12 +14,23 @@
     set lang(v)    { localStorage.setItem("ps_lang", v); },
     get currency() { return localStorage.getItem("ps_currency") || "XPF"; },
     set currency(v){ localStorage.setItem("ps_currency", v); },
-    get cart()     { try { return JSON.parse(localStorage.getItem("ps_cart")) || []; } catch { return []; } },
+    get cart() {
+      try {
+        const raw = JSON.parse(localStorage.getItem("ps_cart")) || [];
+        // migration : ancien format = tableau d'ids
+        return raw.map((x) => typeof x === "string" ? { id: x, key: "original", qty: 1 } : x)
+          .filter((x) => x && x.id && x.key);
+      } catch { return []; }
+    },
     set cart(v)    { localStorage.setItem("ps_cart", JSON.stringify(v)); }
   };
 
   const t = (key) => (I18N[store.lang] && I18N[store.lang][key]) || I18N.fr[key] || key;
   const byId = (id) => ARTWORKS.find((a) => a.id === id);
+  const produitOf = (a, key) => (a.produits || []).find((p) => p.key === key) ||
+    (key === "original" ? { key: "original", prixEUR: a.prixEUR, stock: 1, certificat: true } : null);
+  const produitLabel = (key) => t(({ original: "prod_original", tirage: "prod_tirage", affiche: "prod_affiche" })[key] || key);
+  const imgLarge = (a) => (a.images && a.images.large) || a.image;
   const colName = (key) => (COLLECTIONS[key] ? COLLECTIONS[key][store.lang] || COLLECTIONS[key].fr : key);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
@@ -112,12 +123,37 @@
             <li>${t("footer_secure")}</li>
             <li><a href="mailto:${ARTIST_EMAIL}">${ARTIST_EMAIL}</a></li>
           </ul>
+          <div class="newsletter">
+            <h4>${t("news_t")}</h4>
+            <p class="news-p">${t("news_p")}</p>
+            <form id="newsletter-form" class="news-form">
+              <input type="email" name="email" placeholder="${t("news_ph")}" required>
+              <button type="submit">${t("news_btn")}</button>
+            </form>
+            <p class="news-msg" id="news-msg"></p>
+          </div>
         </div>
       </div>
       <div class="wrap bottom">
         <span>${t("footer_rights")}</span>
         <span>${t("footer_made")} · <a href="/admin" rel="nofollow">Admin</a></span>
       </div>`;
+
+    const nf = document.getElementById("newsletter-form");
+    if (nf) nf.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById("news-msg");
+      try {
+        const r = await fetch("/api/newsletter", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: new FormData(nf).get("email") })
+        });
+        if (!r.ok) throw new Error();
+        msg.textContent = t("news_ok");
+        nf.reset();
+      } catch { msg.textContent = t("news_err"); }
+    });
   }
 
   /* ----------------------------------------------------------- panier -- */
@@ -130,18 +166,26 @@
     el.classList.toggle("empty", n === 0);
   }
 
-  function addToCart(id) {
+  function addToCart(id, key) {
+    key = key || "original";
     const cart = store.cart;
-    if (!cart.includes(id)) {
-      cart.push(id);
-      store.cart = cart;
-      updateCartCount();
-      toast(`<span class="hl">« ${esc(byId(id).titre)} »</span> ${t("toast_added")}`);
+    const line = cart.find((x) => x.id === id && x.key === key);
+    const a = byId(id);
+    const p = produitOf(a, key);
+    if (line) {
+      if (key === "original") return;
+      if (typeof p.stock === "number" && line.qty >= p.stock) return;
+      line.qty += 1;
+    } else {
+      cart.push({ id, key, qty: 1 });
     }
+    store.cart = cart;
+    updateCartCount();
+    toast(`<span class="hl">« ${esc(a.titre)} »</span> ${t("toast_added")}`);
   }
 
-  function removeFromCart(id) {
-    store.cart = store.cart.filter((x) => x !== id);
+  function removeFromCart(id, key) {
+    store.cart = store.cart.filter((x) => !(x.id === id && x.key === key));
     updateCartCount();
     toast(`« ${esc(byId(id).titre)} » ${t("toast_removed")}`);
   }
@@ -159,11 +203,13 @@
   /* ------------------------------------------------------------ cartes -- */
 
   function cardHTML(a) {
-    const badge = a.vendu
-      ? `<span class="badge-sold">${t("sold")}</span>`
-      : a.nouveaute ? `<span class="badge-new">${t("new")}</span>` : "";
-    const price = a.vendu
-      ? `<span class="price sold">${t("sold")}</span>`
+    const badge = a.statut === "vendu"
+      ? `<span class="badge-sold">${t("statut_vendu")}</span>`
+      : a.statut === "reserve"
+        ? `<span class="badge-reserved">${t("statut_reserve")}</span>`
+        : a.nouveaute ? `<span class="badge-new">${t("new")}</span>` : "";
+    const price = a.statut === "vendu"
+      ? `<span class="price sold">${t("statut_vendu")}</span>`
       : `<span class="price">${fmtPrice(a.prixEUR)}</span>`;
     return `
       <article class="card reveal">
@@ -256,31 +302,67 @@
     visual.innerHTML = imgTag(a, { eager: true, sizes: "(max-width: 900px) 94vw, 55vw" });
     visual.addEventListener("click", () => {
       const lb = document.getElementById("lightbox");
-      lb.innerHTML = `<img src="${a.image}" alt="${esc(a.titre)}">`;
+      lb.innerHTML = `<img src="${imgLarge(a)}" alt="${esc(a.titre)}">`;
       lb.classList.add("open");
     });
     document.getElementById("lightbox").addEventListener("click", function () { this.classList.remove("open"); });
 
-    const inCart = store.cart.includes(a.id);
     const desc = store.lang === "en" ? a.desc_en : a.desc_fr;
     const technique = store.lang === "en" ? a.technique_en : a.technique_fr;
+    const statutTxt = t("statut_" + (a.statut || "disponible"));
+
+    // Déclinaisons disponibles à l'achat
+    const produits = (a.produits || []).filter((p) => p.actif !== false);
+    function prodDispo(p) {
+      if (p.key === "original") return a.statut === "disponible";
+      return typeof p.stock !== "number" || p.stock > 0;
+    }
+    function prodNote(p) {
+      if (p.key === "original") return a.statut === "disponible" ? t("statut_disponible") : statutTxt;
+      if (typeof p.stock === "number") {
+        if (p.stock <= 0) return t("sold_out");
+        if (p.stock === 1) return t("last_one");
+        if (p.key === "tirage" && p.edition) return `${p.stock} / ${p.edition} ${t("stock_left")}`;
+        return `${p.stock} ${t("stock_left")}`;
+      }
+      return "";
+    }
+    const firstOk = produits.find(prodDispo);
+    let selectedKey = firstOk ? firstOk.key : null;
+
+    const optionsHTML = produits.map((p) => {
+      const ok = prodDispo(p);
+      return `
+      <label class="prod-option ${ok ? "" : "off"} ${p.key === selectedKey ? "on" : ""}">
+        <input type="radio" name="prod" value="${p.key}" ${p.key === selectedKey ? "checked" : ""} ${ok ? "" : "disabled"}>
+        <span class="prod-info">
+          <span class="prod-name">${produitLabel(p.key)}</span>
+          <span class="prod-note">${prodNote(p)}${p.certificat ? ` · ${t("cert_included")}` : ""}</span>
+        </span>
+        <span class="prod-price">${fmtPrice(p.prixEUR)}</span>
+      </label>`;
+    }).join("");
 
     info.innerHTML = `
       <span class="eyebrow">${colName(a.collection)}</span>
       <h1>${esc(a.titre)}</h1>
-      <div class="price-line">${a.vendu ? `<span class="sold-label">${t("sold")}</span>` : fmtPrice(a.prixEUR)}</div>
+      <div class="price-line" id="price-line">${a.statut === "vendu"
+        ? `<span class="sold-label">${t("statut_vendu")}</span>`
+        : fmtPrice((firstOk || { prixEUR: a.prixEUR }).prixEUR)}</div>
       <p class="story">${desc}</p>
+      <div class="prod-options" id="prod-options">
+        <div class="eyebrow" style="margin-bottom:12px;">${t("choose_format")}</div>
+        ${optionsHTML}
+      </div>
       <dl class="spec-list">
         <div><dt>${t("spec_year")}</dt><dd>${a.annee}</dd></div>
         <div><dt>${t("spec_technique")}</dt><dd>${technique}</dd></div>
         <div><dt>${t("spec_dimensions")}</dt><dd>${a.dimensions}</dd></div>
         <div><dt>${t("spec_collection")}</dt><dd>${colName(a.collection)}</dd></div>
-        <div><dt>${t("spec_availability")}</dt><dd>${a.vendu ? t("sold") : t("available")}</dd></div>
+        <div><dt>${t("spec_availability")}</dt><dd>${statutTxt}</dd></div>
       </dl>
       <div class="btn-row">
-        <button class="btn" id="acquire-btn" ${a.vendu || inCart ? "disabled" : ""}>
-          ${a.vendu ? t("sold") : inCart ? t("in_cart") : t("add_to_cart")}
-        </button>
+        <button class="btn" id="acquire-btn" ${selectedKey ? "" : "disabled"}>${selectedKey ? t("add_to_cart") : t("sold_out")}</button>
         <a class="btn ghost" href="galerie.html">${t("back_gallery")}</a>
       </div>
       <ul class="assurances">
@@ -290,11 +372,23 @@
       </ul>`;
 
     const btn = document.getElementById("acquire-btn");
-    if (btn && !a.vendu && !inCart) {
+    const options = document.getElementById("prod-options");
+    if (options) {
+      options.addEventListener("change", (e) => {
+        if (e.target.name !== "prod") return;
+        selectedKey = e.target.value;
+        options.querySelectorAll(".prod-option").forEach((l) =>
+          l.classList.toggle("on", l.querySelector("input").value === selectedKey));
+        const p = produitOf(a, selectedKey);
+        document.getElementById("price-line").textContent = fmtPrice(p.prixEUR);
+        btn.removeAttribute("disabled");
+        btn.textContent = t("add_to_cart");
+      });
+    }
+    if (btn && selectedKey) {
       btn.addEventListener("click", () => {
-        addToCart(a.id);
-        btn.textContent = t("in_cart");
-        btn.setAttribute("disabled", "");
+        addToCart(a.id, selectedKey);
+        if (selectedKey === "original") { btn.textContent = t("in_cart"); btn.setAttribute("disabled", ""); }
       });
     }
 
@@ -310,48 +404,102 @@
     const emptyEl = document.getElementById("cart-empty");
     if (!listEl) return;
 
+    function cartLines() {
+      return store.cart
+        .map((l) => ({ ...l, art: byId(l.id), produit: byId(l.id) && produitOf(byId(l.id), l.key) }))
+        .filter((l) => l.art && l.produit);
+    }
+
     function draw() {
-      const items = store.cart.map(byId).filter(Boolean);
-      const has = items.length > 0;
+      const lines = cartLines();
+      const has = lines.length > 0;
       listEl.parentElement.style.display = has ? "" : "none";
       emptyEl.style.display = has ? "none" : "";
       if (!has) return;
 
-      listEl.innerHTML = items.map((a) => `
+      listEl.innerHTML = lines.map((l) => `
         <div class="cart-item">
-          <a class="thumb" href="oeuvre.html?id=${a.id}"><img src="${a.image}" alt="${esc(a.titre)}"></a>
+          <a class="thumb" href="oeuvre.html?id=${l.art.id}"><img src="${l.art.image}" alt="${esc(l.art.titre)}"></a>
           <div>
-            <h3>${esc(a.titre)}</h3>
-            <div class="sub">${colName(a.collection)} · ${a.dimensions} · ${a.annee}</div>
-            <button class="remove-btn" data-remove="${a.id}">${t("remove")}</button>
+            <h3>${esc(l.art.titre)}</h3>
+            <div class="sub">${produitLabel(l.key)} · ${l.art.dimensions}</div>
+            ${l.key === "original" ? "" : `
+            <div class="qty-row">
+              <button class="qty-btn" data-qty="-1" data-id="${l.art.id}" data-key="${l.key}">−</button>
+              <span class="qty-val">${l.qty}</span>
+              <button class="qty-btn" data-qty="1" data-id="${l.art.id}" data-key="${l.key}">+</button>
+            </div>`}
+            <button class="remove-btn" data-remove="${l.art.id}" data-key="${l.key}">${t("remove")}</button>
           </div>
-          <div class="price">${fmtPrice(a.prixEUR)}</div>
+          <div class="price">${fmtPrice(l.produit.prixEUR * l.qty)}</div>
         </div>`).join("");
 
-      const total = items.reduce((s, a) => s + a.prixEUR, 0);
+      const total = lines.reduce((s, l) => s + l.produit.prixEUR * l.qty, 0);
       document.getElementById("order-subtotal").textContent = fmtPrice(total);
       document.getElementById("order-total").textContent = fmtPrice(total);
     }
 
     listEl.addEventListener("click", (e) => {
-      const btn = e.target.closest("[data-remove]");
-      if (!btn) return;
-      removeFromCart(btn.dataset.remove);
-      draw();
+      const rm = e.target.closest("[data-remove]");
+      if (rm) { removeFromCart(rm.dataset.remove, rm.dataset.key); draw(); return; }
+      const qb = e.target.closest("[data-qty]");
+      if (qb) {
+        const cart = store.cart;
+        const line = cart.find((x) => x.id === qb.dataset.id && x.key === qb.dataset.key);
+        if (!line) return;
+        const p = produitOf(byId(line.id), line.key);
+        line.qty = Math.max(1, line.qty + Number(qb.dataset.qty));
+        if (typeof p.stock === "number") line.qty = Math.min(line.qty, Math.max(1, p.stock));
+        store.cart = cart;
+        updateCartCount();
+        draw();
+      }
     });
 
     const form = document.getElementById("order-form");
-    if (form) form.addEventListener("submit", (e) => {
+    if (form) form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const items = store.cart.map(byId).filter(Boolean);
-      const total = items.reduce((s, a) => s + a.prixEUR, 0);
+      const lines = cartLines();
+      if (!lines.length) return;
       const data = new FormData(form);
-      const lines = items.map((a) => `• ${a.titre} — ${a.dimensions} — ${fmtPrice(a.prixEUR)}`).join("\n");
-      const body =
-        `${t("order_title")}\n\n${lines}\n\n${t("order_total")}: ${fmtPrice(total)}\n\n` +
-        `${t("f_name")}: ${data.get("name")}\n${t("f_email")}: ${data.get("email")}\n` +
-        `${t("f_country")}: ${data.get("country")}\n\n${data.get("message") || ""}`;
-      location.href = `mailto:${ARTIST_EMAIL}?subject=${encodeURIComponent(t("order_mail_subject"))}&body=${encodeURIComponent(body)}`;
+      const payment = data.get("payment") || "virement";
+      const payload = {
+        items: lines.map((l) => ({ id: l.id, key: l.key, qty: l.qty })),
+        client: {
+          name: data.get("name"), email: data.get("email"),
+          country: data.get("country"), message: data.get("message"),
+          mode: data.get("mode") || "livraison", payment
+        }
+      };
+      const submitBtn = form.querySelector("button[type=submit]");
+      submitBtn.setAttribute("disabled", "");
+      try {
+        const r = await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (!r.ok) throw new Error();
+        const { orderId } = await r.json();
+        if (payment === "card") {
+          const c = await fetch("/api/checkout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ items: payload.items })
+          });
+          if (c.ok) {
+            const { url } = await c.json();
+            store.cart = [];
+            location.href = url;
+            return;
+          }
+        }
+        store.cart = [];
+        location.href = `merci.html?cmd=${encodeURIComponent(orderId)}`;
+      } catch {
+        submitBtn.removeAttribute("disabled");
+        toast(t("news_err"));
+      }
     });
 
     draw();
@@ -430,6 +578,7 @@
 
   document.addEventListener("DOMContentLoaded", async () => {
     await loadCatalogue();
+    if (typeof normalizeArtworks === "function") normalizeArtworks(ARTWORKS);
 
     renderHeader();
     renderFooter();

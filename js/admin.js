@@ -96,6 +96,7 @@
     };
     catalogue.uiTexts.fr = catalogue.uiTexts.fr || {};
     catalogue.uiTexts.en = catalogue.uiTexts.en || {};
+    if (typeof normalizeArtworks === "function") normalizeArtworks(catalogue.artworks);
   }
 
   /* ----------------------------------------------------------- œuvres -- */
@@ -121,9 +122,25 @@
         <div class="f span4"><label>Description (FR)</label><textarea data-k="desc_fr">${esc(a.desc_fr)}</textarea></div>
         <div class="f span4"><label>Description (EN)</label><textarea data-k="desc_en">${esc(a.desc_en)}</textarea></div>
         <div class="aw-flags">
-          <label class="flag"><input type="checkbox" data-k="vendu" ${a.vendu ? "checked" : ""}> Œuvre vendue</label>
+          <label class="flag">Statut
+            <select data-k="statut">
+              <option value="disponible" ${(a.statut || "disponible") === "disponible" ? "selected" : ""}>Disponible</option>
+              <option value="reserve" ${a.statut === "reserve" ? "selected" : ""}>Réservée</option>
+              <option value="vendu" ${a.statut === "vendu" || a.vendu ? "selected" : ""}>Vendue</option>
+            </select>
+          </label>
           <label class="flag"><input type="checkbox" data-k="nouveaute" ${a.nouveaute ? "checked" : ""}> Nouveauté</label>
           <button type="button" class="aw-delete" data-act="delete">Supprimer cette œuvre</button>
+        </div>
+        <div class="produits-rows">
+          ${(a.produits || []).map((p, pi) => `
+          <div class="prod-row" data-pi="${pi}">
+            <label class="flag"><input type="checkbox" data-pk="actif" ${p.actif !== false ? "checked" : ""}>
+              ${({ original: "Original", tirage: "Tirage limité", affiche: "Affiche" })[p.key] || p.key}</label>
+            <span class="prod-field">Prix € <input type="number" data-pk="prixEUR" value="${p.prixEUR}"></span>
+            ${p.key === "original" ? "" : `<span class="prod-field">Stock <input type="number" data-pk="stock" value="${p.stock ?? ""}"></span>`}
+            ${p.key === "tirage" ? `<span class="prod-field">Édition de <input type="number" data-pk="edition" value="${p.edition ?? ""}"></span>` : ""}
+          </div>`).join("")}
         </div>
       </div>
     </article>`;
@@ -216,6 +233,101 @@
         <input data-lang="fr" placeholder="FR — ${esc(I18N.fr[key] || "")}" value="${esc(catalogue.uiTexts.fr[key] || "")}">
         <input data-lang="en" placeholder="EN — ${esc(I18N.en[key] || "")}" value="${esc(catalogue.uiTexts.en[key] || "")}">
       </div>`).join("");
+  }
+
+  /* -------------------------------------------------------- commandes -- */
+
+  const STATUTS_CMD = { nouvelle: "🆕 Nouvelle", payee: "💰 Payée", expediee: "📦 Expédiée", terminee: "✅ Terminée", annulee: "✖ Annulée" };
+  const PRODUIT_NOMS = { original: "Original", tirage: "Tirage limité", affiche: "Affiche" };
+
+  async function renderOrders() {
+    const el = $("#orders-list");
+    el.innerHTML = `<p class="stats-note">Chargement…</p>`;
+    const orders = await fetch("/api/orders").then((r) => r.json()).catch(() => []);
+    if (!orders.length) { el.innerHTML = `<p class="metric-empty">Aucune commande pour le moment — elles apparaîtront ici dès la première demande.</p>`; return; }
+    el.innerHTML = orders.map((o) => `
+      <article class="aw-card order-card" data-oid="${esc(o.id)}" style="grid-template-columns: 1fr;">
+        <div>
+          <div class="order-head">
+            <strong>${esc(o.id)}</strong>
+            <span>${new Date(o.date).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</span>
+            <select class="order-statut">
+              ${Object.entries(STATUTS_CMD).map(([k, v]) => `<option value="${k}" ${o.statut === k ? "selected" : ""}>${v}</option>`).join("")}
+            </select>
+          </div>
+          <div class="order-lines">
+            ${o.lines.map((l) => `<div>• ${esc(l.titre)} — ${PRODUIT_NOMS[l.key] || l.key}${l.qty > 1 ? ` × ${l.qty}` : ""} — ${l.prixEUR * l.qty} €</div>`).join("")}
+          </div>
+          <div class="order-client">
+            <strong>${esc(o.client.name)}</strong> · <a href="mailto:${esc(o.client.email)}">${esc(o.client.email)}</a>
+            ${o.client.country ? " · " + esc(o.client.country) : ""}
+            · ${o.mode === "retrait" ? "Retrait à Tahiti" : "Livraison"}
+            · ${({ card: "Carte", virement: "Virement", paypal: "PayPal" })[o.payment] || o.payment}
+            — <strong>${o.totalEUR} €</strong>
+            ${o.client.message ? `<div class="order-msg">« ${esc(o.client.message)} »</div>` : ""}
+          </div>
+        </div>
+      </article>`).join("");
+
+    el.querySelectorAll(".order-statut").forEach((sel) =>
+      sel.addEventListener("change", async () => {
+        await fetch("/api/orders/statut", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: sel.closest(".order-card").dataset.oid, statut: sel.value })
+        });
+        toast("Statut de commande mis à jour ✓");
+      }));
+  }
+
+  /* ---------------------------------------------------------- clients -- */
+
+  let contactsCache = [];
+
+  async function renderClients() {
+    const el = $("#contacts-list");
+    el.innerHTML = `<p class="stats-note">Chargement…</p>`;
+    contactsCache = await fetch("/api/contacts").then((r) => r.json()).catch(() => []);
+    if (!contactsCache.length) { el.innerHTML = `<p class="metric-empty">Aucun contact pour le moment. Les acheteurs et abonnés à la newsletter apparaîtront ici automatiquement.</p>`; return; }
+    const badge = { commande: "🛒 client", newsletter: "💌 newsletter", manuel: "✍️ ajouté" };
+    el.innerHTML = `
+      <div class="contacts-table">
+        <div class="ct-row ct-head">
+          <span><input type="checkbox" id="ct-all"></span>
+          <span>Nom</span><span>Email</span><span>Pays</span><span>Source</span><span>Cmd.</span><span></span>
+        </div>
+        ${contactsCache.map((c, i) => `
+        <div class="ct-row" data-ci="${i}">
+          <span><input type="checkbox" class="ct-check" data-email="${esc(c.email)}"></span>
+          <span>${esc(c.name || "—")}</span>
+          <span><a href="mailto:${esc(c.email)}">${esc(c.email)}</a></span>
+          <span>${esc(c.country || "—")}</span>
+          <span class="ct-src">${(c.sources || []).map((s) => badge[s] || s).join(" ")}</span>
+          <span>${c.orders || 0}${c.totalEUR ? ` (${c.totalEUR} €)` : ""}</span>
+          <span><button class="aw-delete ct-del" data-email="${esc(c.email)}">retirer</button></span>
+        </div>`).join("")}
+      </div>`;
+
+    $("#ct-all").addEventListener("change", (e) =>
+      el.querySelectorAll(".ct-check").forEach((c) => { c.checked = e.target.checked; }));
+    el.querySelectorAll(".ct-del").forEach((b) =>
+      b.addEventListener("click", async () => {
+        if (!confirm(`Retirer ${b.dataset.email} des contacts ?`)) return;
+        await fetch("/api/contacts", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: b.dataset.email }) });
+        renderClients();
+      }));
+  }
+
+  function inviteSelection() {
+    const emails = [...document.querySelectorAll(".ct-check:checked")].map((c) => c.dataset.email);
+    if (!emails.length) { toast("Cochez d'abord des contacts à inviter."); return; }
+    const today = new Date().toISOString().slice(0, 10);
+    const next = (catalogue.events || []).filter((e) => e.date >= today).sort((a, b) => a.date.localeCompare(b.date))[0];
+    const sujet = next ? `Invitation — ${next.titre}` : "Invitation — Galerie Pascal Sun";
+    const corps = next
+      ? `Ia ora na,\n\nJ'ai le plaisir de vous inviter à « ${next.titre} »\n${next.lieu} · ${next.ville}\nle ${new Date(next.date + "T00:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}${next.heure ? " à " + next.heure : ""}.\n\n${next.desc_fr || ""}\n\nAu plaisir de vous y retrouver,\nPascal Sun\nhttps://pascal-sun.com`
+      : `Ia ora na,\n\nDécouvrez les nouvelles œuvres de la galerie :\nhttps://pascal-sun.com\n\nPascal Sun`;
+    location.href = `mailto:?bcc=${encodeURIComponent(emails.join(","))}&subject=${encodeURIComponent(sujet)}&body=${encodeURIComponent(corps)}`;
   }
 
   /* ------------------------------------------------------ statistiques -- */
@@ -362,7 +474,22 @@
         document.querySelectorAll(".admin-tabs .tab").forEach((x) => x.classList.toggle("active", x === t));
         document.querySelectorAll(".pane").forEach((p) => p.classList.toggle("active", p.dataset.pane === t.dataset.tab));
         if (t.dataset.tab === "stats" && statsLoadedDays === null) loadStats(7);
+        if (t.dataset.tab === "commandes") renderOrders();
+        if (t.dataset.tab === "clients") renderClients();
       }));
+
+    $("#invite-btn").addEventListener("click", inviteSelection);
+    $("#add-contact").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const d = new FormData(e.target);
+      const r = await fetch("/api/contacts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: d.get("email"), name: d.get("name"), country: d.get("country") })
+      });
+      if (r.ok) { e.target.reset(); toast("Contact ajouté ✓"); renderClients(); }
+      else toast("Email invalide.");
+    });
 
     $("#period-chips").addEventListener("click", (e) => {
       const b = e.target.closest("[data-days]");
@@ -400,13 +527,27 @@
     const list = $("#artwork-list");
     list.addEventListener("input", (e) => {
       const card = e.target.closest(".aw-card");
-      const k = e.target.dataset.k;
-      if (!card || !k) return;
+      if (!card) return;
       const a = catalogue.artworks[+card.dataset.i];
+
+      const pk = e.target.dataset.pk;
+      if (pk) {
+        const row = e.target.closest(".prod-row");
+        const p = (a.produits || [])[+row.dataset.pi];
+        if (!p) return;
+        if (e.target.type === "checkbox") p[pk] = e.target.checked;
+        else p[pk] = e.target.value === "" ? null : Number(e.target.value);
+        markDirty();
+        return;
+      }
+
+      const k = e.target.dataset.k;
+      if (!k) return;
       if (e.target.type === "checkbox") a[k] = e.target.checked;
       else if (e.target.type === "number") a[k] = Number(e.target.value) || 0;
       else a[k] = e.target.value;
       if (k === "titre") a.id = slugify(a.titre);
+      if (k === "statut") a.vendu = e.target.value === "vendu";
       markDirty();
     });
     list.addEventListener("click", (e) => {

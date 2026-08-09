@@ -7,8 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=3">
-  <link rel="stylesheet" href="css/effects.css?v=3">
+  <link rel="stylesheet" href="css/style.css?v=4">
+  <link rel="stylesheet" href="css/effects.css?v=4">
   <script defer src="https://stats.pascal-sun.com/script.js" data-website-id="56116cc3-d031-4382-9868-905e305b96e5"></script>
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#f7f3ec">
@@ -57,6 +57,21 @@
               <input id="of-country" name="country" required autocomplete="country-name">
             </div>
             <div class="field">
+              <label data-i18n="delivery_mode"></label>
+              <div class="choice-group">
+                <label class="choice"><input type="radio" name="mode" value="livraison" checked><span data-i18n="delivery_ship"></span></label>
+                <label class="choice"><input type="radio" name="mode" value="retrait"><span data-i18n="delivery_pickup"></span></label>
+              </div>
+            </div>
+            <div class="field">
+              <label data-i18n="payment_method"></label>
+              <div class="choice-group">
+                <label class="choice"><input type="radio" name="payment" value="card" checked><span data-i18n="pay_card"></span></label>
+                <label class="choice"><input type="radio" name="payment" value="virement"><span data-i18n="pay_transfer"></span></label>
+                <label class="choice"><input type="radio" name="payment" value="paypal"><span data-i18n="pay_paypal"></span></label>
+              </div>
+            </div>
+            <div class="field">
               <label for="of-message" data-i18n="f_message"></label>
               <textarea id="of-message" name="message" data-i18n-ph="f_message_ph"></textarea>
             </div>
@@ -70,8 +85,8 @@
 
   <footer class="site-footer" id="site-footer"></footer>
 
-  <script src="js/data.js?v=3"></script>
-  <script src="js/app.js?v=3"></script>
-  <script src="js/effects.js?v=3"></script>
+  <script src="js/data.js?v=4"></script>
+  <script src="js/app.js?v=4"></script>
+  <script src="js/effects.js?v=4"></script>
 </body>
 </html>

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/admin.css?v=3">
+  <link rel="stylesheet" href="css/admin.css?v=4">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='38' fill='%2316130f'/></svg>">
 </head>
 <body>
@@ -32,6 +32,8 @@
       <nav class="admin-tabs">
         <button class="tab active" data-tab="oeuvres">Œuvres</button>
         <button class="tab" data-tab="expos">Vernissages</button>
+        <button class="tab" data-tab="commandes">Commandes</button>
+        <button class="tab" data-tab="clients">Clients</button>
         <button class="tab" data-tab="textes">Textes &amp; boutons</button>
         <button class="tab" data-tab="stats">Statistiques</button>
       </nav>
@@ -64,6 +66,38 @@
           <button class="solid-btn" id="add-event">+ Nouveau vernissage</button>
         </div>
         <div class="artwork-list" id="event-list"></div>
+      </section>
+
+      <!-- COMMANDES -->
+      <section class="pane" data-pane="commandes">
+        <div class="pane-head">
+          <div>
+            <h2>Commandes</h2>
+            <p>Chaque commande réserve automatiquement l'original et décompte le stock des tirages. Mettez à jour le statut au fil du paiement et de l'expédition.</p>
+          </div>
+        </div>
+        <div id="orders-list" class="artwork-list"></div>
+      </section>
+
+      <!-- CLIENTS -->
+      <section class="pane" data-pane="clients">
+        <div class="pane-head">
+          <div>
+            <h2>Clients &amp; contacts</h2>
+            <p>Acheteurs, abonnés à la lettre de l'atelier et contacts ajoutés à la main. Sélectionnez des contacts pour leur envoyer une invitation à un vernissage.</p>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="solid-btn" id="invite-btn">✉ Inviter la sélection</button>
+            <a class="ghost-btn" href="/api/contacts.csv" download>Exporter CSV</a>
+          </div>
+        </div>
+        <form id="add-contact" class="contact-add">
+          <input name="name" placeholder="Nom">
+          <input name="email" type="email" placeholder="Email *" required>
+          <input name="country" placeholder="Pays">
+          <button class="solid-btn" type="submit">+ Ajouter</button>
+        </form>
+        <div id="contacts-list"></div>
       </section>
 
       <!-- TEXTES -->
@@ -127,7 +161,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="js/data.js?v=3"></script>
-  <script src="js/admin.js?v=3"></script>
+  <script src="js/data.js?v=4"></script>
+  <script src="js/admin.js?v=4"></script>
 </body>
 </html>

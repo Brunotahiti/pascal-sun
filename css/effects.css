@@ -201,8 +201,8 @@
   padding: 30px 0;
   background-color: var(--paper);
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='8'%3E%3Cpath d='M0 0 5.5 8 11 0Z M11 0 16.5 8 22 0Z' fill='%23d4593a' opacity='.35'/%3E%3C/svg%3E"),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='8'%3E%3Cpath d='M0 8 5.5 0 11 8Z M11 8 16.5 0 22 8Z' fill='%23d4593a' opacity='.35'/%3E%3C/svg%3E");
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='9'%3E%3Cpath d='M0 5 Q6.5 0 13 5 T26 5' fill='none' stroke='%232f9aa3' stroke-width='2.2' stroke-linecap='round' opacity='.5'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='9'%3E%3Cpath d='M0 5 Q6.5 0 13 5 T26 5' fill='none' stroke='%232f9aa3' stroke-width='2.2' stroke-linecap='round' opacity='.5'/%3E%3C/svg%3E");
   background-position: top center, bottom center;
   background-repeat: repeat-x, repeat-x;
   white-space: nowrap;
