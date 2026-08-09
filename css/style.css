@@ -22,6 +22,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html { scroll-behavior: smooth; }
+html, body { overflow-x: clip; } /* aucun débordement horizontal sur mobile */
 
 body {
   background: var(--paper);
@@ -196,6 +197,18 @@ a { color: inherit; text-decoration: none; }
 /* mobile nav */
 .burger { display: none; background: none; border: 0; cursor: pointer; padding: 8px; }
 .burger span { display: block; width: 24px; height: 2px; background: var(--ink); margin: 5px 0; transition: .3s; }
+
+/* Mobile : barre compacte qui tient dans l'écran */
+@media (max-width: 640px) {
+  .site-header .bar { gap: 8px; height: 60px; }
+  .brand { font-size: 21px; }
+  .brand small { display: none; }
+  .header-tools { gap: 6px; }
+  .tool-select { padding: 5px 8px; font-size: 10px; letter-spacing: .06em; }
+  .cart-btn { padding: 6px 10px; font-size: 10px; gap: 5px; }
+  .cart-count { min-width: 17px; height: 17px; font-size: 10px; }
+  .nav { inset: 60px 0 auto 0 !important; }
+}
 
 @media (max-width: 900px) {
   .burger { display: block; }
