@@ -54,6 +54,26 @@
     return c.position === "before" ? `${c.symbol}${num}` : `${num} ${c.symbol}`;
   }
 
+  /* -------------------------------------------- installation de l'app -- */
+
+  let deferredInstall = null;
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredInstall = e;
+  });
+
+  function installApp() {
+    const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+    if (standalone) { toast(t("app_done")); return; }
+    if (deferredInstall) {
+      deferredInstall.prompt();
+      deferredInstall.userChoice.finally(() => { deferredInstall = null; });
+      return;
+    }
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    toast(ios ? t("app_ios_hint") : t("app_hint"));
+  }
+
   /* --------------------------------------------------- header / footer -- */
 
   function renderHeader() {
@@ -126,6 +146,7 @@
             <li>${t("footer_secure")}</li>
             <li><a href="mailto:${ARTIST_EMAIL}">${ARTIST_EMAIL}</a></li>
           </ul>
+          <button class="app-install-btn" id="pwa-install">${t("app_install")}</button>
           <div class="newsletter">
             <h4>${t("news_t")}</h4>
             <p class="news-p">${t("news_p")}</p>
@@ -141,6 +162,9 @@
         <span>${t("footer_rights")}</span>
         <span>${t("footer_made")} · <a href="/admin" rel="nofollow">Admin</a></span>
       </div>`;
+
+    const ib = document.getElementById("pwa-install");
+    if (ib) ib.addEventListener("click", installApp);
 
     const nf = document.getElementById("newsletter-form");
     if (nf) nf.addEventListener("submit", async (e) => {
@@ -678,6 +702,12 @@
   }
 
   document.addEventListener("DOMContentLoaded", async () => {
+    // Rendu immédiat (données embarquées) : aucun saut de mise en page,
+    // puis rafraîchissement silencieux une fois le catalogue chargé.
+    renderHeader();
+    renderFooter();
+    applyI18n();
+
     await loadCatalogue();
     if (typeof normalizeArtworks === "function") normalizeArtworks(ARTWORKS);
 

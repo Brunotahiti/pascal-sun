@@ -97,6 +97,7 @@ a { color: inherit; text-decoration: none; }
   background: color-mix(in srgb, var(--paper) 88%, transparent);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);
+  min-height: 75px; /* réserve l'espace avant l'injection du contenu */
 }
 
 .site-header .bar {
@@ -577,6 +578,25 @@ a { color: inherit; text-decoration: none; }
 }
 .choice:has(input:checked) { border-color: var(--accent); }
 .choice input { accent-color: var(--accent); }
+
+/* ---------------------------------------------------- installer l'app -- */
+
+.app-install-btn {
+  margin-top: 18px;
+  background: var(--accent);
+  color: #fff;
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 20px;
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: filter .2s, transform .2s;
+}
+.app-install-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
 
 /* ---------------------------------------------------------- newsletter -- */
 

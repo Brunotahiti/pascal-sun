@@ -441,6 +441,49 @@ button { font-family: var(--sans); cursor: pointer; }
 .compose-panel textarea { resize: vertical; }
 .compose-status { font-size: 13px; color: var(--accent); font-weight: 700; }
 
+/* ---------------------------------------------------------- recadrage -- */
+
+.photo-btns { position: absolute; inset: auto 10px 10px 10px; display: grid; gap: 6px; }
+.photo-btns .replace-btn { position: static; }
+.photo-btns .crop { background: rgba(212, 89, 58, .9); }
+
+.crop-modal {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(22, 19, 15, .8);
+  display: grid; place-items: center;
+  padding: 18px;
+}
+.crop-box {
+  background: var(--paper);
+  border-radius: 8px;
+  padding: 22px;
+  max-width: min(860px, 96vw);
+  width: 100%;
+}
+.crop-box h3 { font-family: var(--serif); font-size: 24px; font-weight: 600; }
+.crop-hint { font-size: 13px; color: var(--ink-faint); margin: 4px 0 14px; }
+.crop-stage { position: relative; display: inline-block; max-width: 100%; user-select: none; }
+.crop-stage img { max-width: 100%; max-height: 62vh; display: block; }
+.crop-rect {
+  position: absolute;
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 9999px rgba(22, 19, 15, .55);
+  cursor: move;
+  touch-action: none;
+}
+.ch {
+  position: absolute;
+  width: 18px; height: 18px;
+  background: #fff;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+}
+.ch.nw { top: -10px; left: -10px; cursor: nwse-resize; }
+.ch.ne { top: -10px; right: -10px; cursor: nesw-resize; }
+.ch.sw { bottom: -10px; left: -10px; cursor: nesw-resize; }
+.ch.se { bottom: -10px; right: -10px; cursor: nwse-resize; }
+.crop-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
+
 /* -------------------------------------------------------------- toast -- */
 
 .toast {

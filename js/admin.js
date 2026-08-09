@@ -113,7 +113,10 @@
     <article class="aw-card" data-i="${i}">
       <div class="aw-photo">
         <img src="${esc(a.image)}" alt="">
-        <button type="button" class="replace-btn" data-act="photo">Remplacer la photo</button>
+        <div class="photo-btns">
+          <button type="button" class="replace-btn" data-act="photo">Remplacer</button>
+          <button type="button" class="replace-btn crop" data-act="recrop">✂ Recadrer</button>
+        </div>
         <input type="file" accept="image/*" hidden>
       </div>
       <div class="aw-fields">
@@ -159,6 +162,100 @@
       .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "oeuvre";
   }
 
+  /* ------------------------------------------------------- recadrage -- */
+  /* Éditeur de recadrage : cadre déplaçable et redimensionnable par les
+     coins, export WebP max 1600 px. Résout avec un Blob, ou null si annulé. */
+
+  function openCropper(src) {
+    return new Promise((resolve) => {
+      const modal = document.createElement("div");
+      modal.className = "crop-modal";
+      modal.innerHTML = `
+        <div class="crop-box">
+          <h3>Recadrer la photo</h3>
+          <p class="crop-hint">Déplacez le cadre, tirez les coins. Ne gardez que la toile.</p>
+          <div class="crop-stage"><img alt=""><div class="crop-rect">
+            <span class="ch nw"></span><span class="ch ne"></span><span class="ch sw"></span><span class="ch se"></span>
+          </div></div>
+          <div class="crop-actions">
+            <button class="ghost-btn" data-c="cancel">Annuler</button>
+            <button class="ghost-btn" data-c="all">Garder tout</button>
+            <button class="solid-btn" data-c="ok">✓ Valider le recadrage</button>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+
+      const img = modal.querySelector("img");
+      const rect = modal.querySelector(".crop-rect");
+      const stage = modal.querySelector(".crop-stage");
+      let r = { x: 0, y: 0, w: 0, h: 0 };
+
+      function applyRect() {
+        rect.style.left = r.x + "px"; rect.style.top = r.y + "px";
+        rect.style.width = r.w + "px"; rect.style.height = r.h + "px";
+      }
+
+      img.onload = () => {
+        const dw = img.clientWidth, dh = img.clientHeight;
+        r = { x: dw * 0.05, y: dh * 0.05, w: dw * 0.9, h: dh * 0.9 };
+        applyRect();
+      };
+      img.crossOrigin = "anonymous";
+      img.src = src;
+
+      let drag = null;
+      rect.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        rect.setPointerCapture(e.pointerId);
+        const handle = e.target.classList.contains("ch") ? e.target.className.split(" ")[1] : "move";
+        drag = { handle, sx: e.clientX, sy: e.clientY, r0: { ...r } };
+      });
+      rect.addEventListener("pointermove", (e) => {
+        if (!drag) return;
+        const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
+        const dw = img.clientWidth, dh = img.clientHeight, m = 24;
+        let { x, y, w, h } = drag.r0;
+        if (drag.handle === "move") { x += dx; y += dy; }
+        if (drag.handle === "nw") { x += dx; y += dy; w -= dx; h -= dy; }
+        if (drag.handle === "ne") { y += dy; w += dx; h -= dy; }
+        if (drag.handle === "sw") { x += dx; w -= dx; h += dy; }
+        if (drag.handle === "se") { w += dx; h += dy; }
+        w = Math.max(m, w); h = Math.max(m, h);
+        x = Math.max(0, Math.min(x, dw - w)); y = Math.max(0, Math.min(y, dh - h));
+        w = Math.min(w, dw - x); h = Math.min(h, dh - y);
+        r = { x, y, w, h };
+        applyRect();
+      });
+      rect.addEventListener("pointerup", () => { drag = null; });
+
+      function finish(blob) { modal.remove(); resolve(blob); }
+
+      function exportCrop(full) {
+        const sc = img.naturalWidth / img.clientWidth;
+        const sx = full ? 0 : r.x * sc, sy = full ? 0 : r.y * sc;
+        const sw = full ? img.naturalWidth : r.w * sc, sh = full ? img.naturalHeight : r.h * sc;
+        const MAX = 1600;
+        const out = Math.min(1, MAX / Math.max(sw, sh));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(sw * out); canvas.height = Math.round(sh * out);
+        canvas.getContext("2d").drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((b) => finish(b), "image/webp", 0.86);
+      }
+
+      modal.querySelector('[data-c="cancel"]').addEventListener("click", () => finish(null));
+      modal.querySelector('[data-c="all"]').addEventListener("click", () => exportCrop(true));
+      modal.querySelector('[data-c="ok"]').addEventListener("click", () => exportCrop(false));
+    });
+  }
+
+  async function uploadBlob(card, blob, name) {
+    const fd = new FormData();
+    fd.append("file", blob, name);
+    const r = await fetch("/api/upload", { method: "POST", body: fd });
+    if (!r.ok) throw new Error("upload");
+    return (await r.json()).path;
+  }
+
   /* Réduction de la photo dans le navigateur : max 1600 px, WebP q.85. */
   function shrinkImage(file) {
     return new Promise((resolve, reject) => {
@@ -179,24 +276,35 @@
   }
 
   async function uploadPhoto(card, file) {
+    const a = catalogue.artworks[+card.dataset.i];
+    // Ouvre l'éditeur de recadrage sur la photo choisie
+    const url = URL.createObjectURL(file);
+    const blob = await openCropper(url);
+    URL.revokeObjectURL(url);
+    if (!blob) return;
+    await applyNewPhoto(card, a, blob);
+  }
+
+  async function recropPhoto(card) {
+    const a = catalogue.artworks[+card.dataset.i];
+    const blob = await openCropper(a.image);
+    if (!blob) return;
+    await applyNewPhoto(card, a, blob);
+  }
+
+  async function applyNewPhoto(card, a, blob) {
     const photoBox = $(".aw-photo", card);
     const overlay = document.createElement("div");
     overlay.className = "uploading";
-    overlay.textContent = "Optimisation…";
+    overlay.textContent = "Envoi…";
     photoBox.appendChild(overlay);
     try {
-      const blob = await shrinkImage(file);
-      overlay.textContent = "Envoi…";
-      const fd = new FormData();
-      const a = catalogue.artworks[+card.dataset.i];
-      fd.append("file", blob, `${slugify(a.titre)}.webp`);
-      const r = await fetch("/api/upload", { method: "POST", body: fd });
-      if (!r.ok) throw new Error("upload");
-      const { path } = await r.json();
+      const path = await uploadBlob(card, blob, `${slugify(a.titre)}.webp`);
       a.image = path;
+      a.images = null; // la nouvelle photo remplace les variantes responsives
       $("img", photoBox).src = path;
       markDirty();
-      toast("Photo remplacée — pensez à enregistrer.");
+      toast("Photo mise à jour — pensez à enregistrer.");
     } catch {
       toast("Échec de l'envoi de la photo.");
     } finally {
@@ -615,6 +723,7 @@
       if (!card) return;
       const act = e.target.dataset.act;
       if (act === "photo") $("input[type=file]", card).click();
+      if (act === "recrop") recropPhoto(card);
       if (act === "delete" && confirm("Supprimer définitivement cette œuvre du site ?")) {
         catalogue.artworks.splice(+card.dataset.i, 1);
         renderArtworks();

@@ -15,8 +15,8 @@
 ::view-transition-new(root) {
   animation: vt-in .65s cubic-bezier(.22, .61, .21, 1) both;
 }
-@keyframes vt-out { to { opacity: 0; transform: translateY(-18px); } }
-@keyframes vt-in  { from { opacity: 0; transform: translateY(26px); } }
+@keyframes vt-out { to { opacity: 0; } }
+@keyframes vt-in  { from { opacity: 0; } }
 
 /* --------------------------------------------------- barre de progrès -- */
 
@@ -172,25 +172,8 @@
 }
 .card:hover .frame img { transform: scale(1.05); }
 
-/* parallaxe interne au défilement (navigateurs récents) */
-@supports (animation-timeline: view()) {
-  .card .frame img {
-    animation: card-par linear both;
-    animation-timeline: view();
-    animation-range: entry 0% cover 100%;
-  }
-  @keyframes card-par {
-    from { transform: scale(1.06) translateY(2%); }
-    to   { transform: scale(1.06) translateY(-2%); }
-  }
-  .card:hover .frame img { animation-play-state: paused; }
-
-  .page-head, .quote-block { animation: rise-fade linear both; animation-timeline: view(); animation-range: entry 0% entry 80%; }
-  @keyframes rise-fade {
-    from { opacity: 0; transform: translateY(46px); }
-    to   { opacity: 1; transform: none; }
-  }
-}
+/* (la parallaxe interne des toiles a été retirée : elle rognait les
+   compositions et faisait « sauter » les photos au chargement) */
 
 /* --------------------------------------------------------- marquee -- */
 
@@ -255,33 +238,27 @@ body { animation: page-in .7s var(--ease); }
 .intro.done { transform: translateY(-101%); }
 .intro-scene { text-align: center; }
 
-.intro-horizon {
-  position: relative;
-  width: min(340px, 70vw);
-  height: 150px;
-  margin: 0 auto 34px;
-  overflow: hidden;
+.intro-scene-svg {
+  width: min(480px, 84vw);
+  height: auto;
+  margin: 0 auto 26px;
+  display: block;
+  animation: intro-fadeup 1s var(--ease) both;
 }
-.intro-horizon::after {
-  content: "";
-  position: absolute;
-  left: 0; right: 0; bottom: 0;
-  border-bottom: 2px solid var(--ink);
-  animation: intro-line 1s var(--ease) both;
-}
-@keyframes intro-line { from { transform: scaleX(0); } }
-.intro-sun {
-  position: absolute;
-  left: 50%;
-  bottom: -60px;
-  width: 132px;
-  height: 132px;
-  margin-left: -66px;
-  animation: intro-sunrise 1.4s cubic-bezier(.22, .61, .21, 1) .25s both;
+@keyframes intro-fadeup { from { opacity: 0; transform: translateY(18px); } }
+.intro-sunrise {
+  animation: intro-sunrise 1.6s cubic-bezier(.22, .61, .21, 1) .3s both;
 }
 @keyframes intro-sunrise {
-  from { transform: translateY(120px) scale(.7); opacity: 0; }
-  to   { transform: translateY(0) scale(1); opacity: 1; }
+  from { transform: translateY(70px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+.intro-lagon {
+  animation: intro-lagon 1.2s var(--ease) .55s both;
+}
+@keyframes intro-lagon {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
 }
 
 .intro-name {
