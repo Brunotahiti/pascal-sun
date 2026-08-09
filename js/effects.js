@@ -38,8 +38,8 @@
       c === " " ? "<span style='width:.5em'></span>"
         : `<span class="${i >= 7 ? "sun" : ""}" style="--i:${i}">${c}</span>`
     ).join("");
-    // Lever de soleil sur Moorea : soleil pur (sans rayons), silhouette de
-    // l'île, cocotiers penchés et vague du lagon.
+    // Un pinceau dessine la scène : horizon, silhouette de Moorea, soleil,
+    // puis le lagon et le reflet — comme une toile qui naît sous nos yeux.
     const POLYNESIE = `<svg class="intro-scene-svg" viewBox="0 0 480 235" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <defs>
         <radialGradient id="ihalo" cx="50%" cy="50%" r="50%">
@@ -52,37 +52,37 @@
           <stop offset="100%" stop-color="#8fd0c6" stop-opacity=".22"/>
         </linearGradient>
       </defs>
-      <g class="intro-sunrise">
-        <circle cx="300" cy="128" r="98" fill="url(#ihalo)"/>
-        <circle cx="300" cy="128" r="46" fill="#d4593a"/>
+      <!-- lagon : la couleur monte à la fin, comme un lavis -->
+      <path class="i-lagon" d="M14 158 H 466 V 226 H 14 Z" fill="url(#ilagon)"/>
+      <!-- soleil derrière l'île -->
+      <circle class="i-halo" cx="300" cy="128" r="98" fill="url(#ihalo)"/>
+      <circle class="i-sun-fill" cx="300" cy="128" r="46" fill="#d4593a"/>
+      <circle class="i-sun-stroke" cx="300" cy="128" r="46" fill="none" stroke="#d4593a" stroke-width="3.5" pathLength="1"/>
+      <!-- Moorea : le trait d'abord, l'encre ensuite -->
+      <path class="i-moorea-fill" d="M120 158 L200 74 L236 118 L268 96 L330 150 L400 122 L462 158 Z" fill="#16130f"/>
+      <path class="i-moorea" d="M120 158 L200 74 L236 118 L268 96 L330 150 L400 122 L462 158" fill="none" stroke="#16130f" stroke-width="3.5" stroke-linejoin="round" pathLength="1"/>
+      <!-- horizon -->
+      <path class="i-horizon" d="M14 158 H 466" stroke="#16130f" stroke-width="3" stroke-linecap="round" pathLength="1" fill="none"/>
+      <!-- reflet du soleil -->
+      <g stroke="#d4593a" stroke-width="4" stroke-linecap="round" fill="none">
+        <path class="i-r" style="--d:2.15s" d="M272 172 h 56" pathLength="1"/>
+        <path class="i-r" style="--d:2.3s" d="M284 186 h 34" pathLength="1"/>
+        <path class="i-r" style="--d:2.45s" d="M292 200 h 18" pathLength="1"/>
       </g>
-      <!-- silhouette de Moorea -->
-      <path d="M120 158 L200 74 L236 118 L268 96 L330 150 L400 122 L462 158 Z" fill="#16130f" opacity=".9"/>
-      <!-- cocotiers penchés -->
-      <g stroke="#16130f" stroke-linecap="round" fill="none">
-        <path d="M60 158 Q 58 110 84 84" stroke-width="5"/>
-        <path d="M84 84 q -30 -14 -52 -2 M84 84 q -2 -26 -22 -36 M84 84 q 28 -14 48 -2 M84 84 q 22 -22 16 -42 M84 84 q -8 22 -30 26" stroke-width="3.5"/>
-        <path d="M30 158 Q 34 128 22 112" stroke-width="4"/>
-        <path d="M22 112 q -18 -8 -30 0 M22 112 q 2 -16 -10 -24 M22 112 q 18 -10 30 -2 M22 112 q 12 -14 8 -26" stroke-width="3"/>
+      <!-- écume -->
+      <g stroke="#f7f3ec" stroke-width="2.5" stroke-linecap="round" fill="none">
+        <path class="i-w" style="--d:1.9s" d="M60 176 Q 72 170 84 176 T 108 176" pathLength="1"/>
+        <path class="i-w" style="--d:2.05s" d="M150 192 Q 162 186 174 192 T 198 192" pathLength="1"/>
+        <path class="i-w" style="--d:2.2s" d="M370 182 Q 382 176 394 182 T 418 182" pathLength="1"/>
+        <path class="i-w" style="--d:2.35s" d="M100 210 Q 112 204 124 210 T 148 210" pathLength="1"/>
+        <path class="i-w" style="--d:2.5s" d="M330 208 Q 342 202 354 208 T 378 208" pathLength="1"/>
       </g>
-      <!-- le lagon -->
-      <g class="intro-lagon">
-        <path d="M14 158 H 466 V 226 H 14 Z" fill="url(#ilagon)"/>
-        <!-- reflet du soleil -->
-        <g stroke="#d4593a" stroke-width="4" stroke-linecap="round" opacity=".65">
-          <path d="M272 172 h 56"/><path d="M284 186 h 34"/><path d="M292 200 h 18"/>
-        </g>
-        <!-- écume -->
-        <g stroke="#f7f3ec" stroke-width="2.5" stroke-linecap="round" fill="none" opacity=".8">
-          <path d="M60 176 Q 72 170 84 176 T 108 176"/>
-          <path d="M150 192 Q 162 186 174 192 T 198 192"/>
-          <path d="M370 182 Q 382 176 394 182 T 418 182"/>
-          <path d="M100 210 Q 112 204 124 210 T 148 210"/>
-          <path d="M330 208 Q 342 202 354 208 T 378 208"/>
-        </g>
+      <!-- le pinceau qui dessine -->
+      <g class="i-brush">
+        <line x1="8" y1="-14" x2="30" y2="-46" stroke="#16130f" stroke-width="5" stroke-linecap="round"/>
+        <path d="M-2 4 Q 2 -10 14 -8 Q 10 2 2 6 Z" fill="#16130f"/>
+        <circle cx="-1" cy="5" r="3" fill="#d4593a"/>
       </g>
-      <!-- ligne d'horizon -->
-      <path d="M14 158 H 466" stroke="#16130f" stroke-width="3" stroke-linecap="round"/>
     </svg>`;
     intro.innerHTML = `
       <div class="intro-scene">
@@ -97,7 +97,7 @@
       intro.classList.add("done");
       document.body.classList.remove("intro-lock");
       setTimeout(() => intro.remove(), 1300);
-    }, 2300);
+    }, 3600);
   }
 
   /* ------------------------------------------- progrès + grain -- */

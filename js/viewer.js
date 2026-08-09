@@ -64,15 +64,21 @@
     const id = new URLSearchParams(location.search).get("id");
     art = ARTWORKS.find((a) => a.id === id) || ARTWORKS[0];
     art = Object.assign({}, art, { imageHD: (art.images && art.images.large) || art.image });
-    dims = parseDims(art.dimensions);
+    dims = parseDims(art.dimensions, art.orientation);
 
     injectLaunchButtons();
     buildModal();
   }
 
-  function parseDims(str) {
+  function parseDims(str, orientation) {
     const m = String(str).match(/(\d+)\s*[×x]\s*(\d+)/);
-    return m ? { w: +m[1], h: +m[2] } : { w: 80, h: 60 };
+    if (!m) return { w: 80, h: 60 };
+    let w = +m[1], h = +m[2];
+    // Convention artistique : hauteur × largeur. On aligne sur l'orientation
+    // de la photo pour que la toile 3D soit dans le bon sens.
+    if (orientation === "portrait" && w > h) [w, h] = [h, w];
+    if (orientation === "landscape" && h > w) [w, h] = [h, w];
+    return { w, h };
   }
 
   /* -------------------------------------------------- boutons fiche -- */
@@ -153,8 +159,8 @@
     pane.dataset.ready = "1";
     const maxPx = Math.min(innerHeight * 0.52, innerWidth * 0.6, 460);
     const scale = maxPx / Math.max(dims.w, dims.h);
-    // Cadre en bois noir : 2 cm à l'échelle, tout autour de la toile.
-    const F = Math.max(4, 2 * scale);
+    // Cadre en bois noir bien visible : ~2,5 cm à l'échelle, minimum 10 px.
+    const F = Math.max(10, 2.5 * scale);
     const W = dims.w * scale + 2 * F, H = dims.h * scale + 2 * F;
     const D = Math.max(12, 4.5 * scale);
     const WOOD = "linear-gradient(135deg,#26201a 0%,#15100c 55%,#1d1712 100%)";
@@ -168,7 +174,7 @@
       <div class="v3d-scene" style="width:${W}px;height:${H}px">
         <div class="canvas3d" style="width:${W}px;height:${H}px">
           <div class="face front" style="width:${W}px;height:${H}px;transform:translateZ(${D / 2}px);background:${WOOD}">
-            <div class="frame-inner" style="position:absolute;inset:${F}px;background-image:url('${art.imageHD}');background-size:cover;background-position:center;box-shadow:inset 0 0 ${F * 3}px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.07)"></div>
+            <div class="frame-inner" style="position:absolute;inset:${F}px;background-image:url('${art.imageHD}');background-size:cover;background-position:center;box-shadow:inset 0 0 ${F * 2}px rgba(0,0,0,.3), 0 0 0 1px rgba(247,243,236,.18)"></div>
           </div>
           <div class="face back" style="width:${W}px;height:${H}px;transform:rotateY(180deg) translateZ(${D / 2}px)"></div>
           <div class="face edge" style="width:${D}px;height:${H}px;left:${W - D / 2}px;transform:translateX(-50%) rotateY(90deg);background:${WOOD}"></div>

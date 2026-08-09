@@ -243,22 +243,40 @@ body { animation: page-in .7s var(--ease); }
   height: auto;
   margin: 0 auto 26px;
   display: block;
-  animation: intro-fadeup 1s var(--ease) both;
+  animation: intro-fadeup .6s var(--ease) both;
 }
-@keyframes intro-fadeup { from { opacity: 0; transform: translateY(18px); } }
-.intro-sunrise {
-  animation: intro-sunrise 1.6s cubic-bezier(.22, .61, .21, 1) .3s both;
+@keyframes intro-fadeup { from { opacity: 0; } }
+
+/* traits qui se dessinent (pathLength=1 sur chaque tracé) */
+.i-horizon, .i-moorea, .i-sun-stroke, .i-w, .i-r {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: i-draw .001s linear both;
 }
-@keyframes intro-sunrise {
-  from { transform: translateY(70px); opacity: 0; }
-  to   { transform: translateY(0); opacity: 1; }
+@keyframes i-draw { to { stroke-dashoffset: 0; } }
+.i-horizon    { animation-duration: .5s;  animation-delay: .2s; }
+.i-moorea     { animation-duration: .75s; animation-delay: .75s; }
+.i-sun-stroke { animation-duration: .45s; animation-delay: 1.6s; }
+.i-w, .i-r    { animation-duration: .3s;  animation-delay: var(--d, 2s); }
+
+/* les aplats apparaissent après le trait, comme un lavis */
+.i-moorea-fill { opacity: 0; animation: i-ink .5s var(--ease) 1.5s both; }
+.i-sun-fill    { opacity: 0; animation: i-ink .5s var(--ease) 2s both; }
+.i-halo        { opacity: 0; animation: i-ink .9s var(--ease) 2.1s both; }
+.i-lagon       { opacity: 0; animation: i-ink 1s var(--ease) 2.3s both; }
+@keyframes i-ink { to { opacity: 1; } }
+
+/* le pinceau suit le tracé */
+.i-brush {
+  offset-rotate: 0deg;
+  offset-path: path("M14 158 L466 158 M120 158 L200 74 L236 118 L268 96 L330 150 L400 122 L462 158 M346 128 A46 46 0 1 1 254 128 A46 46 0 1 1 346 128 M60 176 Q72 170 84 176 T108 176 M150 192 Q162 186 174 192 T198 192 M370 182 Q382 176 394 182 T418 182 M100 210 Q112 204 124 210 T148 210 M330 208 Q342 202 354 208 T378 208 M272 172 L328 172 M284 186 L318 186 M292 200 L310 200");
+  animation: i-brush-move 2.6s linear .2s both;
 }
-.intro-lagon {
-  animation: intro-lagon 1.2s var(--ease) .55s both;
-}
-@keyframes intro-lagon {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: none; }
+@supports not (offset-path: path("M0 0 L1 1")) { .i-brush { display: none; } }
+@keyframes i-brush-move {
+  0%   { offset-distance: 0%; opacity: 1; }
+  96%  { offset-distance: 100%; opacity: 1; }
+  100% { offset-distance: 100%; opacity: 0; }
 }
 
 .intro-name {
@@ -275,7 +293,7 @@ body { animation: page-in .7s var(--ease); }
   opacity: 0;
   transform: translateY(24px);
   animation: intro-letter .7s var(--ease) forwards;
-  animation-delay: calc(.55s + var(--i) * 55ms);
+  animation-delay: calc(1.7s + var(--i) * 55ms);
 }
 .intro-name .sun { color: var(--accent); }
 @keyframes intro-letter { to { opacity: 1; transform: none; } }
@@ -288,7 +306,7 @@ body { animation: page-in .7s var(--ease); }
   text-transform: uppercase;
   color: var(--ink-faint);
   opacity: 0;
-  animation: intro-fade .8s var(--ease) 1.35s forwards;
+  animation: intro-fade .8s var(--ease) 2.6s forwards;
 }
 @keyframes intro-fade { to { opacity: 1; } }
 

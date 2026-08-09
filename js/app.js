@@ -134,6 +134,7 @@
             <li><a href="expositions.html">${t("nav_expos")}</a></li>
             <li><a href="journal.html">${t("nav_journal")}</a></li>
             <li><a href="portrait.html">${t("portrait_home_btn")}</a></li>
+            <li><a href="idees.html">${t("nav_idees")}</a></li>
             <li><a href="artiste.html">${t("nav_artist")}</a></li>
             <li><a href="contact.html">${t("nav_contact")}</a></li>
           </ul>
@@ -669,6 +670,26 @@
     }
   }
 
+  function pageIdees() {
+    const form = document.getElementById("idees-form");
+    if (!form) return;
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const d = new FormData(form);
+      try {
+        const r = await fetch("/api/idees", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: d.get("name"), email: d.get("email"), message: d.get("message") })
+        });
+        if (!r.ok) throw new Error();
+        form.reset();
+        document.getElementById("idees-msg").textContent = t("idees_ok");
+        toast(t("idees_ok"));
+      } catch { document.getElementById("idees-msg").textContent = t("news_err"); }
+    });
+  }
+
   function pageContact() {
     const form = document.getElementById("contact-form");
     if (!form) return;
@@ -719,6 +740,7 @@
       case "home":    pageHome(); homeExtras(); break;
       case "journal": pageJournal(); break;
       case "portrait": pagePortrait(); break;
+      case "idees":   pageIdees(); break;
       case "gallery": pageGallery(); break;
       case "artwork": pageArtwork(); break;
       case "cart":    pageCart(); break;

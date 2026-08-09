@@ -498,6 +498,70 @@
     location.href = `mailto:?bcc=${encodeURIComponent(emails.join(","))}&subject=${encodeURIComponent(sujet)}&body=${encodeURIComponent(corps)}`;
   }
 
+  /* ----------------------------------------------------- boîte à idées -- */
+
+  async function renderIdees() {
+    const el = $("#idees-list");
+    el.innerHTML = `<p class="stats-note">Chargement…</p>`;
+    const idees = await fetch("/api/idees").then((r) => r.json()).catch(() => []);
+    if (!idees.length) { el.innerHTML = `<p class="metric-empty">La boîte est vide pour l'instant — les idées des visiteurs apparaîtront ici.</p>`; return; }
+    el.innerHTML = idees.map((i) => `
+      <article class="aw-card idee-card ${i.statut === "nouvelle" ? "is-new" : ""}" data-iid="${esc(i.id)}" style="grid-template-columns: 1fr;">
+        <div>
+          <div class="order-head">
+            ${i.statut === "nouvelle" ? '<span class="idee-new">Nouvelle</span>' : ""}
+            <strong>${esc(i.name || "Visiteur anonyme")}</strong>
+            ${i.email ? `· <a href="mailto:${esc(i.email)}" style="color:var(--accent)">${esc(i.email)}</a>` : ""}
+            <span>${new Date(i.date).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</span>
+          </div>
+          <div class="order-msg" style="margin-top:4px;">« ${esc(i.message)} »</div>
+          <div style="display:flex; gap:14px; margin-top:12px;">
+            ${i.statut === "nouvelle" ? `<button class="ghost-btn" data-iact="lue">✓ Marquer comme lue</button>` : ""}
+            ${i.email ? `<a class="ghost-btn" href="mailto:${esc(i.email)}?subject=${encodeURIComponent("Votre idée pour la galerie — Pascal Sun")}">Répondre</a>` : ""}
+            <button class="aw-delete" data-iact="supprimee">Supprimer</button>
+          </div>
+        </div>
+      </article>`).join("");
+
+    el.querySelectorAll("[data-iact]").forEach((b) =>
+      b.addEventListener("click", async () => {
+        await fetch("/api/idees/statut", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: b.closest(".idee-card").dataset.iid, statut: b.dataset.iact })
+        });
+        renderIdees();
+      }));
+  }
+
+  function b64ToU8(b64) {
+    const pad = "=".repeat((4 - (b64.length % 4)) % 4);
+    const raw = atob((b64 + pad).replace(/-/g, "+").replace(/_/g, "/"));
+    return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
+  }
+
+  async function enablePush() {
+    try {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window)) throw new Error("non-supporté");
+      const { key } = await fetch("/api/push/key").then((r) => r.json());
+      if (!key) { toast("Notifications non configurées côté serveur."); return; }
+      const reg = await navigator.serviceWorker.register("/sw.js");
+      await navigator.serviceWorker.ready;
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") { toast("Autorisez les notifications dans votre navigateur."); return; }
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(key) });
+      const r = await fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(sub)
+      });
+      const d = await r.json();
+      toast(`Notifications activées sur cet appareil ✓ (${d.devices} appareil${d.devices > 1 ? "s" : ""})`);
+    } catch {
+      toast("Impossible d'activer les notifications sur cet appareil.");
+    }
+  }
+
   /* ------------------------------------------------------ statistiques -- */
 
   let statsLoadedDays = null;
@@ -644,7 +708,10 @@
         if (t.dataset.tab === "stats" && statsLoadedDays === null) loadStats(7);
         if (t.dataset.tab === "commandes") renderOrders();
         if (t.dataset.tab === "clients") renderClients();
+        if (t.dataset.tab === "idees") renderIdees();
       }));
+
+    $("#push-btn").addEventListener("click", enablePush);
 
     $("#invite-btn").addEventListener("click", inviteSelection);
     $("#add-contact").addEventListener("submit", async (e) => {

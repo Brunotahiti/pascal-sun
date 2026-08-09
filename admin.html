@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/admin.css?v=7">
+  <link rel="stylesheet" href="css/admin.css?v=8">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='38' fill='%2316130f'/></svg>">
 </head>
 <body>
@@ -34,6 +34,7 @@
         <button class="tab" data-tab="expos">Vernissages</button>
         <button class="tab" data-tab="commandes">Commandes</button>
         <button class="tab" data-tab="clients">Clients</button>
+        <button class="tab" data-tab="idees">💡 Boîte à idées</button>
         <button class="tab" data-tab="journal">Journal &amp; avis</button>
         <button class="tab" data-tab="textes">Textes &amp; boutons</button>
         <button class="tab" data-tab="stats">Statistiques</button>
@@ -111,6 +112,18 @@
           <button class="solid-btn" type="submit">+ Ajouter</button>
         </form>
         <div id="contacts-list"></div>
+      </section>
+
+      <!-- BOÎTE À IDÉES -->
+      <section class="pane" data-pane="idees">
+        <div class="pane-head">
+          <div>
+            <h2>💡 Boîte à idées</h2>
+            <p>Les idées, envies et messages déposés par les visiteurs. Activez les notifications pour être prévenu sur cet appareil dès qu'une idée (ou une commande) arrive.</p>
+          </div>
+          <button class="solid-btn" id="push-btn">🔔 Activer les notifications</button>
+        </div>
+        <div id="idees-list" class="artwork-list"></div>
       </section>
 
       <!-- JOURNAL & AVIS -->
@@ -195,7 +208,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="js/data.js?v=7"></script>
-  <script src="js/admin.js?v=7"></script>
+  <script src="js/data.js?v=8"></script>
+  <script src="js/admin.js?v=8"></script>
 </body>
 </html>

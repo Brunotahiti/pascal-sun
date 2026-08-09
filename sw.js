@@ -6,7 +6,7 @@
    Les vidéos et l'admin ne sont jamais mis en cache.
    ========================================================================= */
 
-const VERSION = "ps-v3";
+const VERSION = "ps-v4";
 const CORE = [
   "/", "/galerie.html", "/expositions.html", "/artiste.html",
   "/panier.html", "/contact.html", "/oeuvre.html", "/merci.html",
@@ -14,6 +14,27 @@ const CORE = [
   "/js/data.js", "/js/app.js", "/js/effects.js", "/js/viewer.js",
   "/manifest.webmanifest"
 ];
+
+/* Notifications push (boîte à idées, commandes, portraits) */
+self.addEventListener("push", (e) => {
+  let data = {};
+  try { data = e.data.json(); } catch { data = { title: "Galerie Pascal Sun", body: e.data && e.data.text() }; }
+  e.waitUntil(self.registration.showNotification(data.title || "Galerie Pascal Sun", {
+    body: data.body || "",
+    icon: "/img/icon-192.png",
+    badge: "/img/icon-192.png",
+    data: { url: data.url || "/admin" }
+  }));
+});
+
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || "/admin";
+  e.waitUntil(clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+    for (const c of list) { if (c.url.includes("/admin") && "focus" in c) return c.focus(); }
+    return clients.openWindow(url);
+  }));
+});
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(CORE)).then(() => self.skipWaiting()));

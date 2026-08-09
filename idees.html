@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Galerie — Pascal Sun</title>
-  <meta name="description" content="Toutes les œuvres originales de Pascal Sun disponibles à l'acquisition. Scènes de vie polynésiennes, livraison mondiale assurée.">
+  <title>Boîte à idées — Pascal Sun</title>
+  <meta name="description" content="La boîte à idées de la galerie Pascal Sun : partagez vos envies de toiles, vos thèmes préférés et vos suggestions directement avec l'artiste.">
+  <link rel="canonical" href="https://pascal-sun.com/idees.html">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -16,22 +17,33 @@
   <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><circle cx=%2750%27 cy=%2750%27 r=%2726%27 fill=%27%23d4593a%27/><g fill=%27%23d4593a%27><path d=%27M81.5 44.4 96 50 81.5 55.6Z M76.2 68.4 82.5 82.5 68.4 76.2Z M55.6 81.5 50 96 44.4 81.5Z M31.6 76.2 17.5 82.5 23.8 68.4Z M18.5 55.6 4 50 18.5 44.4Z M23.8 31.6 17.5 17.5 31.6 23.8Z M44.4 18.5 50 4 55.6 18.5Z M68.4 23.8 82.5 17.5 76.2 31.6Z%27/></g></svg>">
 </head>
-<body data-page="gallery">
+<body data-page="idees">
 
   <header class="site-header" id="site-header"></header>
 
   <main>
     <div class="wrap">
       <div class="page-head reveal is-in">
-        <span class="eyebrow" data-i18n="gallery_eyebrow"></span>
-        <h1 class="section-title" data-i18n="gallery_title"></h1>
-        <p class="lede" data-i18n="gallery_lede"></p>
+        <span class="eyebrow" data-i18n="idees_eyebrow"></span>
+        <h1 class="section-title" data-i18n="idees_title"></h1>
+        <p class="lede" data-i18n="idees_lede"></p>
       </div>
 
-      <div class="filters" id="filters"></div>
-      <p class="form-note" id="gallery-count" style="margin: -22px 0 26px;"></p>
+      <div class="cart-layout" style="padding-bottom: 60px;">
+        <form id="idees-form" class="order-panel">
+          <div class="field"><input name="name" data-i18n-ph="idees_name_ph" autocomplete="name"></div>
+          <div class="field"><input name="email" type="email" data-i18n-ph="idees_email_ph" autocomplete="email"></div>
+          <div class="field"><textarea name="message" required data-i18n-ph="idees_msg_ph" style="min-height: 160px;"></textarea></div>
+          <button class="btn" type="submit" data-i18n="idees_btn"></button>
+          <p class="news-msg" id="idees-msg" style="color: var(--accent);"></p>
+        </form>
 
-      <div class="grid" id="gallery-grid" style="padding-bottom: 40px;"></div>
+        <aside>
+          <figure class="portrait" style="position: static; transform: rotate(-.8deg); max-width: 420px;">
+            <img src="img/oeuvres/le-tressage-960.webp" alt="Le tressage — Pascal Sun" loading="lazy">
+          </figure>
+        </aside>
+      </div>
     </div>
   </main>
 

@@ -216,6 +216,85 @@ function orderEmailText(order) {
   return { lignes, mode, paiement };
 }
 
+/* ------------------------------------------------- notifications push -- */
+/* Web Push vers les appareils de Pascal (admin). S'active avec les clés
+   VAPID en variables d'environnement. */
+
+const webpush = require("web-push");
+const VAPID_PUBLIC = process.env.VAPID_PUBLIC || "";
+const VAPID_PRIVATE = process.env.VAPID_PRIVATE || "";
+const PUSH_FILE = path.join(DATA_DIR, "push.json");
+const IDEAS_FILE = path.join(DATA_DIR, "idees.json");
+
+if (VAPID_PUBLIC && VAPID_PRIVATE) {
+  webpush.setVapidDetails("mailto:contact@pascal-sun.com", VAPID_PUBLIC, VAPID_PRIVATE);
+}
+
+async function sendPush(title, body, url) {
+  if (!VAPID_PUBLIC) return;
+  const subs = readJSON(PUSH_FILE, []);
+  const payload = JSON.stringify({ title, body, url: url || "/admin" });
+  const alive = [];
+  for (const sub of subs) {
+    try { await webpush.sendNotification(sub, payload); alive.push(sub); }
+    catch (e) { if (e.statusCode !== 404 && e.statusCode !== 410) alive.push(sub); }
+  }
+  if (alive.length !== subs.length) writeJSON(PUSH_FILE, alive);
+}
+
+app.get("/api/push/key", requireAuth, (_req, res) => res.json({ key: VAPID_PUBLIC }));
+
+app.post("/api/push/subscribe", requireAuth, (req, res) => {
+  const sub = req.body;
+  if (!sub || !sub.endpoint) return res.status(400).json({ error: "subscription-invalide" });
+  const subs = readJSON(PUSH_FILE, []);
+  if (!subs.find((s) => s.endpoint === sub.endpoint)) { subs.push(sub); writeJSON(PUSH_FILE, subs); }
+  res.json({ ok: true, devices: subs.length });
+});
+
+/* ------------------------------------------------------ boîte à idées -- */
+
+app.post("/api/idees", (req, res) => {
+  const b = req.body || {};
+  if (!b.message || String(b.message).trim().length < 3) {
+    return res.status(400).json({ error: "message-requis" });
+  }
+  const idees = readJSON(IDEAS_FILE, []);
+  const idee = {
+    id: "ID-" + Date.now().toString(36).toUpperCase(),
+    date: new Date().toISOString(),
+    name: String(b.name || "").slice(0, 160),
+    email: String(b.email || "").slice(0, 200),
+    message: String(b.message).slice(0, 3000),
+    statut: "nouvelle"
+  };
+  idees.unshift(idee);
+  writeJSON(IDEAS_FILE, idees);
+  if (idee.email) upsertContact({ email: idee.email, name: idee.name, source: "idee" });
+
+  sendPush("💡 Nouvelle idée dans la boîte",
+    `${idee.name || "Un visiteur"} : « ${idee.message.slice(0, 120)}${idee.message.length > 120 ? "…" : ""} »`);
+  sendMail(ARTIST_NOTIFY, "💡 Nouvelle idée dans la boîte à idées",
+`${idee.name || "Un visiteur"}${idee.email ? " <" + idee.email + ">" : ""} propose :
+
+« ${idee.message} »
+
+→ https://pascal-sun.com/admin (onglet Boîte à idées)`);
+
+  res.json({ ok: true, id: idee.id });
+});
+
+app.get("/api/idees", requireAuth, (_req, res) => res.json(readJSON(IDEAS_FILE, [])));
+
+app.post("/api/idees/statut", requireAuth, (req, res) => {
+  const { id, statut } = req.body || {};
+  let idees = readJSON(IDEAS_FILE, []);
+  if (statut === "supprimee") idees = idees.filter((i) => i.id !== id);
+  else { const i = idees.find((x) => x.id === id); if (i && ["nouvelle", "lue"].includes(statut)) i.statut = statut; }
+  writeJSON(IDEAS_FILE, idees);
+  res.json({ ok: true });
+});
+
 /* ----------------------------------------------------- contacts (CRM) -- */
 
 function upsertContact({ email, name, country, source, orderTotalEUR }) {
@@ -359,6 +438,7 @@ les originaux et tirages numérotés).
 Pascal Sun — Tahiti
 https://pascal-sun.com`);
 
+  sendPush("🛒 Nouvelle commande !", `${order.client.name} — ${totalEUR} € (${order.id})`);
   sendMail(ARTIST_NOTIFY, `🛒 Nouvelle commande ${order.id} — ${totalEUR} €`,
 `Nouvelle commande sur la galerie !
 
@@ -401,6 +481,7 @@ app.post("/api/notify", (req, res) => {
     if (!(c.notes || "").includes(note)) c.notes = ((c.notes || "") + "\n" + note).trim();
     writeJSON(NEWSLETTER_FILE, contacts);
   }
+  sendPush("🔔 Alerte œuvre", `${email} suit « ${titre || artworkId} »`);
   sendMail(ARTIST_NOTIFY, `🔔 Alerte œuvre — ${titre || artworkId}`,
 `${email} souhaite être prévenu(e) au sujet de « ${titre || artworkId} »
 (disponibilité, retirage ou œuvre similaire).
@@ -455,6 +536,7 @@ ${cm.budget ? "Budget : " + cm.budget : ""}
 
 À très vite,
 Pascal Sun — Tahiti`);
+  sendPush("🎨 Demande de portrait", `${cm.name}${cm.budget ? " — budget " + cm.budget : ""}`);
   sendMail(ARTIST_NOTIFY, `🎨 Demande de portrait ${cm.id}`,
 `Nouvelle demande de portrait sur commande !
 
