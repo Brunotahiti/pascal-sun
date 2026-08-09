@@ -159,8 +159,8 @@
     pane.dataset.ready = "1";
     const maxPx = Math.min(innerHeight * 0.52, innerWidth * 0.6, 460);
     const scale = maxPx / Math.max(dims.w, dims.h);
-    // Cadre en bois noir bien visible : ~2,5 cm à l'échelle, minimum 10 px.
-    const F = Math.max(10, 2.5 * scale);
+    // Cadre en bois noir fin : ~0,75 cm à l'échelle, minimum 3 px.
+    const F = Math.max(3, 0.75 * scale);
     const W = dims.w * scale + 2 * F, H = dims.h * scale + 2 * F;
     const D = Math.max(12, 4.5 * scale);
     const WOOD = "linear-gradient(135deg,#26201a 0%,#15100c 55%,#1d1712 100%)";

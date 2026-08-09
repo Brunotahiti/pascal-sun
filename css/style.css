@@ -259,13 +259,12 @@ a { color: inherit; text-decoration: none; }
 
 .hero-art {
   position: relative;
-  padding: clamp(18px, 2vw, 30px);
+  padding: clamp(10px, 1.2vw, 16px);
   background: #f4efe6;
   border: 6px solid #17120e;
   box-shadow:
     0 3px 6px rgba(22, 19, 15, .24),
     0 40px 70px -34px rgba(22, 19, 15, .55);
-  transform: rotate(.6deg);
 }
 .hero-art img {
   width: 100%;
@@ -380,7 +379,7 @@ a { color: inherit; text-decoration: none; }
    s'affine et la toile vient vers vous — le cadre, lui, reste. */
 .card { position: relative; }
 .card .frame {
-  --mat: clamp(16px, 2.2vw, 30px);     /* largeur du passe-partout */
+  --mat: clamp(8px, 1vw, 14px);        /* passe-partout fin */
   position: relative;
   background: #f4efe6;                 /* passe-partout */
   border: 5px solid #17120e;           /* cadre bois noir fin */
@@ -388,7 +387,7 @@ a { color: inherit; text-decoration: none; }
   box-shadow:
     0 2px 5px rgba(22, 19, 15, .25),
     0 26px 46px -24px rgba(22, 19, 15, .58);
-  transition: padding .5s var(--ease), box-shadow .45s var(--ease);
+  transition: padding 1.15s cubic-bezier(.23, .7, .16, 1), box-shadow .8s var(--ease);
   overflow: hidden;
 }
 /* Au survol : le cadre ne bouge pas — c'est la toile qui s'agrandit,
@@ -472,7 +471,7 @@ a { color: inherit; text-decoration: none; }
   top: 104px;
   background: #f4efe6;
   border: 7px solid #17120e;
-  padding: clamp(20px, 2.4vw, 36px);
+  padding: clamp(10px, 1.3vw, 18px);
   box-shadow:
     0 3px 7px rgba(22, 19, 15, .26),
     0 46px 80px -38px rgba(22, 19, 15, .58);
@@ -562,6 +561,8 @@ a { color: inherit; text-decoration: none; }
   padding: 6px 10px 0 0;
   color: var(--accent);
 }
+
+.artist-signature { max-width: 300px; margin: clamp(30px, 5vw, 50px) 0 0 auto; opacity: .85; }
 
 .values { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(18px, 3vw, 36px); margin-top: clamp(40px, 6vw, 70px); }
 @media (max-width: 760px) { .values { grid-template-columns: 1fr; } }
@@ -909,6 +910,69 @@ a { color: inherit; text-decoration: none; }
 .tl-card .btn { margin-top: 16px; padding: 10px 22px; font-size: 12px; }
 .timeline.past .tl-card { opacity: .75; }
 .timeline .empty { color: var(--ink-faint); font-style: italic; padding-left: 24px; }
+
+/* ------------------------------------------------- diaporama atelier -- */
+
+.diapo {
+  position: relative;
+  max-width: 760px;
+  margin-top: clamp(28px, 4vw, 46px);
+  background: #f4efe6;
+  border: 5px solid #17120e;
+  padding: clamp(8px, 1vw, 14px);
+  box-shadow:
+    0 2px 5px rgba(22, 19, 15, .25),
+    0 26px 46px -24px rgba(22, 19, 15, .58);
+}
+.diapo-track { position: relative; aspect-ratio: 4 / 3; overflow: hidden; background: var(--paper-deep); }
+.diapo-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 1.1s var(--ease);
+}
+.diapo-slide.on { opacity: 1; }
+.diapo-slide img { width: 100%; height: 100%; object-fit: cover; }
+
+.diapo-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 46px; height: 46px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .92);
+  color: var(--ink);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  transition: .25s;
+  z-index: 2;
+}
+.diapo-nav:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+.diapo-nav.prev { left: 18px; }
+.diapo-nav.next { right: 18px; }
+
+.diapo-dots {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 2;
+}
+.diapo-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(255, 255, 255, .65);
+  box-shadow: 0 0 0 1px rgba(22, 19, 15, .25);
+  cursor: pointer;
+  transition: .25s;
+  padding: 0;
+}
+.diapo-dot.on { background: var(--accent); transform: scale(1.25); }
 
 /* --------------------------------------------------------------- vidéo -- */
 

@@ -113,11 +113,11 @@ body[data-page="certificat"] {
   gap: 20px;
 }
 .cert-signature { text-align: center; }
-.cert-signature .sig {
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: 30px;
-  color: var(--ink);
+.cert-signature .sig-img {
+  width: 58mm;
+  height: auto;
+  margin: 0 auto;
+  display: block;
 }
 .cert-signature .sig-line {
   display: block;

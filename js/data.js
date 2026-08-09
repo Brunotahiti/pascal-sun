@@ -378,6 +378,16 @@ var POSTS = [];
 var AVIS = [];
 var INSTA = { username: "", posts: [] };
 
+/* Diaporama de l'atelier (page L'artiste) — modifiable dans l'admin. */
+var ATELIER = [
+  "img/atelier/atelier-1.webp",
+  "img/atelier/atelier-2.webp",
+  "img/atelier/atelier-3.webp",
+  "img/atelier/atelier-4.webp",
+  "img/atelier/atelier-5.webp",
+  "img/atelier/atelier-6.webp"
+];
+
 /* ------------------------------------------------------------ devises -- */
 
 const CURRENCIES = {
@@ -429,6 +439,8 @@ var I18N = {
     filter_all: "Toutes",
     artist_eyebrow: "L'univers",
     artist_title: "L'art de Pascal Sun est une invitation à ralentir",
+    atelier_diapo_t: "Dans l'atelier",
+    atelier_diapo_p: "Les toiles encadrées, prêtes à partir : quelques instants volés à l'atelier de Tahiti.",
     atelier_video_t: "L'atelier en mouvement",
     atelier_video_p: "Quelques minutes dans l'atelier de Pascal, à Tahiti : le geste, le silence, la toile qui prend vie.",
     nav_expos: "Vernissages",
@@ -637,6 +649,8 @@ var I18N = {
     filter_all: "All",
     artist_eyebrow: "The universe",
     artist_title: "Pascal Sun's art is an invitation to slow down",
+    atelier_diapo_t: "Inside the studio",
+    atelier_diapo_p: "Framed canvases, ready to travel: a few stolen moments from the Tahiti studio.",
     atelier_video_t: "The studio in motion",
     atelier_video_p: "A few minutes inside Pascal's studio in Tahiti: the gesture, the silence, the canvas coming to life.",
     nav_expos: "Exhibitions",

@@ -716,6 +716,51 @@
     past.innerHTML = gone.map((e) => itemHTML(e, true)).join("");
   }
 
+  /* Diaporama élégant de l'atelier : fondu croisé, flèches, points,
+     défilement automatique qui se met en pause au survol. */
+  function pageArtist() {
+    const track = document.getElementById("diapo-track");
+    if (!track || !ATELIER.length) return;
+    const wrap = document.getElementById("atelier-diapo");
+    let index = 0, timer = null;
+
+    track.innerHTML = ATELIER.map((src, i) => `
+      <div class="diapo-slide ${i === 0 ? "on" : ""}">
+        <img src="${esc(src)}" alt="L'atelier de Pascal Sun" ${i === 0 ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">
+      </div>`).join("");
+    document.getElementById("diapo-dots").innerHTML = ATELIER.map((_, i) =>
+      `<button class="diapo-dot ${i === 0 ? "on" : ""}" data-i="${i}" aria-label="Photo ${i + 1}"></button>`).join("");
+
+    const slides = track.querySelectorAll(".diapo-slide");
+    const dots = document.querySelectorAll(".diapo-dot");
+
+    function go(n) {
+      index = (n + ATELIER.length) % ATELIER.length;
+      slides.forEach((s, i) => s.classList.toggle("on", i === index));
+      dots.forEach((d, i) => d.classList.toggle("on", i === index));
+    }
+    function auto() { clearInterval(timer); timer = setInterval(() => go(index + 1), 4500); }
+
+    document.getElementById("diapo-prev").addEventListener("click", () => { go(index - 1); auto(); });
+    document.getElementById("diapo-next").addEventListener("click", () => { go(index + 1); auto(); });
+    document.getElementById("diapo-dots").addEventListener("click", (e) => {
+      const d = e.target.closest(".diapo-dot");
+      if (d) { go(+d.dataset.i); auto(); }
+    });
+    wrap.addEventListener("mouseenter", () => clearInterval(timer));
+    wrap.addEventListener("mouseleave", auto);
+    // balayage tactile
+    let sx = null;
+    wrap.addEventListener("touchstart", (e) => { sx = e.touches[0].clientX; }, { passive: true });
+    wrap.addEventListener("touchend", (e) => {
+      if (sx === null) return;
+      const dx = e.changedTouches[0].clientX - sx;
+      if (Math.abs(dx) > 40) { go(index + (dx < 0 ? 1 : -1)); auto(); }
+      sx = null;
+    }, { passive: true });
+    auto();
+  }
+
   function pageJournal() {
     const list = document.getElementById("journal-list");
     if (!list) return;
@@ -832,6 +877,7 @@
       if (Array.isArray(data.avis)) AVIS = data.avis;
       if (data.instagram) INSTA = Object.assign({ username: "", posts: [] }, data.instagram);
       if (data.shipping && Array.isArray(data.shipping.zones)) SHIPPING = data.shipping;
+      if (Array.isArray(data.atelier) && data.atelier.length) ATELIER = data.atelier;
       if (data.uiTexts) {
         ["fr", "en"].forEach((l) => {
           if (data.uiTexts[l]) I18N[l] = Object.assign({}, I18N[l], data.uiTexts[l]);
@@ -856,6 +902,7 @@
 
     switch (document.body.dataset.page) {
       case "home":    pageHome(); homeExtras(); break;
+      case "artist":  pageArtist(); break;
       case "journal": pageJournal(); break;
       case "portrait": pagePortrait(); break;
       case "idees":   pageIdees(); break;

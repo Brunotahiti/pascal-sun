@@ -85,6 +85,7 @@
     renderPosts();
     renderAvis();
     renderInsta();
+    renderAtelier();
     renderShipping();
     renderTexts();
     wireChrome();
@@ -100,6 +101,7 @@
       avis: (data && data.avis) || [],
       instagram: (data && data.instagram) || { username: "", posts: [] },
       shipping: (data && data.shipping) || JSON.parse(JSON.stringify(typeof SHIPPING !== "undefined" ? SHIPPING : { zones: [], freeAbove: 0 })),
+      atelier: (data && data.atelier) || JSON.parse(JSON.stringify(typeof ATELIER !== "undefined" ? ATELIER : [])),
       uiTexts: (data && data.uiTexts) || { fr: {}, en: {} }
     };
     catalogue.uiTexts.fr = catalogue.uiTexts.fr || {};
@@ -371,6 +373,14 @@
         <div class="aw-flags"><button type="button" class="aw-delete" data-act="avis-del">Supprimer cet avis</button></div>
       </div>
     </article>`;
+  }
+
+  function renderAtelier() {
+    $("#atelier-list").innerHTML = catalogue.atelier.map((src, i) => `
+      <div class="atelier-cell" data-ati="${i}">
+        <img src="${esc(src)}" alt="">
+        <button type="button" class="aw-delete" data-act="atelier-del">retirer</button>
+      </div>`).join("");
   }
 
   function renderPosts() { $("#post-list").innerHTML = catalogue.posts.map(postCard).join(""); }
@@ -1024,6 +1034,31 @@
     $("#avis-list").addEventListener("click", (e) => {
       if (e.target.dataset.act === "avis-del" && confirm("Supprimer cet avis ?")) {
         catalogue.avis.splice(+e.target.closest("[data-ai]").dataset.ai, 1); renderAvis(); markDirty();
+      }
+    });
+
+    /* ------ diaporama atelier ------ */
+    const atFile = document.createElement("input");
+    atFile.type = "file"; atFile.accept = "image/*"; atFile.multiple = true; atFile.hidden = true;
+    document.body.appendChild(atFile);
+    $("#add-atelier").addEventListener("click", () => atFile.click());
+    atFile.addEventListener("change", async () => {
+      for (const file of atFile.files) {
+        try {
+          const blob = await shrinkImage(file);
+          const fd = new FormData();
+          fd.append("file", blob, "atelier.webp");
+          const { path } = await (await fetch("/api/upload", { method: "POST", body: fd })).json();
+          catalogue.atelier.push(path);
+        } catch { toast("Échec d'envoi d'une photo."); }
+      }
+      atFile.value = "";
+      renderAtelier(); markDirty();
+    });
+    $("#atelier-list").addEventListener("click", (e) => {
+      if (e.target.dataset.act === "atelier-del") {
+        catalogue.atelier.splice(+e.target.closest("[data-ati]").dataset.ati, 1);
+        renderAtelier(); markDirty();
       }
     });
 

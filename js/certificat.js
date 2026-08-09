@@ -68,7 +68,7 @@
 
         <footer class="cert-foot">
           <div class="cert-signature">
-            <span class="sig">Pascal Sun</span>
+            <img class="sig-img" src="/img/signature.png" alt="Signature de Pascal Sun">
             <span class="sig-line"></span>
             <small>${t("cert_sign")}</small>
           </div>

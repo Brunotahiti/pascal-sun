@@ -116,20 +116,14 @@
 
 .hero-art { animation: art-float 8s ease-in-out infinite; }
 @keyframes art-float {
-  0%, 100% { transform: rotate(.6deg) translateY(0); }
-  50%      { transform: rotate(-.4deg) translateY(-12px); }
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
 }
 .hero-art:hover { animation-play-state: paused; }
 
 /* ------------------------------------------------------- cartes 3D -- */
 
-.card { perspective: 900px; }
-.card .frame {
-  transform-style: preserve-3d;
-  transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(var(--lift, 0px));
-  transition: transform .18s ease-out, box-shadow .45s var(--ease);
-}
-.card:hover .frame { --lift: -6px; box-shadow: 0 30px 55px -25px rgba(22, 19, 15, .45); }
+/* (l'inclinaison 3D a été retirée : les tableaux restent parfaitement droits) */
 
 /* reflet qui suit la souris */
 .card .frame::after {

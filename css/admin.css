@@ -505,6 +505,13 @@ button { font-family: var(--sans); cursor: pointer; }
 .ch.se { bottom: -10px; right: -10px; cursor: nwse-resize; }
 .crop-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
 
+/* ---------------------------------------------------- diaporama atelier -- */
+
+.atelier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.atelier-cell { position: relative; background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 6px; }
+.atelier-cell img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 3px; }
+.atelier-cell .aw-delete { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,.9); padding: 3px 10px; border-radius: 999px; }
+
 /* ---------------------------------------------------------- livraison -- */
 
 .ship-table { background: #fff; border: 1px solid var(--line); border-radius: 6px; overflow-x: auto; }
