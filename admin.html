@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/admin.css?v=10">
+  <link rel="stylesheet" href="css/admin.css?v=11">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='38' fill='%2316130f'/></svg>">
 </head>
 <body>
@@ -36,8 +36,10 @@
         <button class="tab" data-tab="clients">Clients</button>
         <button class="tab" data-tab="idees">💡 Boîte à idées</button>
         <button class="tab" data-tab="journal">Journal &amp; avis</button>
+        <button class="tab" data-tab="livraison">Livraison</button>
         <button class="tab" data-tab="textes">Textes &amp; boutons</button>
         <button class="tab" data-tab="stats">Statistiques</button>
+        <button class="tab" data-tab="donnees">Sauvegardes</button>
       </nav>
       <div class="admin-actions">
         <a class="ghost-btn" href="/" target="_blank">Voir le site ↗</a>
@@ -160,6 +162,38 @@
         <div class="artwork-list" id="avis-list"></div>
       </section>
 
+      <!-- LIVRAISON -->
+      <section class="pane" data-pane="livraison">
+        <div class="pane-head">
+          <div>
+            <h2>Frais de livraison</h2>
+            <p>Tarifs en euros, appliqués automatiquement dans le panier selon la zone choisie par l'acheteur. « Grand format » = plus grande dimension supérieure à 100 cm. Le retrait à Tahiti reste toujours gratuit.</p>
+          </div>
+        </div>
+        <div class="ship-table" id="ship-table"></div>
+        <div class="compose-panel" style="margin-top: 22px;">
+          <label style="font-size:11px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-faint);">Livraison offerte à partir de (€, 0 = jamais)</label>
+          <input id="ship-free" type="number" min="0" step="100">
+        </div>
+      </section>
+
+      <!-- SAUVEGARDES -->
+      <section class="pane" data-pane="donnees">
+        <div class="pane-head">
+          <div>
+            <h2>Sauvegardes &amp; rapport</h2>
+            <p>Une sauvegarde complète (catalogue, commandes, clients, idées) est créée automatiquement chaque jour et conservée 30 jours sur le serveur. Vous pouvez aussi en télécharger une à tout moment.</p>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <a class="solid-btn" href="/api/backup" download>⬇ Télécharger la sauvegarde</a>
+            <button class="ghost-btn" id="report-btn">📊 Voir le rapport du mois</button>
+          </div>
+        </div>
+        <pre class="report-box" id="report-box" hidden></pre>
+        <h3 style="font-family:var(--serif); font-size:22px; font-weight:600; margin:26px 0 12px;">Sauvegardes automatiques</h3>
+        <div id="backup-list"></div>
+      </section>
+
       <!-- TEXTES -->
       <section class="pane" data-pane="textes">
         <div class="pane-head">
@@ -221,7 +255,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="js/data.js?v=10"></script>
-  <script src="js/admin.js?v=10"></script>
+  <script src="js/data.js?v=11"></script>
+  <script src="js/admin.js?v=11"></script>
 </body>
 </html>

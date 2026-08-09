@@ -85,6 +85,7 @@
     renderPosts();
     renderAvis();
     renderInsta();
+    renderShipping();
     renderTexts();
     wireChrome();
     markClean();
@@ -98,6 +99,7 @@
       posts: (data && data.posts) || [],
       avis: (data && data.avis) || [],
       instagram: (data && data.instagram) || { username: "", posts: [] },
+      shipping: (data && data.shipping) || JSON.parse(JSON.stringify(typeof SHIPPING !== "undefined" ? SHIPPING : { zones: [], freeAbove: 0 })),
       uiTexts: (data && data.uiTexts) || { fr: {}, en: {} }
     };
     catalogue.uiTexts.fr = catalogue.uiTexts.fr || {};
@@ -391,6 +393,47 @@
       </article>`).join("");
   }
 
+  /* --------------------------------------------------------- livraison -- */
+
+  function renderShipping() {
+    const zones = catalogue.shipping.zones || [];
+    $("#ship-table").innerHTML = `
+      <div class="ship-row ship-head">
+        <span>Zone</span><span>Original</span><span>Grand format</span><span>Tirage</span><span>Affiche</span>
+      </div>
+      ${zones.map((z, i) => `
+        <div class="ship-row" data-zi="${i}">
+          <span class="ship-name">${esc(z.fr)}</span>
+          ${["original", "grand", "tirage", "affiche"].map((k) =>
+            `<span><input type="number" min="0" step="5" data-sk="${k}" value="${z[k] ?? 0}"> €</span>`).join("")}
+        </div>`).join("")}`;
+    $("#ship-free").value = catalogue.shipping.freeAbove || 0;
+  }
+
+  /* ------------------------------------------------ sauvegardes/rapport -- */
+
+  async function renderBackups() {
+    const el = $("#backup-list");
+    const list = await fetch("/api/backups").then((r) => r.json()).catch(() => []);
+    el.innerHTML = list.length
+      ? `<div class="contacts-table">${list.map((b) => `
+          <div class="ct-row" style="grid-template-columns: 1fr auto;">
+            <span>${esc(b.file.replace("pascal-sun-", "").replace(".json.gz", ""))}</span>
+            <span>${(b.size / 1024).toFixed(0)} Ko</span>
+          </div>`).join("")}</div>`
+      : `<p class="metric-empty">La première sauvegarde automatique sera créée dans quelques minutes.</p>`;
+  }
+
+  async function showReport() {
+    const box = $("#report-box");
+    box.hidden = false;
+    box.textContent = "Calcul du rapport…";
+    try {
+      const d = await fetch("/api/rapport").then((r) => r.json());
+      box.textContent = d.corps || JSON.stringify(d, null, 2);
+    } catch { box.textContent = "Rapport indisponible."; }
+  }
+
   /* ----------------------------------------------------------- textes -- */
 
   function renderTexts() {
@@ -423,14 +466,16 @@
             </select>
           </div>
           <div class="order-lines">
-            ${o.lines.map((l) => `<div>• ${esc(l.titre)} — ${PRODUIT_NOMS[l.key] || l.key}${l.qty > 1 ? ` × ${l.qty}` : ""} — ${l.prixEUR * l.qty} €</div>`).join("")}
+            ${o.lines.map((l, li) => `<div>• ${esc(l.titre)} — ${PRODUIT_NOMS[l.key] || l.key}${l.qty > 1 ? ` × ${l.qty}` : ""} — ${l.prixEUR * l.qty} €
+              ${l.key !== "affiche" ? ` <a class="cert-link" href="/certificat.html?c=${esc(o.id)}-${li}" target="_blank">📜 certificat</a>` : ""}</div>`).join("")}
+            ${o.livraisonEUR !== undefined ? `<div>• Livraison ${o.zone ? "(" + esc(o.zone) + ")" : ""} — ${o.livraisonEUR ? o.livraisonEUR + " €" : "offerte"}</div>` : ""}
           </div>
           <div class="order-client">
             <strong>${esc(o.client.name)}</strong> · <a href="mailto:${esc(o.client.email)}">${esc(o.client.email)}</a>
             ${o.client.country ? " · " + esc(o.client.country) : ""}
             · ${o.mode === "retrait" ? "Retrait à Tahiti" : "Livraison"}
             · ${({ card: "Carte", virement: "Virement", paypal: "PayPal" })[o.payment] || o.payment}
-            — <strong>${o.totalEUR} €</strong>
+            — <strong>${o.grandTotalEUR || o.totalEUR} €</strong>
             ${o.client.message ? `<div class="order-msg">« ${esc(o.client.message)} »</div>` : ""}
           </div>
         </div>
@@ -766,7 +811,22 @@
         if (t.dataset.tab === "commandes") renderOrders();
         if (t.dataset.tab === "clients") renderClients();
         if (t.dataset.tab === "idees") renderIdees();
+        if (t.dataset.tab === "donnees") renderBackups();
       }));
+
+    $("#report-btn").addEventListener("click", showReport);
+    $("#ship-free").addEventListener("input", (e) => {
+      catalogue.shipping.freeAbove = Number(e.target.value) || 0;
+      markDirty();
+    });
+    $("#ship-table").addEventListener("input", (e) => {
+      const row = e.target.closest("[data-zi]");
+      const k = e.target.dataset.sk;
+      if (row && k) {
+        catalogue.shipping.zones[+row.dataset.zi][k] = Number(e.target.value) || 0;
+        markDirty();
+      }
+    });
 
     $("#push-btn").addEventListener("click", enablePush);
 

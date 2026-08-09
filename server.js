@@ -149,8 +149,11 @@ app.put("/api/catalogue", requireAuth, (req, res) => {
   if (!Array.isArray(body.artworks)) {
     return res.status(400).json({ error: "artworks-array-required" });
   }
+  const previous = readJSON(CATALOGUE_FILE, { artworks: [] }).artworks || [];
   fs.writeFileSync(CATALOGUE_FILE, JSON.stringify(body, null, 2));
   res.json({ ok: true });
+  // Annonce des nouvelles œuvres aux abonnés (après réponse, sans bloquer)
+  setTimeout(() => announceNewArtworks(previous, body.artworks).catch(() => {}), 500);
 });
 
 /* ------------------------------------------------- statistiques (Umami) -- */
@@ -243,13 +246,82 @@ function sendMail(to, subject, text) {
 const COMMISSIONS_FILE = path.join(DATA_DIR, "commissions.json");
 const PRODUIT_FR = { original: "Œuvre originale", tirage: "Tirage d'art édition limitée", affiche: "Affiche" };
 
+const DEFAULT_SHIPPING = {
+  zones: [
+    { key: "pf", fr: "Polynésie française", original: 0, grand: 0, tirage: 15, affiche: 8 },
+    { key: "fr", fr: "France métropolitaine", original: 190, grand: 290, tirage: 25, affiche: 15 },
+    { key: "eu", fr: "Europe", original: 240, grand: 360, tirage: 30, affiche: 18 },
+    { key: "monde", fr: "Reste du monde", original: 320, grand: 480, tirage: 40, affiche: 25 }
+  ],
+  freeAbove: 4000
+};
+
 function orderEmailText(order) {
   const lignes = order.lines.map((l) =>
     `  • ${l.titre} — ${PRODUIT_FR[l.key] || l.key}${l.qty > 1 ? ` × ${l.qty}` : ""} — ${l.prixEUR * l.qty} €`).join("\n");
-  const mode = order.mode === "retrait" ? "Retrait à Tahiti" : "Livraison (devis de transport à suivre)";
+  const mode = order.mode === "retrait"
+    ? "Retrait à Tahiti (gratuit)"
+    : `Livraison — ${order.zone || ""} : ${order.livraisonEUR ? order.livraisonEUR + " €" : "offerte"}`;
   const paiement = { card: "Carte bancaire", virement: "Virement bancaire", paypal: "PayPal" }[order.payment] || order.payment;
   return { lignes, mode, paiement };
 }
+
+/* --------------------------------------------- sauvegardes quotidiennes -- */
+/* Chaque nuit (heure de Tahiti), une archive compressée de toutes les
+   données est écrite dans data/backups/. Les 30 dernières sont conservées.
+   L'admin peut aussi télécharger une sauvegarde à tout moment. */
+
+const zlib = require("zlib");
+const BACKUP_DIR = path.join(DATA_DIR, "backups");
+fs.mkdirSync(BACKUP_DIR, { recursive: true });
+
+function collectData() {
+  return {
+    exportedAt: new Date().toISOString(),
+    catalogue: readJSON(CATALOGUE_FILE, null),
+    orders: readJSON(ORDERS_FILE, []),
+    contacts: readJSON(NEWSLETTER_FILE, []),
+    commissions: readJSON(COMMISSIONS_FILE, []),
+    idees: readJSON(IDEAS_FILE, [])
+  };
+}
+
+function makeBackup() {
+  try {
+    const stamp = new Date().toISOString().slice(0, 10);
+    const file = path.join(BACKUP_DIR, `pascal-sun-${stamp}.json.gz`);
+    fs.writeFileSync(file, zlib.gzipSync(JSON.stringify(collectData())));
+    // rotation : on garde les 30 plus récentes
+    const olds = fs.readdirSync(BACKUP_DIR).filter((f) => f.endsWith(".json.gz")).sort();
+    olds.slice(0, Math.max(0, olds.length - 30)).forEach((f) => fs.unlinkSync(path.join(BACKUP_DIR, f)));
+    console.log("Sauvegarde écrite :", path.basename(file));
+    return file;
+  } catch (e) {
+    console.error("backup:", e.message);
+    return null;
+  }
+}
+
+/* Vérification toutes les heures : sauvegarde si celle du jour manque. */
+function backupTick() {
+  const stamp = new Date().toISOString().slice(0, 10);
+  if (!fs.existsSync(path.join(BACKUP_DIR, `pascal-sun-${stamp}.json.gz`))) makeBackup();
+}
+setTimeout(backupTick, 30e3);
+setInterval(backupTick, 3600e3);
+
+app.get("/api/backup", requireAuth, (_req, res) => {
+  const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
+  res.setHeader("Content-Type", "application/gzip");
+  res.setHeader("Content-Disposition", `attachment; filename=pascal-sun-sauvegarde-${stamp}.json.gz`);
+  res.send(zlib.gzipSync(JSON.stringify(collectData(), null, 2)));
+});
+
+app.get("/api/backups", requireAuth, (_req, res) => {
+  const list = fs.readdirSync(BACKUP_DIR).filter((f) => f.endsWith(".json.gz")).sort().reverse()
+    .map((f) => ({ file: f, size: fs.statSync(path.join(BACKUP_DIR, f)).size }));
+  res.json(list);
+});
 
 /* ------------------------------------------------- notifications push -- */
 /* Web Push vers les appareils de Pascal (admin). S'active avec les clés
@@ -429,6 +501,24 @@ app.post("/api/orders", formLimit, (req, res) => {
 
   if (!lines.length) return res.status(409).json({ error: "articles-indisponibles" });
 
+  /* Frais de livraison calculés côté serveur (source de vérité). */
+  const ship = catalogue.shipping || DEFAULT_SHIPPING;
+  const zoneKey = String((client.zone || "pf")).slice(0, 10);
+  const zone = (ship.zones || []).find((z) => z.key === zoneKey) || (ship.zones || [])[0];
+  let livraisonEUR = 0;
+  if (client.mode !== "retrait" && zone) {
+    if (!(ship.freeAbove && totalEUR >= ship.freeAbove)) {
+      for (const l of lines) {
+        const art = (catalogue.artworks || []).find((a) => a.id === l.id);
+        const dim = String((art && art.dimensions) || "").match(/(\d+)\s*[×x]\s*(\d+)/);
+        const grand = dim && Math.max(+dim[1], +dim[2]) > 100;
+        const tarif = l.key === "original" ? (grand ? zone.grand : zone.original)
+          : (zone[l.key] || 0) * l.qty;
+        livraisonEUR += tarif || 0;
+      }
+    }
+  }
+
   writeJSON(CATALOGUE_FILE, catalogue);
 
   const orders = readJSON(ORDERS_FILE, []);
@@ -437,6 +527,9 @@ app.post("/api/orders", formLimit, (req, res) => {
     date: new Date().toISOString(),
     lines,
     totalEUR,
+    livraisonEUR,
+    zone: zone ? zone.fr : "",
+    grandTotalEUR: totalEUR + livraisonEUR,
     client: {
       name: String(client.name || "").slice(0, 160),
       email: String(client.email || "").slice(0, 200),
@@ -463,7 +556,12 @@ ${lignes}
 
 Total œuvres : ${totalEUR} €
 Réception : ${mode}
+Total à régler : ${order.grandTotalEUR} €
 Paiement choisi : ${paiement}
+
+Votre certificat d'authenticité (à conserver) :
+${order.lines.filter((l) => l.key !== "affiche").map((l, i) =>
+  `  ${l.titre} → https://pascal-sun.com/certificat.html?c=${order.id}-${i}`).join("\n")}
 
 Pascal vous écrit personnellement sous 48 h pour confirmer le paiement sécurisé
 et organiser la réception de votre œuvre (certificat d'authenticité inclus pour
@@ -473,13 +571,13 @@ les originaux et tirages numérotés).
 Pascal Sun — Tahiti
 https://pascal-sun.com`);
 
-  sendPush("🛒 Nouvelle commande !", `${order.client.name} — ${totalEUR} € (${order.id})`);
+  sendPush("🛒 Nouvelle commande !", `${order.client.name} — ${order.grandTotalEUR} € (${order.id})`);
   sendMail(ARTIST_NOTIFY, `🛒 Nouvelle commande ${order.id} — ${totalEUR} €`,
 `Nouvelle commande sur la galerie !
 
 ${lignes}
 
-Total : ${totalEUR} €
+Total œuvres : ${totalEUR} € | Livraison : ${order.livraisonEUR} € | À régler : ${order.grandTotalEUR} €
 Client : ${order.client.name} <${order.client.email}> ${order.client.country ? "· " + order.client.country : ""}
 Réception : ${mode}
 Paiement : ${paiement}
@@ -490,6 +588,155 @@ ${order.client.message ? "\nMessage : « " + order.client.message + " »\n" : ""
 });
 
 app.get("/api/orders", requireAuth, (_req, res) => res.json(readJSON(ORDERS_FILE, [])));
+
+/* ---------------------------------------- certificat d'authenticité -- */
+/* Référence publique : <idCommande>-<n° de ligne>. La page certificat.html
+   affiche le document, prêt à imprimer ou à enregistrer en PDF. */
+
+app.get("/api/certificat", (req, res) => {
+  const ref = String(req.query.c || "");
+  const m = ref.match(/^(.+)-(\d+)$/);
+  if (!m) return res.status(400).json({ error: "reference-invalide" });
+  const order = readJSON(ORDERS_FILE, []).find((o) => o.id === m[1]);
+  const line = order && order.lines[Number(m[2])];
+  if (!order || !line || line.key === "affiche") return res.status(404).json({ error: "introuvable" });
+
+  const catalogue = readJSON(CATALOGUE_FILE, { artworks: [] });
+  const art = (catalogue.artworks || []).find((a) => a.id === line.id) || {};
+  const produit = (art.produits || []).find((p) => p.key === line.key) || {};
+
+  // Numéro d'édition : déduit du stock restant au moment de la commande
+  let edition = null;
+  if (line.key === "tirage" && produit.edition) {
+    const num = Math.max(1, produit.edition - (typeof produit.stock === "number" ? produit.stock : 0));
+    edition = `${num} / ${produit.edition}`;
+  }
+
+  res.setHeader("Cache-Control", "no-store");
+  res.json({
+    ref,
+    date: order.date,
+    acheteur: order.client.name,
+    titre: line.titre,
+    type: line.key,
+    edition,
+    annee: art.annee || "",
+    technique: art.technique_fr || "",
+    dimensions: art.dimensions || "",
+    image: (art.images && art.images.large) || art.image || ""
+  });
+});
+
+/* ------------------------------- alerte « nouvelle œuvre » aux abonnés -- */
+
+async function announceNewArtworks(previous, next) {
+  if (!mailEnabled()) return;
+  const before = new Set((previous || []).map((a) => a.id));
+  const fresh = (next || [])
+    .filter((a) => !before.has(a.id) && (a.statut || "disponible") === "disponible")
+    .slice(0, 3);
+  if (!fresh.length) return;
+
+  const contacts = readJSON(NEWSLETTER_FILE, []);
+  for (const art of fresh) {
+    const sujet = `Nouvelle œuvre à l'atelier : « ${art.titre} » 🌺`;
+    const corps = `Ia ora na,
+
+Une nouvelle toile vient de rejoindre la galerie :
+
+  « ${art.titre} »
+  ${art.dimensions || ""} · ${art.technique_fr || ""}${art.annee ? " · " + art.annee : ""}
+
+${art.desc_fr || ""}
+
+À découvrir ici :
+https://pascal-sun.com/oeuvre.html?id=${art.id}
+
+Belle journée,
+Pascal Sun — Tahiti`;
+    for (const c of contacts) {
+      await sendMail(c.email, sujet, corps + `
+
+—
+Vous recevez cet email car vous suivez la galerie Pascal Sun.`);
+      await new Promise((r) => setTimeout(r, 200));
+    }
+    sendPush("🌺 Œuvre annoncée", `« ${art.titre} » envoyée à ${contacts.length} abonné(s)`);
+    console.log(`Nouvelle œuvre annoncée : ${art.titre} → ${contacts.length} contacts`);
+  }
+}
+
+/* -------------------------------------------- rapport mensuel auto -- */
+
+async function monthlyReport(when) {
+  const now = when || new Date();
+  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const debut = new Date(prev.getFullYear(), prev.getMonth(), 1);
+  const fin = new Date(prev.getFullYear(), prev.getMonth() + 1, 1);
+  const mois = debut.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+
+  const orders = readJSON(ORDERS_FILE, []).filter((o) => {
+    const d = new Date(o.date);
+    return d >= debut && d < fin;
+  });
+  const ca = orders.reduce((s, o) => s + (o.grandTotalEUR || o.totalEUR || 0), 0);
+  const vendues = orders.flatMap((o) => o.lines).filter((l) => l.key === "original").length;
+  const contacts = readJSON(NEWSLETTER_FILE, []);
+  const nouveaux = contacts.filter((c) => new Date(c.createdAt) >= debut && new Date(c.createdAt) < fin).length;
+  const idees = readJSON(IDEAS_FILE, []).filter((i) => new Date(i.date) >= debut && new Date(i.date) < fin).length;
+
+  let visites = "—", pays = "—";
+  if (UMAMI_URL && UMAMI_WEBSITE_ID) {
+    try {
+      const q = `startAt=${debut.getTime()}&endAt=${fin.getTime()}`;
+      const st = await umami(`stats?${q}`);
+      const val = (o) => (o && typeof o === "object" ? o.value : o) || 0;
+      visites = `${val(st.visitors)} visiteurs · ${val(st.pageviews)} pages vues`;
+      const c = await umami(`metrics?${q}&type=country&limit=5`);
+      pays = c.map((x) => `${x.x} (${x.y})`).join(", ") || "—";
+    } catch { /* stats indisponibles */ }
+  }
+
+  const corps = `Rapport de la galerie — ${mois}
+
+VENTES
+  Commandes : ${orders.length}
+  Œuvres originales vendues : ${vendues}
+  Chiffre d'affaires : ${ca} €  (≈ ${Math.round(ca * 119.33).toLocaleString("fr-FR")} F)
+
+AUDIENCE
+  ${visites}
+  Top pays : ${pays}
+
+COMMUNAUTÉ
+  Nouveaux contacts : ${nouveaux} (total : ${contacts.length})
+  Idées reçues : ${idees}
+
+${orders.length ? "Détail des commandes :\n" + orders.map((o) =>
+  `  ${o.id} — ${o.client.name} — ${o.grandTotalEUR || o.totalEUR} € — ${o.statut}`).join("\n") : ""}
+
+→ Tableau de bord : https://pascal-sun.com/admin`;
+
+  await sendMail(ARTIST_NOTIFY, `📊 Rapport de la galerie — ${mois}`, corps);
+  return { mois, orders: orders.length, ca, vendues, nouveaux, idees, visites, pays, corps };
+}
+
+/* Le 1er de chaque mois (vérification horaire, une seule exécution). */
+const REPORT_FILE = path.join(DATA_DIR, "last-report.txt");
+setInterval(async () => {
+  const now = new Date();
+  const tag = `${now.getFullYear()}-${now.getMonth()}`;
+  if (now.getDate() !== 1) return;
+  if (readJSON(REPORT_FILE, null) === tag) return;
+  try { if (fs.readFileSync(REPORT_FILE, "utf8") === tag) return; } catch { /* première fois */ }
+  fs.writeFileSync(REPORT_FILE, tag);
+  if (mailEnabled()) { await monthlyReport(now); sendPush("📊 Rapport mensuel envoyé", "Le bilan du mois vient de partir par email."); }
+}, 3600e3);
+
+app.get("/api/rapport", requireAuth, async (_req, res) => {
+  try { res.json(await monthlyReport()); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
 
 app.post("/api/orders/statut", requireAuth, (req, res) => {
   const { id, statut } = req.body || {};

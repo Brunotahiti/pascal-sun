@@ -1,0 +1,158 @@
+/* ==========================================================================
+   Certificat d'authenticité — mise en page A4, prête à imprimer
+   ========================================================================== */
+
+body[data-page="certificat"] {
+  background: #ded7ca;
+  padding: 24px 16px 60px;
+}
+
+.cert-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+
+.cert-sheet {
+  width: 210mm;
+  max-width: 100%;
+  min-height: 297mm;
+  margin: 0 auto;
+  background: var(--paper);
+  box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .5);
+  padding: 16mm;
+}
+.cert-loading { padding: 60px 0; text-align: center; color: var(--ink-faint); font-style: italic; }
+
+.cert-frame {
+  border: 2px solid var(--ink);
+  outline: 1px solid var(--ink);
+  outline-offset: 5px;
+  padding: 14mm 12mm;
+  min-height: calc(297mm - 32mm - 12px);
+  display: flex;
+  flex-direction: column;
+}
+
+.cert-head { display: flex; align-items: center; gap: 16px; }
+.cert-sun svg { display: block; }
+.cert-brand {
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  line-height: 1;
+}
+.cert-brand span { color: var(--accent); }
+.cert-brand small {
+  display: block;
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .32em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-top: 5px;
+}
+
+.cert-title {
+  font-family: var(--serif);
+  font-size: 34px;
+  font-weight: 500;
+  letter-spacing: .04em;
+  text-align: center;
+  margin-top: 14mm;
+}
+.cert-rule {
+  width: 90px;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 2px;
+  margin: 10px auto 12mm;
+}
+
+.cert-body { display: grid; grid-template-columns: 62mm 1fr; gap: 10mm; align-items: start; }
+.cert-visual { border: 1px solid var(--line); background: #fff; padding: 4mm; }
+.cert-visual img { width: 100%; display: block; }
+
+.cert-facts { display: grid; gap: 5mm; }
+.cf { display: grid; gap: 2px; border-bottom: 1px solid var(--line); padding-bottom: 3mm; }
+.cf dt {
+  font-family: var(--sans);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.cf dd { font-size: 14px; color: var(--ink); }
+.cf-title { font-family: var(--serif); font-size: 22px !important; font-weight: 600; }
+.cf-buyer { font-family: var(--serif); font-size: 19px !important; font-weight: 600; }
+.cf-ref { font-family: monospace; letter-spacing: .06em; color: var(--ink-soft) !important; }
+
+.cert-text {
+  margin-top: 10mm;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--ink-soft);
+  text-align: center;
+  max-width: 62ch;
+  margin-inline: auto;
+}
+
+.cert-foot {
+  margin-top: auto;
+  padding-top: 12mm;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+}
+.cert-signature { text-align: center; }
+.cert-signature .sig {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 30px;
+  color: var(--ink);
+}
+.cert-signature .sig-line {
+  display: block;
+  width: 62mm;
+  border-top: 1px solid var(--ink);
+  margin: 4px 0 6px;
+}
+.cert-signature small { font-size: 10px; letter-spacing: .12em; color: var(--ink-faint); }
+
+.cert-seal {
+  width: 32mm; height: 32mm;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  color: var(--accent);
+  transform: rotate(-8deg);
+  flex: none;
+}
+.cert-seal span { font-size: 7.5px; letter-spacing: .2em; text-transform: uppercase; }
+.cert-seal strong { font-family: var(--serif); font-size: 13px; display: block; margin: 2px 0; }
+
+@media (max-width: 640px) {
+  .cert-sheet { width: 100%; min-height: 0; padding: 8mm; }
+  .cert-frame { padding: 8mm 6mm; }
+  .cert-body { grid-template-columns: 1fr; }
+  .cert-visual { max-width: 62mm; }
+  .cert-foot { flex-direction: column; align-items: center; gap: 24px; }
+}
+
+@media print {
+  @page { size: A4; margin: 0; }
+  body[data-page="certificat"] { background: #fff; padding: 0; }
+  .no-print { display: none !important; }
+  .cert-sheet { box-shadow: none; width: 210mm; min-height: 297mm; margin: 0; }
+  .grain, .cursor-dot, .cursor-ring, .scroll-progress { display: none !important; }
+}

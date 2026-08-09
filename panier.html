@@ -7,8 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=10">
-  <link rel="stylesheet" href="css/effects.css?v=10">
+  <link rel="stylesheet" href="css/style.css?v=11">
+  <link rel="stylesheet" href="css/effects.css?v=11">
   <script defer src="https://stats.pascal-sun.com/script.js" data-website-id="56116cc3-d031-4382-9868-905e305b96e5"></script>
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#f7f3ec">
@@ -40,9 +40,10 @@
           <h2 data-i18n="order_title"></h2>
           <div class="totals">
             <div><span data-i18n="order_sub"></span><span id="order-subtotal">—</span></div>
-            <div><span data-i18n="order_ship"></span><span data-i18n="order_ship_val"></span></div>
+            <div><span data-i18n="order_ship"></span><span id="order-shipping">—</span></div>
             <div class="grand"><span data-i18n="order_total"></span><span id="order-total">—</span></div>
           </div>
+          <p class="form-note" id="ship-note" style="margin: -6px 0 16px;"></p>
           <form id="order-form">
             <div class="field">
               <label for="of-name" data-i18n="f_name"></label>
@@ -62,6 +63,10 @@
                 <label class="choice"><input type="radio" name="mode" value="livraison" checked><span data-i18n="delivery_ship"></span></label>
                 <label class="choice"><input type="radio" name="mode" value="retrait"><span data-i18n="delivery_pickup"></span></label>
               </div>
+            </div>
+            <div class="field" id="zone-field">
+              <label for="of-zone" data-i18n="ship_zone"></label>
+              <select id="of-zone" name="zone"></select>
             </div>
             <div class="field">
               <label data-i18n="payment_method"></label>
@@ -84,8 +89,8 @@
 
   <footer class="site-footer" id="site-footer"></footer>
 
-  <script src="js/data.js?v=10"></script>
-  <script src="js/app.js?v=10"></script>
-  <script src="js/effects.js?v=10"></script>
+  <script src="js/data.js?v=11"></script>
+  <script src="js/app.js?v=11"></script>
+  <script src="js/effects.js?v=11"></script>
 </body>
 </html>

@@ -356,6 +356,21 @@ var EVENTS = [
   }
 ];
 
+/* --------------------------------------------------- frais de livraison -- */
+/* Tarifs indicatifs par zone et par format, en euros. Modifiables dans
+   l'espace admin. « grand » = plus grande dimension supérieure à 100 cm. */
+
+var SHIPPING = {
+  zones: [
+    { key: "pf",     fr: "Polynésie française",       en: "French Polynesia",  original: 0,   grand: 0,   tirage: 15, affiche: 8 },
+    { key: "fr",     fr: "France métropolitaine",     en: "Mainland France",   original: 190, grand: 290, tirage: 25, affiche: 15 },
+    { key: "eu",     fr: "Europe",                    en: "Europe",            original: 240, grand: 360, tirage: 30, affiche: 18 },
+    { key: "monde",  fr: "Reste du monde",            en: "Rest of the world", original: 320, grand: 480, tirage: 40, affiche: 25 }
+  ],
+  freeAbove: 4000,   // livraison offerte au-delà de ce montant d'œuvres (EUR)
+  retrait: true      // retrait gratuit à Tahiti
+};
+
 /* ------------------------------------------------- journal & avis -- */
 /* Alimentés depuis l'espace admin (onglet Journal & avis). */
 
@@ -539,6 +554,22 @@ var I18N = {
     order_sub: "Sous-total",
     order_ship: "Livraison",
     order_ship_val: "Devis personnalisé",
+    ship_zone: "Zone de livraison",
+    ship_free: "Offerte",
+    ship_pickup_free: "Retrait — gratuit",
+    ship_free_note: "Livraison offerte à partir de",
+    ship_note: "Emballage d'art professionnel et assurance transport inclus.",
+    cert_title: "Certificat d'authenticité",
+    cert_dl: "📜 Certificat d'authenticité",
+    cert_for: "Délivré à",
+    cert_work: "Œuvre",
+    cert_edition: "Édition",
+    cert_unique: "Pièce unique",
+    cert_ref: "Référence",
+    cert_date: "Date",
+    cert_text: "Je soussigné Pascal Sun, artiste peintre à Tahiti, certifie que l'œuvre décrite ci-dessus est authentique, réalisée de ma main, et qu'elle a été acquise auprès de ma galerie.",
+    cert_sign: "Pascal Sun · Tahiti, Polynésie française",
+    cert_print: "Imprimer / Enregistrer en PDF",
     order_total: "Total œuvres",
     f_name: "Nom complet",
     f_email: "Email",
@@ -731,6 +762,22 @@ var I18N = {
     order_sub: "Subtotal",
     order_ship: "Shipping",
     order_ship_val: "Personal quote",
+    ship_zone: "Delivery zone",
+    ship_free: "Free",
+    ship_pickup_free: "Pickup — free",
+    ship_free_note: "Free shipping from",
+    ship_note: "Professional art packaging and transport insurance included.",
+    cert_title: "Certificate of authenticity",
+    cert_dl: "📜 Certificate of authenticity",
+    cert_for: "Issued to",
+    cert_work: "Artwork",
+    cert_edition: "Edition",
+    cert_unique: "Unique piece",
+    cert_ref: "Reference",
+    cert_date: "Date",
+    cert_text: "I, the undersigned Pascal Sun, painter in Tahiti, certify that the work described above is authentic, created by my own hand, and acquired from my gallery.",
+    cert_sign: "Pascal Sun · Tahiti, French Polynesia",
+    cert_print: "Print / Save as PDF",
     order_total: "Artworks total",
     f_name: "Full name",
     f_email: "Email",

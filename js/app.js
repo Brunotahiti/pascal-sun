@@ -546,6 +546,21 @@
         .filter((l) => l.art && l.produit);
     }
 
+    /* Frais de livraison : même calcul que le serveur (source de vérité). */
+    function shippingEUR(lines) {
+      const mode = (form && new FormData(form).get("mode")) || "livraison";
+      if (mode === "retrait") return 0;
+      const zoneKey = (document.getElementById("of-zone") || {}).value || "pf";
+      const zone = (SHIPPING.zones || []).find((z) => z.key === zoneKey) || SHIPPING.zones[0];
+      const total = lines.reduce((s, l) => s + l.produit.prixEUR * l.qty, 0);
+      if (SHIPPING.freeAbove && total >= SHIPPING.freeAbove) return 0;
+      return lines.reduce((s, l) => {
+        const d = String(l.art.dimensions || "").match(/(\d+)\s*[×x]\s*(\d+)/);
+        const grand = d && Math.max(+d[1], +d[2]) > 100;
+        return s + (l.key === "original" ? (grand ? zone.grand : zone.original) : (zone[l.key] || 0) * l.qty);
+      }, 0);
+    }
+
     function draw() {
       const lines = cartLines();
       const has = lines.length > 0;
@@ -571,8 +586,16 @@
         </div>`).join("");
 
       const total = lines.reduce((s, l) => s + l.produit.prixEUR * l.qty, 0);
+      const mode = (form && new FormData(form).get("mode")) || "livraison";
+      const port = shippingEUR(lines);
       document.getElementById("order-subtotal").textContent = fmtPrice(total);
-      document.getElementById("order-total").textContent = fmtPrice(total);
+      document.getElementById("order-shipping").textContent =
+        mode === "retrait" ? t("ship_pickup_free") : (port === 0 ? t("ship_free") : fmtPrice(port));
+      document.getElementById("order-total").textContent = fmtPrice(total + port);
+      const zf = document.getElementById("zone-field");
+      if (zf) zf.style.display = mode === "retrait" ? "none" : "";
+      document.getElementById("ship-note").textContent =
+        mode === "retrait" ? "" : `${t("ship_note")} ${SHIPPING.freeAbove ? t("ship_free_note") + " " + fmtPrice(SHIPPING.freeAbove) + "." : ""}`;
     }
 
     listEl.addEventListener("click", (e) => {
@@ -592,6 +615,16 @@
       }
     });
 
+    // Zones de livraison + recalcul à chaque changement
+    const zoneSel = document.getElementById("of-zone");
+    if (zoneSel) {
+      zoneSel.innerHTML = (SHIPPING.zones || [])
+        .map((z) => `<option value="${z.key}">${store.lang === "en" ? (z.en || z.fr) : z.fr}</option>`).join("");
+      zoneSel.addEventListener("change", draw);
+    }
+    document.querySelectorAll('#order-form input[name="mode"]').forEach((r) =>
+      r.addEventListener("change", draw));
+
     const form = document.getElementById("order-form");
     if (form) form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -604,7 +637,7 @@
         client: {
           name: data.get("name"), email: data.get("email"),
           country: data.get("country"), message: data.get("message"),
-          mode: data.get("mode") || "livraison", payment
+          mode: data.get("mode") || "livraison", zone: data.get("zone") || "pf", payment
         }
       };
       const submitBtn = form.querySelector("button[type=submit]");
@@ -797,6 +830,7 @@
       if (Array.isArray(data.posts)) POSTS = data.posts;
       if (Array.isArray(data.avis)) AVIS = data.avis;
       if (data.instagram) INSTA = Object.assign({ username: "", posts: [] }, data.instagram);
+      if (data.shipping && Array.isArray(data.shipping.zones)) SHIPPING = data.shipping;
       if (data.uiTexts) {
         ["fr", "en"].forEach((l) => {
           if (data.uiTexts[l]) I18N[l] = Object.assign({}, I18N[l], data.uiTexts[l]);
