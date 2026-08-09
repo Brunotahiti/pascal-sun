@@ -30,7 +30,8 @@
       arErrTitle: "Caméra indisponible",
       arErrText: "Votre navigateur a refusé l'accès à la caméra (ou il n'y en a pas). Essayez sur votre téléphone, ou visualisez l'œuvre en situation dans un salon.",
       arErrBtn: "Voir en situation",
-      roomHint: "Échelle réelle : le canapé mesure 220 cm — l'œuvre fait",
+      roomHint: "Faites glisser le tableau pour le placer · canapé 220 cm — l'œuvre fait",
+      arShot: "Prendre une photo",
       close: "Fermer"
     },
     en: {
@@ -47,7 +48,8 @@
       arErrTitle: "Camera unavailable",
       arErrText: "Your browser denied camera access (or there is none). Try on your phone, or view the artwork in a room instead.",
       arErrBtn: "View in a room",
-      roomHint: "True scale: the sofa is 220 cm wide — the artwork is",
+      roomHint: "Drag the artwork to place it · sofa 220 cm — the artwork is",
+      arShot: "Take a photo",
       close: "Close"
     }
   };
@@ -259,7 +261,7 @@
           el.style.left = x + "px";
           el.style.top = y + "px";
           // cadre bois noir 2 cm à l'échelle de l'œuvre
-          el.style.borderWidth = Math.max(2, 2 * (w / dims.w)) + "px";
+          el.style.borderWidth = Math.max(2, 1.7 * (w / dims.w)) + "px";
         }
         apply();
 
@@ -299,10 +301,41 @@
         controls.className = "ar-controls";
         controls.innerHTML = `
           <label>${tr.arSize}</label>
-          <input type="range" min="90" max="${Math.round(innerWidth * 0.92)}" value="${Math.round(w)}">`;
+          <input type="range" min="90" max="${Math.round(innerWidth * 0.92)}" value="${Math.round(w)}">
+          <button class="ar-shot" title="${tr.arShot}">\u{1F4F7}</button>`;
         pane.appendChild(controls);
         const slider = controls.querySelector("input");
         slider.addEventListener("input", () => { w = +slider.value; apply(); });
+
+        /* Photo souvenir : la vidéo et l'œuvre sont dessinées sur un canvas,
+           puis l'image est téléchargée. */
+        controls.querySelector(".ar-shot").addEventListener("click", () => {
+          try {
+            const vw = video.videoWidth, vh = video.videoHeight;
+            if (!vw) return;
+            const cv = document.createElement("canvas");
+            cv.width = vw; cv.height = vh;
+            const ctx = cv.getContext("2d");
+            const scale = Math.max(pane.clientWidth / vw, pane.clientHeight / vh);
+            const offX = (pane.clientWidth - vw * scale) / 2;
+            const offY = (pane.clientHeight - vh * scale) / 2;
+            ctx.drawImage(video, 0, 0, vw, vh);
+            const img = el.querySelector("img");
+            const bw = parseFloat(getComputedStyle(el).borderWidth) || 0;
+            const X = (x - offX) / scale, Y = (y - offY) / scale;
+            const Wp = w / scale, Hp = (w * ratio) / scale, B = bw / scale;
+            ctx.fillStyle = "#17120e";
+            ctx.fillRect(X, Y, Wp, Hp);
+            ctx.drawImage(img, X + B, Y + B, Math.max(1, Wp - 2 * B), Math.max(1, Hp - 2 * B));
+            ctx.font = Math.round(vh * 0.022) + "px Manrope, sans-serif";
+            ctx.fillStyle = "rgba(255,255,255,.9)";
+            ctx.fillText("pascal-sun.com", vw * 0.03, vh - vh * 0.03);
+            const a = document.createElement("a");
+            a.download = "pascal-sun-" + art.id + ".jpg";
+            a.href = cv.toDataURL("image/jpeg", 0.92);
+            a.click();
+          } catch { /* prise de vue impossible */ }
+        });
 
         const hint = document.createElement("div");
         hint.className = "viewer-hint";
@@ -398,6 +431,35 @@
     }
     setFrame();
     addEventListener("resize", setFrame);
+
+    /* L'œuvre se déplace librement sur le mur (souris ou doigt). */
+    artEl.classList.add("movable");
+    let drag = null;
+    artEl.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      artEl.setPointerCapture(e.pointerId);
+      const r = wrap.getBoundingClientRect();
+      drag = {
+        dx: e.clientX - (r.left + (parseFloat(artEl.style.left) / 100) * r.width),
+        dy: e.clientY - (r.top + (parseFloat(artEl.style.top) / 100) * r.height)
+      };
+      artEl.classList.add("grabbing");
+    });
+    artEl.addEventListener("pointermove", (e) => {
+      if (!drag) return;
+      const r = wrap.getBoundingClientRect();
+      const lw = (artEl.offsetWidth / r.width) * 100;
+      const lh = (artEl.offsetHeight / r.height) * 100;
+      let nl = ((e.clientX - drag.dx - r.left) / r.width) * 100;
+      let nt = ((e.clientY - drag.dy - r.top) / r.height) * 100;
+      nl = Math.max(0, Math.min(nl, 100 - lw));
+      nt = Math.max(0, Math.min(nt, 100 - lh));
+      artEl.style.left = nl + "%";
+      artEl.style.top = nt + "%";
+    });
+    const stop = () => { drag = null; artEl.classList.remove("grabbing"); };
+    artEl.addEventListener("pointerup", stop);
+    artEl.addEventListener("pointercancel", stop);
   }
 
   function escapeHtml(s) {
