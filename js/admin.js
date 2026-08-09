@@ -84,6 +84,7 @@
     renderEvents();
     renderPosts();
     renderAvis();
+    renderInsta();
     renderTexts();
     wireChrome();
     markClean();
@@ -96,6 +97,7 @@
       events: (data && data.events) || JSON.parse(JSON.stringify(typeof EVENTS !== "undefined" ? EVENTS : [])),
       posts: (data && data.posts) || [],
       avis: (data && data.avis) || [],
+      instagram: (data && data.instagram) || { username: "", posts: [] },
       uiTexts: (data && data.uiTexts) || { fr: {}, en: {} }
     };
     catalogue.uiTexts.fr = catalogue.uiTexts.fr || {};
@@ -372,6 +374,23 @@
   function renderPosts() { $("#post-list").innerHTML = catalogue.posts.map(postCard).join(""); }
   function renderAvis() { $("#avis-list").innerHTML = catalogue.avis.map(avisCard).join(""); }
 
+  function renderInsta() {
+    $("#insta-user").value = catalogue.instagram.username || "";
+    $("#insta-list").innerHTML = (catalogue.instagram.posts || []).map((p, i) => `
+      <article class="aw-card" data-ii="${i}" style="grid-template-columns: 150px 1fr;">
+        <div class="aw-photo">
+          <img src="${esc(p.image || "img/oeuvres/le-tressage-480.webp")}" alt="" style="aspect-ratio:1;">
+          <div class="photo-btns"><button type="button" class="replace-btn" data-act="insta-photo">Photo</button></div>
+          <input type="file" accept="image/*" hidden>
+        </div>
+        <div class="aw-fields" style="grid-template-columns: 1fr;">
+          <div class="f"><label>Lien du post Instagram</label><input data-ik="url" value="${esc(p.url || "")}" placeholder="https://instagram.com/p/…"></div>
+          <div class="f"><label>Légende courte</label><input data-ik="legende" value="${esc(p.legende || "")}"></div>
+          <div class="aw-flags"><button type="button" class="aw-delete" data-act="insta-del">Retirer</button></div>
+        </div>
+      </article>`).join("");
+  }
+
   /* ----------------------------------------------------------- textes -- */
 
   function renderTexts() {
@@ -541,14 +560,38 @@
   }
 
   async function enablePush() {
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+
+    // iOS n'autorise le push que depuis l'app ajoutée à l'écran d'accueil.
+    if (ios && !standalone) {
+      showPushHelp(`Sur iPhone, les notifications ne fonctionnent que depuis l'application installée :
+1. Touchez le bouton Partager <span style="font-size:16px">􀈂</span> en bas de Safari
+2. Choisissez « Sur l'écran d'accueil »
+3. Ouvrez l'application Pascal Sun depuis votre écran d'accueil
+4. Revenez ici (onglet Boîte à idées) et touchez de nouveau « Activer les notifications ».`);
+      return;
+    }
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+      showPushHelp("Ce navigateur ne gère pas les notifications. Utilisez Chrome, Edge, Firefox, ou l'application installée sur iPhone.");
+      return;
+    }
+    if (location.protocol !== "https:" && location.hostname !== "localhost") {
+      showPushHelp("Les notifications nécessitent une connexion sécurisée (https).");
+      return;
+    }
+
     try {
-      if (!("serviceWorker" in navigator) || !("PushManager" in window)) throw new Error("non-supporté");
       const { key } = await fetch("/api/push/key").then((r) => r.json());
-      if (!key) { toast("Notifications non configurées côté serveur."); return; }
+      if (!key) { showPushHelp("Notifications non configurées côté serveur."); return; }
       const reg = await navigator.serviceWorker.register("/sw.js");
       await navigator.serviceWorker.ready;
       const perm = await Notification.requestPermission();
-      if (perm !== "granted") { toast("Autorisez les notifications dans votre navigateur."); return; }
+      if (perm === "denied") {
+        showPushHelp("Les notifications sont bloquées pour ce site. Autorisez-les dans les réglages de votre navigateur (Réglages du site → Notifications), puis réessayez.");
+        return;
+      }
+      if (perm !== "granted") return;
       const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(key) });
       const r = await fetch("/api/push/subscribe", {
         method: "POST",
@@ -556,10 +599,24 @@
         body: JSON.stringify(sub)
       });
       const d = await r.json();
+      $("#push-help") && ($("#push-help").hidden = true);
       toast(`Notifications activées sur cet appareil ✓ (${d.devices} appareil${d.devices > 1 ? "s" : ""})`);
-    } catch {
-      toast("Impossible d'activer les notifications sur cet appareil.");
+    } catch (e) {
+      showPushHelp("Impossible d'activer les notifications ici : " + (e && e.message ? e.message : "erreur inconnue") +
+        ". Essayez depuis l'application installée, ou depuis un ordinateur (Chrome).");
     }
+  }
+
+  function showPushHelp(html) {
+    let box = $("#push-help");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "push-help";
+      box.className = "push-help";
+      $("#idees-list").before(box);
+    }
+    box.hidden = false;
+    box.innerHTML = `<strong>🔔 Notifications</strong><p>${html.replace(/\n/g, "<br>")}</p>`;
   }
 
   /* ------------------------------------------------------ statistiques -- */
@@ -883,6 +940,44 @@
       if (e.target.dataset.act === "avis-del" && confirm("Supprimer cet avis ?")) {
         catalogue.avis.splice(+e.target.closest("[data-ai]").dataset.ai, 1); renderAvis(); markDirty();
       }
+    });
+
+    /* ------ Instagram ------ */
+    $("#insta-user").addEventListener("input", (e) => {
+      catalogue.instagram.username = e.target.value.trim().replace(/^@/, "");
+      markDirty();
+    });
+    $("#add-insta").addEventListener("click", () => {
+      catalogue.instagram.posts = catalogue.instagram.posts || [];
+      if (catalogue.instagram.posts.length >= 6) { toast("6 publications maximum sur l'accueil."); return; }
+      catalogue.instagram.posts.push({ image: "", url: "", legende: "" });
+      renderInsta(); markDirty();
+    });
+    const instaList = $("#insta-list");
+    instaList.addEventListener("input", (e) => {
+      const card = e.target.closest("[data-ii]"); const k = e.target.dataset.ik;
+      if (card && k) { catalogue.instagram.posts[+card.dataset.ii][k] = e.target.value; markDirty(); }
+    });
+    instaList.addEventListener("click", (e) => {
+      const card = e.target.closest("[data-ii]");
+      if (!card) return;
+      if (e.target.dataset.act === "insta-photo") $("input[type=file]", card).click();
+      if (e.target.dataset.act === "insta-del") {
+        catalogue.instagram.posts.splice(+card.dataset.ii, 1); renderInsta(); markDirty();
+      }
+    });
+    instaList.addEventListener("change", async (e) => {
+      if (e.target.type !== "file" || !e.target.files[0]) return;
+      const card = e.target.closest("[data-ii]");
+      try {
+        const blob = await shrinkImage(e.target.files[0]);
+        const fd = new FormData();
+        fd.append("file", blob, "instagram.webp");
+        const { path } = await (await fetch("/api/upload", { method: "POST", body: fd })).json();
+        catalogue.instagram.posts[+card.dataset.ii].image = path;
+        $("img", card).src = path;
+        markDirty();
+      } catch { toast("Échec de l'envoi de la photo."); }
     });
 
     /* ------ newsletter ------ */

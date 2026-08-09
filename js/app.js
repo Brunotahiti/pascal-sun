@@ -46,10 +46,14 @@
     return `<img class="${className}" src="${src}" ${srcset} alt="${esc(a.titre)} — Pascal Sun" ${loading} decoding="async">`;
   }
 
+  /* Prix « jolis » : arrondis commerciaux propres à chaque devise. */
   function fmtPrice(eur) {
     const c = CURRENCIES[store.currency];
     const value = eur * c.rate;
-    const rounded = store.currency === "XPF" ? Math.round(value / 100) * 100 : Math.round(value);
+    let pas;
+    if (store.currency === "XPF") pas = value >= 100000 ? 5000 : value >= 20000 ? 1000 : 500;
+    else pas = value >= 1000 ? 50 : value >= 200 ? 10 : 5;
+    const rounded = Math.round(value / pas) * pas;
     const num = rounded.toLocaleString(c.locale);
     return c.position === "before" ? `${c.symbol}${num}` : `${num} ${c.symbol}`;
   }
@@ -70,8 +74,60 @@
       deferredInstall.userChoice.finally(() => { deferredInstall = null; });
       return;
     }
-    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    toast(ios ? t("app_ios_hint") : t("app_hint"));
+    showInstallGuide();
+  }
+
+  /* Guide d'installation illustré, pas à pas, selon l'appareil. */
+  function showInstallGuide() {
+    const ua = navigator.userAgent;
+    const ios = /iphone|ipad|ipod/i.test(ua);
+    const android = /android/i.test(ua);
+    const steps = ios ? [
+      [`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V3"/><path d="m8 7 4-4 4 4"/><path d="M5 12v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8"/></svg>`,
+       t("g_ios_1")],
+      [`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/></svg>`,
+       t("g_ios_2")],
+      [`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>`,
+       t("g_ios_3")],
+      [`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`,
+       t("g_ios_4")]
+    ] : android ? [
+      [`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>`,
+       t("g_and_1")],
+      [`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 3v13"/><path d="m8 12 4 4 4-4"/><path d="M4 21h16"/></svg>`,
+       t("g_and_2")],
+      [`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>`,
+       t("g_and_3")]
+    ] : [
+      [`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 21h8"/></svg>`,
+       t("g_desk_1")],
+      [`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 3v13"/><path d="m8 12 4 4 4-4"/><path d="M4 21h16"/></svg>`,
+       t("g_desk_2")]
+    ];
+
+    let m = document.getElementById("install-guide");
+    if (m) m.remove();
+    m = document.createElement("div");
+    m.id = "install-guide";
+    m.className = "install-modal";
+    m.innerHTML = `
+      <div class="install-box">
+        <button class="install-close" aria-label="Fermer">✕</button>
+        <div class="install-icon"><img src="/img/icon-192.png" alt=""></div>
+        <h3>${t("g_title")}</h3>
+        <p class="install-sub">${t("g_sub")}</p>
+        <ol class="install-steps">
+          ${steps.map(([ico, txt], i) => `
+            <li><span class="istep">${i + 1}</span><span class="iico">${ico}</span><span>${txt}</span></li>`).join("")}
+        </ol>
+        <p class="install-note">${t("g_note")}</p>
+        <button class="btn install-ok">${t("g_ok")}</button>
+      </div>`;
+    document.body.appendChild(m);
+    const close = () => m.remove();
+    m.querySelector(".install-close").addEventListener("click", close);
+    m.querySelector(".install-ok").addEventListener("click", close);
+    m.addEventListener("click", (e) => { if (e.target === m) close(); });
   }
 
   /* --------------------------------------------------- header / footer -- */
@@ -146,6 +202,7 @@
             <li>${t("footer_cert")}</li>
             <li>${t("footer_secure")}</li>
             <li><a href="mailto:${ARTIST_EMAIL}">${ARTIST_EMAIL}</a></li>
+            <li><a href="cgv.html">${t("footer_cgv")}</a></li>
           </ul>
           <button class="app-install-btn" id="pwa-install">${t("app_install")}</button>
           <div class="newsletter">
@@ -161,7 +218,11 @@
       </div>
       <div class="wrap bottom">
         <span>${t("footer_rights")}</span>
-        <span>${t("footer_made")} · <a href="/admin" rel="nofollow">Admin</a></span>
+        <span>
+          ${t("footer_made")} ·
+          <a class="made-by" href="https://manaprocess.com" target="_blank" rel="noopener">Réalisé par Manaprocess.com</a> ·
+          <a href="/admin" rel="nofollow">Admin</a>
+        </span>
       </div>`;
 
     const ib = document.getElementById("pwa-install");
@@ -668,6 +729,27 @@
           <footer>${esc(av.nom)}${av.lieu ? ` · ${esc(av.lieu)}` : ""}</footer>
         </blockquote>`).join("");
     }
+
+    // Instagram : compte connecté depuis l'admin
+    const ig = document.getElementById("insta-section");
+    if (ig && INSTA.username) {
+      const user = String(INSTA.username).replace(/^@/, "");
+      ig.hidden = false;
+      const link = document.getElementById("insta-link");
+      link.href = `https://instagram.com/${user}`;
+      link.textContent = `@${user} — ${t("insta_follow")} ↗`;
+      const posts = (INSTA.posts || []).filter((p) => p && p.image).slice(0, 6);
+      document.getElementById("insta-grid").innerHTML = posts.length
+        ? posts.map((p) => `
+          <a class="insta-cell reveal" href="${esc(p.url || `https://instagram.com/${user}`)}" target="_blank" rel="noopener">
+            <img src="${esc(p.image)}" alt="${esc(p.legende || "Instagram")}" loading="lazy" decoding="async">
+            ${p.legende ? `<span class="insta-cap">${esc(p.legende)}</span>` : ""}
+          </a>`).join("")
+        : `<a class="insta-empty reveal" href="https://instagram.com/${user}" target="_blank" rel="noopener">
+             <span>📷</span> @${user} — ${t("insta_follow")} ↗
+           </a>`;
+      observeReveals();
+    }
   }
 
   function pageIdees() {
@@ -714,6 +796,7 @@
       if (Array.isArray(data.events)) EVENTS = data.events;
       if (Array.isArray(data.posts)) POSTS = data.posts;
       if (Array.isArray(data.avis)) AVIS = data.avis;
+      if (data.instagram) INSTA = Object.assign({ username: "", posts: [] }, data.instagram);
       if (data.uiTexts) {
         ["fr", "en"].forEach((l) => {
           if (data.uiTexts[l]) I18N[l] = Object.assign({}, I18N[l], data.uiTexts[l]);

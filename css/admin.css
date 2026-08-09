@@ -507,6 +507,17 @@ button { font-family: var(--sans); cursor: pointer; }
 
 /* ------------------------------------------------------ boîte à idées -- */
 
+.push-help {
+  background: #fff;
+  border: 1px solid var(--accent);
+  border-left: 4px solid var(--accent);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin-bottom: 22px;
+}
+.push-help strong { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+.push-help p { margin-top: 8px; font-size: 14px; color: var(--ink-soft); line-height: 1.7; }
+
 .idee-card.is-new { border-left: 4px solid var(--accent); }
 .idee-new {
   background: var(--accent);

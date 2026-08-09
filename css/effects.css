@@ -7,16 +7,8 @@
 
 /* ------------------------------------------------ transitions de page -- */
 
-@view-transition { navigation: auto; }
-
-::view-transition-old(root) {
-  animation: vt-out .45s cubic-bezier(.55, 0, .55, .2) both;
-}
-::view-transition-new(root) {
-  animation: vt-in .65s cubic-bezier(.22, .61, .21, 1) both;
-}
-@keyframes vt-out { to { opacity: 0; } }
-@keyframes vt-in  { from { opacity: 0; } }
+/* Les transitions de page ont été retirées : le fondu entre l'ancienne et la
+   nouvelle page donnait une impression de sursaut à chaque navigation. */
 
 /* --------------------------------------------------- barre de progrès -- */
 
@@ -219,10 +211,8 @@
   from { opacity: 0; transform: scale(.86) translateY(20px); }
 }
 
-/* ------------------------------------------------ apparition douce -- */
-
-body { animation: page-in .7s var(--ease); }
-@keyframes page-in { from { opacity: 0; } }
+/* (le fondu d'apparition du corps de page a été retiré : il retardait
+   l'affichage et accentuait l'impression de saut) */
 
 /* ------------------------------------------------- intro cinématique -- */
 

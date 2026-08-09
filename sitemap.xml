@@ -7,6 +7,7 @@
   <url><loc>https://pascal-sun.com/portrait.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://pascal-sun.com/artiste.html</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://pascal-sun.com/contact.html</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://pascal-sun.com/cgv.html</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
   <url><loc>https://pascal-sun.com/oeuvre.html?id=retour-du-pecheur</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://pascal-sun.com/oeuvre.html?id=vahine-a-la-fleur</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://pascal-sun.com/oeuvre.html?id=le-vieux-truck</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>

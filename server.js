@@ -60,8 +60,43 @@ const readJSON = (file, fallback) => {
 const writeJSON = (file, data) => fs.writeFileSync(file, JSON.stringify(data, null, 2));
 
 app.disable("x-powered-by");
+app.set("trust proxy", 1);
 app.use(compression());
 app.use(express.json({ limit: "3mb" }));
+
+/* ------------------------------------------------------------ sécurité -- */
+
+/* En-têtes de protection du navigateur */
+app.use((_req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "geolocation=(), microphone=(), payment=()");
+  res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  next();
+});
+
+/* Limitation de débit : protège la connexion admin (force brute) et les
+   formulaires publics (spam). Fenêtre glissante en mémoire. */
+const hits = new Map();
+function rateLimit({ windowMs, max, key }) {
+  return (req, res, next) => {
+    const ip = req.ip || req.socket.remoteAddress || "?";
+    const k = key + ":" + ip;
+    const now = Date.now();
+    const list = (hits.get(k) || []).filter((t) => now - t < windowMs);
+    if (list.length >= max) {
+      res.setHeader("Retry-After", Math.ceil(windowMs / 1000));
+      return res.status(429).json({ error: "trop-de-tentatives" });
+    }
+    list.push(now);
+    hits.set(k, list);
+    if (hits.size > 5000) hits.clear(); // garde-fou mémoire
+    next();
+  };
+}
+const loginLimit = rateLimit({ windowMs: 15 * 60e3, max: 8, key: "login" });
+const formLimit = rateLimit({ windowMs: 60 * 60e3, max: 20, key: "form" });
 
 /* ------------------------------------------------------------- session -- */
 
@@ -83,7 +118,7 @@ function isAuthed(req) {
 const requireAuth = (req, res, next) =>
   isAuthed(req) ? next() : res.status(401).json({ error: "unauthorized" });
 
-app.post("/api/login", (req, res) => {
+app.post("/api/login", loginLimit, (req, res) => {
   const given = String((req.body || {}).password || "");
   const ok = given.length === ADMIN_PASSWORD.length &&
     crypto.timingSafeEqual(Buffer.from(given), Buffer.from(ADMIN_PASSWORD));
@@ -254,7 +289,7 @@ app.post("/api/push/subscribe", requireAuth, (req, res) => {
 
 /* ------------------------------------------------------ boîte à idées -- */
 
-app.post("/api/idees", (req, res) => {
+app.post("/api/idees", formLimit, (req, res) => {
   const b = req.body || {};
   if (!b.message || String(b.message).trim().length < 3) {
     return res.status(400).json({ error: "message-requis" });
@@ -314,7 +349,7 @@ function upsertContact({ email, name, country, source, orderTotalEUR }) {
 }
 
 /* inscription newsletter (publique) */
-app.post("/api/newsletter", (req, res) => {
+app.post("/api/newsletter", formLimit, (req, res) => {
   const { email, name } = req.body || {};
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(email))) {
     return res.status(400).json({ error: "email-invalide" });
@@ -359,7 +394,7 @@ app.get("/api/contacts.csv", requireAuth, (_req, res) => {
 /* Enregistre la commande, réserve automatiquement les originaux et
    décrémente le stock des tirages/affiches, puis crée la fiche client. */
 
-app.post("/api/orders", (req, res) => {
+app.post("/api/orders", formLimit, (req, res) => {
   const { items, client } = req.body || {};
   if (!Array.isArray(items) || !items.length || !client || !client.email) {
     return res.status(400).json({ error: "commande-invalide" });
@@ -468,7 +503,7 @@ app.post("/api/orders/statut", requireAuth, (req, res) => {
 
 /* ------------------------------------------- alerte « prévenez-moi » -- */
 
-app.post("/api/notify", (req, res) => {
+app.post("/api/notify", formLimit, (req, res) => {
   const { email, artworkId, titre } = req.body || {};
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(email))) {
     return res.status(400).json({ error: "email-invalide" });
@@ -504,7 +539,7 @@ const commissionUpload = multer({
   fileFilter: (_req, file, cb) => cb(null, /^image\//.test(file.mimetype))
 });
 
-app.post("/api/commission", commissionUpload.single("photo"), (req, res) => {
+app.post("/api/commission", formLimit, commissionUpload.single("photo"), (req, res) => {
   const b = req.body || {};
   if (!b.email || !b.name || !b.description) return res.status(400).json({ error: "champs-manquants" });
   const commissions = readJSON(COMMISSIONS_FILE, []);
