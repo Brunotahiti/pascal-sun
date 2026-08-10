@@ -677,7 +677,7 @@ body.lights-on .lights-switch .bulb {
 }
 @media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
 
-.portrait {
+figure.portrait {
   background: #f4efe6;
   border: 5px solid #17120e;      /* cadre noir, comme les toiles */
   padding: clamp(8px, 1vw, 14px);
@@ -687,7 +687,7 @@ body.lights-on .lights-switch .bulb {
   position: sticky;
   top: 104px;
 }
-@media (max-width: 900px) { .portrait { position: static; max-width: 440px; } }
+@media (max-width: 900px) { figure.portrait { position: static; max-width: 440px; } }
 
 .prose p { margin-bottom: 1.2em; color: var(--ink-soft); }
 .prose.cgv h2 {
