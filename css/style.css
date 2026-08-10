@@ -268,9 +268,6 @@ a { color: inherit; text-decoration: none; }
 }
 .hero-art img {
   width: 100%;
-  box-shadow:
-    0 0 0 1px rgba(22, 19, 15, .14),
-    0 1px 8px rgba(22, 19, 15, .12) inset;
 }
 .hero-art figcaption { padding: 14px 2px 0; }
 .hero-art figcaption {
@@ -402,9 +399,6 @@ a { color: inherit; text-decoration: none; }
   width: 100%;
   height: auto;              /* proportions réelles de la toile */
   display: block;
-  box-shadow:
-    0 0 0 1px rgba(22, 19, 15, .14),
-    0 1px 8px rgba(22, 19, 15, .12) inset;
 }
 
 /* ------------------------------------------------- éclairage de galerie -- */
@@ -631,9 +625,6 @@ body.lights-on .lights-switch .bulb {
 .artwork-visual img {
   width: 100%;
   height: auto;
-  box-shadow:
-    0 0 0 1px rgba(22, 19, 15, .14),
-    0 1px 8px rgba(22, 19, 15, .12) inset;
 }
 @media (max-width: 900px) { .artwork-visual { position: static; } }
 
