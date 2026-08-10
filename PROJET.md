@@ -46,14 +46,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=29/?v=30/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=30/?v=31/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=30"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=31"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement

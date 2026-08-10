@@ -261,10 +261,14 @@ a { color: inherit; text-decoration: none; }
   position: relative;
   padding: clamp(10px, 1.2vw, 16px);
   background: #f4efe6;
-  border: 5px solid #17120e;
+  /* même moulure biseautée que les cadres de la sélection */
+  border: 9px solid #17120e;
+  border-image: linear-gradient(138deg,
+                #6b5e4e 0%, #3a3126 26%, #1d1710 62%, #0b0806 100%) 1;
   box-shadow:
-    0 3px 6px rgba(22, 19, 15, .24),
-    0 40px 70px -34px rgba(22, 19, 15, .55);
+    0 1px 2px rgba(22, 19, 15, .6),                /* contact avec le mur */
+    0 12px 22px -8px rgba(22, 19, 15, .34),        /* ombre portée */
+    0 46px 84px -32px rgba(22, 19, 15, .6);        /* ambiance */
 }
 .hero-art img {
   width: 100%;
@@ -402,6 +406,52 @@ a { color: inherit; text-decoration: none; }
   height: auto;              /* proportions réelles de la toile */
   display: block;
 }
+
+/* ------------------------------------------- accrochage de l'accueil -- */
+/* Sur la page d'accueil, les toiles sont accrochées à un mur : un fond
+   légèrement plus soutenu que la page, très peu éclairé sur les bords.
+   Le passe-partout crème ressort alors du mur, et le cadre redevient un
+   objet posé dessus plutôt qu'une image imprimée dans la page. */
+
+.section.mur {
+  position: relative;
+  background:
+    radial-gradient(120% 78% at 50% 0%, rgba(255, 252, 245, .85), transparent 62%),
+    linear-gradient(180deg, #efe7da 0%, #e8dfd0 62%, #e3d9c8 100%);
+  border-top: 1px solid rgba(22, 19, 15, .07);
+  border-bottom: 1px solid rgba(22, 19, 15, .07);
+}
+/* grain de mur peint, très fin : la lumière y accroche */
+.section.mur::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23m)' opacity='.07'/%3E%3C/svg%3E");
+}
+.section.mur > .wrap { position: relative; z-index: 1; }
+
+/* Cadres mis en avant : moulure plus épaisse, biseau plus marqué, et une
+   ombre en trois temps — contact, portée, ambiance — comme un tableau
+   décollé du mur de deux centimètres. */
+.cadres-forts .frame {
+  --mat: clamp(10px, 1.25vw, 17px);
+  border-width: 7px;
+  border-image: linear-gradient(var(--biseau, 138deg),
+                #6b5e4e 0%, #3a3126 26%, #1d1710 62%, #0b0806 100%) 1;
+  box-shadow:
+    0 1px 1px rgba(22, 19, 15, .55),                                  /* contact */
+    calc(var(--ox, 0px) * .5) calc(var(--oy, 24px) * .42) 14px -4px rgba(22, 19, 15, .34),
+    calc(var(--ox, 0px) * .9) calc(var(--oy, 26px) * 1.15) 54px -18px rgba(22, 19, 15, .58);
+}
+.cadres-forts .card:hover .frame {
+  box-shadow:
+    0 1px 2px rgba(22, 19, 15, .6),
+    calc(var(--ox, 0px) * .6) calc(var(--oy, 24px) * .55) 20px -5px rgba(22, 19, 15, .38),
+    calc(var(--ox, 0px) * 1.3) calc(var(--oy, 26px) * 1.7) 74px -16px rgba(22, 19, 15, .62);
+}
+.section.mur .card-meta .sub { color: #7d7466; }
 
 /* ------------------------------------------------- éclairage de galerie -- */
 /* Un petit projecteur au-dessus de chaque toile, comme dans une vraie

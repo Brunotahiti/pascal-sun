@@ -281,3 +281,23 @@
   .viewer-tabs { padding-top: 10px; }
   .ar-controls { bottom: 76px; padding: 8px 14px; }
 }
+
+/* message d'échec de la prise de vue AR */
+.ar-shot-error {
+  position: absolute;
+  bottom: 130px;
+  left: 50%;
+  transform: translate(-50%, 10px);
+  max-width: min(400px, 84vw);
+  text-align: center;
+  background: rgba(22, 19, 15, .92);
+  color: #f4efe6;
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  line-height: 1.4;
+  opacity: 0;
+  pointer-events: none;
+  transition: .3s var(--ease);
+}
+.ar-shot-error.show { opacity: 1; transform: translate(-50%, 0); }

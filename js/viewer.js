@@ -38,6 +38,7 @@
       arErrBtn: "Voir en situation",
       roomHint: "Faites glisser le tableau pour le placer · canapé 220 cm — l'œuvre fait",
       arShot: "Prendre une photo",
+      arShotErr: "La photo n'a pas pu être prise. Réessayez dans un instant.",
       close: "Fermer"
     },
     en: {
@@ -62,6 +63,7 @@
       arErrBtn: "View in a room",
       roomHint: "Drag the artwork to place it · sofa 220 cm — the artwork is",
       arShot: "Take a photo",
+      arShotErr: "The photo could not be taken. Please try again in a moment.",
       close: "Close"
     }
   };
@@ -323,19 +325,23 @@
         slider.addEventListener("input", () => { w = +slider.value; apply(); });
 
         /* Photo souvenir : la vidéo et l'œuvre sont dessinées sur un canvas,
-           puis l'image est téléchargée. */
-        controls.querySelector(".ar-shot").addEventListener("click", () => {
+           puis l'image part dans la feuille de partage (iPhone : « Enregistrer
+           dans Photos ») ou, à défaut, en téléchargement. */
+        const shot = controls.querySelector(".ar-shot");
+        shot.addEventListener("click", () => {
+          const vw = video.videoWidth, vh = video.videoHeight;
+          const img = el.querySelector("img");
+          if (!vw || !img.complete || !img.naturalWidth) return arPhotoRatee(pane);
+
+          let cv;
           try {
-            const vw = video.videoWidth, vh = video.videoHeight;
-            if (!vw) return;
-            const cv = document.createElement("canvas");
+            cv = document.createElement("canvas");
             cv.width = vw; cv.height = vh;
             const ctx = cv.getContext("2d");
             const scale = Math.max(pane.clientWidth / vw, pane.clientHeight / vh);
             const offX = (pane.clientWidth - vw * scale) / 2;
             const offY = (pane.clientHeight - vh * scale) / 2;
             ctx.drawImage(video, 0, 0, vw, vh);
-            const img = el.querySelector("img");
             const bw = parseFloat(getComputedStyle(el).borderWidth) || 0;
             const X = (x - offX) / scale, Y = (y - offY) / scale;
             const Wp = w / scale, Hp = (w * ratio) / scale, B = bw / scale;
@@ -345,11 +351,32 @@
             ctx.font = Math.round(vh * 0.022) + "px Manrope, sans-serif";
             ctx.fillStyle = "rgba(255,255,255,.9)";
             ctx.fillText("pascal-sun.com", vw * 0.03, vh - vh * 0.03);
+          } catch { return arPhotoRatee(pane); }
+
+          const nom = "pascal-sun-" + art.id + ".jpg";
+          cv.toBlob((blob) => {
+            if (!blob) return arPhotoRatee(pane);
+            const fichier = new File([blob], nom, { type: "image/jpeg" });
+
+            /* iPhone : le téléchargement d'un lien ne mène nulle part, c'est la
+               feuille de partage qui permet d'enregistrer dans Photos. */
+            if (navigator.canShare && navigator.canShare({ files: [fichier] })) {
+              navigator.share({ files: [fichier], title: art.titre })
+                .catch(() => { /* partage annulé par le visiteur */ });
+              return;
+            }
+
+            /* Ailleurs : téléchargement classique. Le lien doit être dans la
+               page, sinon Safari ignore le clic. */
+            const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
-            a.download = "pascal-sun-" + art.id + ".jpg";
-            a.href = cv.toDataURL("image/jpeg", 0.92);
+            a.href = url;
+            a.download = nom;
+            a.rel = "noopener";
+            document.body.appendChild(a);
             a.click();
-          } catch { /* prise de vue impossible */ }
+            setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 4000);
+          }, "image/jpeg", 0.92);
         });
 
         const hint = document.createElement("div");
@@ -388,6 +415,20 @@
     if (estNavigateurIntegre()) return "inapp";
     if (nom === "NotAllowedError" || nom === "SecurityError" || nom === "PermissionDeniedError") return "refus";
     return "";
+  }
+
+  /* La prise de vue a échoué : le dire, plutôt que de ne rien faire. */
+  function arPhotoRatee(pane) {
+    let msg = pane.querySelector(".ar-shot-error");
+    if (!msg) {
+      msg = document.createElement("div");
+      msg.className = "ar-shot-error";
+      pane.appendChild(msg);
+    }
+    msg.textContent = tr.arShotErr;
+    msg.classList.add("show");
+    clearTimeout(msg.dataset.t);
+    msg.dataset.t = setTimeout(() => msg.classList.remove("show"), 4000);
   }
 
   function arFallback(pane, cause) {
