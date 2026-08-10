@@ -380,10 +380,12 @@ a { color: inherit; text-decoration: none; }
   position: relative;
   background: #f4efe6;                 /* passe-partout */
   border: 4px solid #17120e;           /* cadre bois noir fin */
+  border-image: linear-gradient(var(--biseau, 135deg),
+                #4a4137 0%, #221c16 38%, #14100c 70%, #0c0907 100%) 1;
   padding: var(--mat);
   box-shadow:
-    0 2px 5px rgba(22, 19, 15, .25),
-    0 26px 46px -24px rgba(22, 19, 15, .58);
+    0 1px 2px rgba(22, 19, 15, .4),                    /* contact */
+    calc(var(--ox, 0px) * .5) calc(var(--oy, 24px) * .55) 30px -14px rgba(22, 19, 15, .5);
   transition: padding 1.15s cubic-bezier(.23, .7, .16, 1), box-shadow .8s var(--ease);
   overflow: hidden;
 }
@@ -392,8 +394,8 @@ a { color: inherit; text-decoration: none; }
 .card:hover .frame {
   padding: calc(var(--mat) * 0.15); /* 15 % du passe-partout reste visible */
   box-shadow:
-    0 3px 7px rgba(22, 19, 15, .3),
-    0 38px 62px -28px rgba(22, 19, 15, .63);
+    0 2px 3px rgba(22, 19, 15, .45),
+    calc(var(--ox, 0px) * .8) calc(var(--oy, 26px) * .9) 48px -16px rgba(22, 19, 15, .6);
 }
 .card .frame img {
   width: 100%;
@@ -409,9 +411,10 @@ a { color: inherit; text-decoration: none; }
 
 .spot {
   position: absolute;
-  left: 50%;
-  top: -34px;
-  transform: translateX(-50%);
+  left: var(--sx, 50%);
+  top: var(--sy, -34px);
+  transform: translateX(-50%) rotate(var(--sa, 0deg));
+  transform-origin: 50% 13px;   /* pivot au niveau de la lampe */
   width: 46px;
   height: 34px;
   pointer-events: none;
@@ -419,6 +422,17 @@ a { color: inherit; text-decoration: none; }
   opacity: 0;
   transition: opacity .55s var(--ease);   /* extinction immédiate */
 }
+
+/* Un accrochage de galerie : les sources ne sont jamais toutes au même
+   endroit. Chaque toile reçoit sa propre lumière. */
+.card.lit-haut        { --sx: 50%;  --sy: -34px; --sa: 0deg;   --hx: 50%;  --hy: -12%; }
+.card.lit-haut-gauche { --sx: 24%;  --sy: -34px; --sa: 22deg;  --hx: 22%;  --hy: -10%; }
+.card.lit-haut-droite { --sx: 76%;  --sy: -34px; --sa: -22deg; --hx: 78%;  --hy: -10%; }
+.card.lit-gauche      { --sx: -18px;--sy: 26%;   --sa: 62deg;  --hx: -8%;  --hy: 28%;  }
+.card.lit-droite      { --sx: calc(100% + 18px); --sy: 26%; --sa: -62deg; --hx: 108%; --hy: 28%; }
+.card.lit-bas .spot, .card.lit-bas-gauche .spot { z-index: 1; }
+.card.lit-bas         { --sx: 50%;  --sy: calc(100% - 78px); --sa: 180deg; --hx: 50%; --hy: 112%; }
+.card.lit-bas-gauche  { --sx: 22%;  --sy: calc(100% - 78px); --sa: 156deg; --hx: 20%; --hy: 110%; }
 /* la tige et le corps du projecteur */
 .spot::before {
   content: "";
@@ -463,7 +477,7 @@ a { color: inherit; text-decoration: none; }
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: radial-gradient(125% 85% at 50% -12%,
+  background: radial-gradient(125% 85% at var(--hx, 50%) var(--hy, -12%),
     rgba(255, 246, 224, .5) 0%,
     rgba(255, 240, 210, .16) 42%,
     rgba(22, 19, 15, .3) 100%);
@@ -484,7 +498,14 @@ body,
               border-color 1.1s var(--ease), box-shadow 1.1s var(--ease);
 }
 
-body.lights-on { background: #171410; }
+body.lights-on {
+  background-color: #171410;
+  /* léger grain de mur peint : la lumière y accroche */
+  background-image:
+    radial-gradient(120% 60% at 50% 0%, rgba(255, 240, 214, .05), transparent 60%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23m)' opacity='.12'/%3E%3C/svg%3E");
+  background-attachment: fixed, fixed;
+}
 body.lights-on .site-header {
   background: color-mix(in srgb, #171410 88%, transparent);
   border-bottom-color: #2c2620;
@@ -513,14 +534,14 @@ body.lights-on .lightwash { opacity: 1; transition-duration: 1.1s; transition-de
 body.lights-on .card .frame {
   transition: box-shadow 1.2s var(--ease) .5s, padding 1.15s cubic-bezier(.23, .7, .16, 1);
   box-shadow:
-    0 3px 8px rgba(0, 0, 0, .5),
-    0 30px 60px -22px rgba(0, 0, 0, .75),
+    calc(var(--ox, 0px) * .18) calc(var(--oy, 24px) * .16) 6px rgba(0, 0, 0, .55),
+    var(--ox, 0px) var(--oy, 26px) 46px -14px rgba(0, 0, 0, .8),
     0 0 44px -6px rgba(255, 238, 200, .22);
 }
 body.lights-on .card:hover .frame {
   box-shadow:
-    0 4px 10px rgba(0, 0, 0, .55),
-    0 44px 74px -24px rgba(0, 0, 0, .8),
+    calc(var(--ox, 0px) * .2) calc(var(--oy, 24px) * .18) 8px rgba(0, 0, 0, .6),
+    calc(var(--ox, 0px) * 1.5) calc(var(--oy, 26px) * 1.5) 62px -14px rgba(0, 0, 0, .85),
     0 0 70px -4px rgba(255, 238, 200, .34);
 }
 

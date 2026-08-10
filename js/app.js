@@ -301,7 +301,12 @@
 
   /* ------------------------------------------------------------ cartes -- */
 
-  function cardHTML(a) {
+  /* Répartition des éclairages, comme dans une salle réelle :
+     jamais deux voisines éclairées pareil. */
+  const ECLAIRAGES = ["lit-haut", "lit-haut-gauche", "lit-droite", "lit-bas",
+                      "lit-haut-droite", "lit-gauche", "lit-haut", "lit-bas-gauche"];
+
+  function cardHTML(a, index) {
     const badge = a.statut === "vendu"
       ? `<span class="badge-sold">${t("statut_vendu")}</span>`
       : a.statut === "reserve"
@@ -310,8 +315,9 @@
     const price = a.statut === "vendu"
       ? `<span class="price sold">${t("statut_vendu")}</span>`
       : `<span class="price">${fmtPrice(a.prixEUR)}</span>`;
+    const lumiere = ECLAIRAGES[(index || 0) % ECLAIRAGES.length];
     return `
-      <article class="card reveal">
+      <article class="card reveal ${lumiere}">
         <span class="spot" aria-hidden="true"><span class="spot-beam"></span></span>
         <a href="oeuvre.html?id=${a.id}" aria-label="${esc(a.titre)}">
           ${badge}
