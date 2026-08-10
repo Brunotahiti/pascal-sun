@@ -18,8 +18,7 @@ body[data-page="certificat"] {
 .cert-sheet {
   width: 210mm;
   max-width: 100%;
-  height: 297mm;
-  overflow: hidden;
+  min-height: 297mm;
   margin: 0 auto;
   background: var(--paper);
   box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .5);
@@ -32,8 +31,7 @@ body[data-page="certificat"] {
   outline: 1px solid var(--ink);
   outline-offset: 5px;
   padding: 11mm 10mm;
-  height: calc(297mm - 32mm - 12px);
-  overflow: hidden;
+  min-height: calc(297mm - 32mm - 12px);
   display: flex;
   flex-direction: column;
 }
@@ -153,10 +151,32 @@ body[data-page="certificat"] {
 
 @media print {
   @page { size: A4; margin: 0; }
-  body[data-page="certificat"] { background: #fff; padding: 0; }
+  html, body {
+    width: 210mm;
+    height: 296mm;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    background: #fff;
+  }
   .no-print { display: none !important; }
-  .cert-sheet { box-shadow: none; width: 210mm; height: 297mm; margin: 0; overflow: hidden; page-break-after: avoid; break-after: avoid; }
-  .cert-frame, .cert-body, .cert-foot { break-inside: avoid; page-break-inside: avoid; }
-  html, body { height: 297mm; overflow: hidden; }
+  .cert-sheet {
+    box-shadow: none;
+    width: 210mm;
+    height: 296mm;
+    min-height: 0;
+    margin: 0 !important;
+    padding: 13mm;
+    overflow: hidden;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+  .cert-frame {
+    min-height: 0;
+    height: calc(296mm - 26mm - 12px);
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .grain, .cursor-dot, .cursor-ring, .scroll-progress { display: none !important; }
 }

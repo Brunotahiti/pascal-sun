@@ -77,5 +77,23 @@
           </div>
         </footer>
       </div>`;
+
+    /* Le certificat doit tenir sur une seule page A4, quel que soit le
+       navigateur : on mesure la hauteur réelle et on ajuste l'échelle. */
+    function fitToPage() {
+      const frame = sheet.querySelector(".cert-frame");
+      if (!frame) return;
+      frame.style.zoom = "";
+      const mmToPx = (mm) => (mm * 96) / 25.4;
+      const dispo = mmToPx(296 - 26) - 12;          // page - marges - cadre
+      const reel = frame.scrollHeight;
+      if (reel > dispo) frame.style.zoom = String(Math.max(0.7, dispo / reel));
+    }
+    // après le chargement de l'image de l'œuvre (elle change la hauteur)
+    const visuel = sheet.querySelector(".cert-visual img");
+    if (visuel && !visuel.complete) visuel.addEventListener("load", fitToPage, { once: true });
+    requestAnimationFrame(fitToPage);
+    addEventListener("beforeprint", fitToPage);
+    addEventListener("resize", fitToPage);
   });
 })();
