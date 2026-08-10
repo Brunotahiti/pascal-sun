@@ -104,7 +104,7 @@ var ARTWORKS = [
     "technique_fr": "Fusain et acrylique sur toile",
     "technique_en": "Charcoal and acrylic on canvas",
     "dimensions": "100 × 100 cm",
-    "orientation": "portrait",
+    "orientation": "landscape",
     "prixEUR": 3100,
     "vendu": false,
     "statut": "disponible",
