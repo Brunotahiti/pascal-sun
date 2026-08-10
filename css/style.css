@@ -417,7 +417,7 @@ a { color: inherit; text-decoration: none; }
   pointer-events: none;
   z-index: 3;
   opacity: 0;
-  transition: opacity .6s var(--ease);
+  transition: opacity .55s var(--ease);   /* extinction immédiate */
 }
 /* la tige et le corps du projecteur */
 .spot::before {
@@ -454,7 +454,7 @@ a { color: inherit; text-decoration: none; }
     rgba(255, 238, 200, 0) 100%);
   filter: blur(3px);
   opacity: 0;
-  transition: opacity .7s var(--ease);
+  transition: opacity .6s var(--ease);
 }
 
 /* halo chaud sur la toile éclairée */
@@ -468,11 +468,22 @@ a { color: inherit; text-decoration: none; }
     rgba(255, 240, 210, .16) 42%,
     rgba(22, 19, 15, .3) 100%);
   opacity: 0;
-  transition: opacity .7s var(--ease);
+  transition: opacity .6s var(--ease);
   mix-blend-mode: soft-light;
 }
 
-/* ------- lumières allumées ------- */
+/* ------- passage jour / nuit, en fondu ------- */
+/* La salle s'assombrit doucement, puis les projecteurs s'allument. */
+body,
+.site-header,
+.brand, .brand small, .nav, .nav a.nav-link, .cart-btn, .tool-select,
+.page-head .section-title, .page-head .lede, #gallery-count,
+.chip, .card-meta h3, .card-meta .sub, .card-meta .price,
+.lights-switch, .lights-switch .bulb, .burger span {
+  transition: background-color 1.1s var(--ease), color 1.1s var(--ease),
+              border-color 1.1s var(--ease), box-shadow 1.1s var(--ease);
+}
+
 body.lights-on { background: #171410; }
 body.lights-on .site-header {
   background: color-mix(in srgb, #171410 88%, transparent);
@@ -496,10 +507,11 @@ body.lights-on .card-meta .sub { color: #8f867a; }
 body.lights-on .card-meta .price { color: #f2ece1; }
 body.lights-on .nav { background: #171410; border-bottom-color: #2c2620; }
 
-body.lights-on .spot { opacity: 1; }
-body.lights-on .spot-beam { opacity: 1; }
-body.lights-on .lightwash { opacity: 1; }
+body.lights-on .spot { opacity: 1; transition-duration: .9s; transition-delay: .5s; }
+body.lights-on .spot-beam { opacity: 1; transition-duration: 1.1s; transition-delay: .65s; }
+body.lights-on .lightwash { opacity: 1; transition-duration: 1.1s; transition-delay: .6s; }
 body.lights-on .card .frame {
+  transition: box-shadow 1.2s var(--ease) .5s, padding 1.15s cubic-bezier(.23, .7, .16, 1);
   box-shadow:
     0 3px 8px rgba(0, 0, 0, .5),
     0 30px 60px -22px rgba(0, 0, 0, .75),
@@ -573,7 +585,8 @@ body.lights-on .lights-switch .bulb {
   transition: background-position 1.2s var(--ease);
   mix-blend-mode: screen;
 }
-.card:hover .glass, .hero-art:hover .glass, .artwork-visual:hover .glass {
+.card:hover .glass, .hero-art:hover .glass, .artwork-visual:hover .glass,
+figure.portrait:hover .glass, .artist-hero:hover .glass, .diapo:hover .glass {
   background-position: 88% 0, 88% 0, 0 0;
 }
 .hero-art .glass { bottom: 58px; } /* la légende reste hors vitre */
@@ -677,16 +690,29 @@ body.lights-on .lights-switch .bulb {
 }
 @media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
 
-figure.portrait {
+figure.portrait, .artist-hero {
+  position: relative;
+  --mat: clamp(8px, 1vw, 14px);
   background: #f4efe6;
   border: 5px solid #17120e;      /* cadre noir, comme les toiles */
-  padding: clamp(8px, 1vw, 14px);
+  padding: var(--mat);
+  overflow: hidden;
+  transition: padding 1.15s cubic-bezier(.23, .7, .16, 1), box-shadow .8s var(--ease);
   box-shadow:
     0 2px 5px rgba(22, 19, 15, .25),
     0 26px 46px -24px rgba(22, 19, 15, .58);
   position: sticky;
   top: 104px;
 }
+figure.portrait:hover, .artist-hero:hover {
+  padding: calc(var(--mat) * 0.15);
+  box-shadow:
+    0 3px 7px rgba(22, 19, 15, .3),
+    0 38px 62px -28px rgba(22, 19, 15, .63);
+}
+/* la légende du bandeau artiste reste hors du cadre qui se resserre */
+.artist-hero { overflow: visible; }
+.artist-hero:hover { padding: calc(var(--mat) * 0.15); }
 @media (max-width: 900px) { figure.portrait { position: static; max-width: 440px; } }
 
 .prose p { margin-bottom: 1.2em; color: var(--ink-soft); }
@@ -718,6 +744,7 @@ figure.portrait {
     0 30px 52px -26px rgba(22, 19, 15, .55);
 }
 .artist-hero img { width: 100%; height: auto; display: block; }
+.artist-hero .glass { bottom: 42px; }
 .artist-hero figcaption {
   padding: 13px 4px 2px;
   font-size: 13px;
@@ -1089,6 +1116,8 @@ figure.portrait {
     0 26px 46px -24px rgba(22, 19, 15, .58);
 }
 .diapo-track { position: relative; aspect-ratio: 4 / 3; overflow: hidden; background: var(--paper-deep); }
+.diapo { position: relative; }
+.diapo-glass { inset: clamp(8px, 1vw, 14px); z-index: 1; }
 .diapo-slide {
   position: absolute;
   inset: 0;
