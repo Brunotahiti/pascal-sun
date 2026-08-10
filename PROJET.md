@@ -1,0 +1,245 @@
+# Galerie Pascal Sun — dossier de projet
+
+Document de reprise complet. À lire en début de nouvelle conversation pour
+reprendre le travail sans rien redemander.
+
+---
+
+## 1. Le projet en une phrase
+
+Galerie-boutique en ligne de **Pascal Sun**, artiste peintre à Tahiti, en
+production sur **https://pascal-sun.com** : catalogue de ses toiles, vente
+d'originaux, tirages et affiches dans le monde entier, espace d'administration
+complet géré par l'artiste lui-même.
+
+**Univers de l'artiste** : scènes de vie polynésiennes, style minimaliste,
+noir et blanc au fusain avec **une seule touche de couleur** qui guide le
+regard. Sa devise : *« Je ne peins pas pour remplir une toile. Je peins pour
+laisser respirer une émotion. »*
+
+---
+
+## 2. Accès et identifiants
+
+| Quoi | Où | Identifiants |
+|---|---|---|
+| Site public | https://pascal-sun.com | — |
+| Espace admin | https://pascal-sun.com/admin | mot de passe `PascalSun-Fenua-793aa3!` |
+| Statistiques brutes | https://stats.pascal-sun.com | `admin` + même mot de passe |
+| Code source | https://github.com/Brunotahiti/pascal-sun (branche `master`) | compte GitHub `Brunotahiti`, `gh` CLI authentifié |
+| Email artiste | contact@pascal-sun.com | mot de passe saisi dans l'admin (jamais dans le code) |
+
+**Le mot de passe email** est stocké de façon permanente dans
+`data/mail.json` sur le volume Docker, saisi via **admin → onglet Sauvegardes
+→ « ✉️ Emails automatiques »**. Il survit aux redéploiements. Si les emails
+sont inactifs après une mise à jour, c'est qu'il faut le re-saisir là.
+
+---
+
+## 3. Hébergement et déploiement
+
+**VPS Hostinger** `srv1565699` (id API **1565699**, IP **187.127.105.242**),
+Ubuntu 24.04 + Docker + Traefik. Pas d'hébergement mutualisé : tout tourne en
+conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
+
+### Déployer une modification
+
+```bash
+# 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
+for f in *.html; do sed -i '' 's/?v=28/?v=29/g' "$f"; done
+# 2. commit + push
+git add -A && git commit -m "…" && git push
+# 3. recréer le projet Docker via l'API Hostinger (MCP) :
+#    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
+#      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
+# 4. attendre que la nouvelle version soit servie :
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=29"; do sleep 8; done
+```
+
+### Variables d'environnement à repasser à chaque déploiement
+
+```
+ADMIN_PASSWORD=PascalSun-Fenua-793aa3!
+APP_SECRET=283d8fc2cd2c3282231e677c06606f5f361d776dfd2fd49c6729a697f96bf961
+UMAMI_URL=http://pascal-sun-umami:3000
+UMAMI_USER=admin
+UMAMI_PASSWORD=PascalSun-Fenua-793aa3!
+UMAMI_WEBSITE_ID=56116cc3-d031-4382-9868-905e305b96e5
+VAPID_PUBLIC=BHLAm4TpfuaP9EMbgXM2bn5EUGyrwhdnRTLw2qqVI-Mnhu6rz-GNjx7S90lBbICvCxMmKgGGYVbnKWWF-Y3tb_k
+VAPID_PRIVATE=D0qUqKRCdLYDdett3-JSH8aEH2JB7wyMYjySn8-KHZw
+```
+
+⚠️ **Ne jamais oublier `SMTP_PASS`** : il n'est PAS dans cette liste (il vit
+dans `data/mail.json`). Ne pas le remettre en variable d'environnement.
+
+### Autres projets Docker sur le même VPS
+
+`pascal-sun` (le site), `pascal-sun-stats` (Umami + Postgres), plus une
+vingtaine d'autres projets sans rapport (manaprocess, medipac, kaikau…).
+**Ne jamais toucher aux autres.**
+
+### DNS (API Hostinger, `DNS_updateDNSRecordsV1`)
+
+- `@` → A 187.127.105.242
+- `www` → CNAME pascal-sun.com
+- `stats` → A 187.127.105.242
+- MX / DKIM / SPF Hostinger pour la boîte mail — **ne pas y toucher**
+- TXT de vérification Google Search Console (propriété déjà validée)
+
+---
+
+## 4. Architecture technique
+
+**Aucun framework, aucune étape de build.** HTML + CSS + JavaScript natif,
+servis par un petit serveur Node/Express.
+
+```
+server.js              serveur Express : site + admin + API + emails + push
+package.json           express, multer, compression, nodemailer, web-push
+Dockerfile             node:20-alpine
+docker-compose.yml     service web derrière Traefik, volume pascal-sun-data
+
+index.html             accueil
+galerie.html           catalogue + filtres + projecteurs
+oeuvre.html?id=…       fiche œuvre (3D / AR / en situation)
+artiste.html           univers, photo de Pascal, diaporama, vidéos, signature
+expositions.html       feuille de route des vernissages
+journal.html           journal de l'atelier
+portrait.html          portrait sur commande
+idees.html             boîte à idées
+panier.html            panier + livraison + paiement
+merci.html             confirmation de commande
+certificat.html?c=…    certificat d'authenticité imprimable (1 page A4)
+cgv.html               conditions générales de vente
+admin.html             espace d'administration (8 onglets)
+
+css/style.css          identité du site
+css/effects.css        curseur, grain, intro, marquee
+css/viewer.css         visionneuse 3D / AR / salon
+css/certificat.css     certificat A4
+css/admin.css          espace admin
+
+js/data.js             DONNÉES : ARTWORKS, EVENTS, SHIPPING, ATELIER, I18N…
+js/app.js              moteur du site public
+js/viewer.js           vue 3D, réalité augmentée, mise en situation
+js/effects.js          intro « pinceau », curseur, boutons magnétiques
+js/certificat.js       rendu + ajustement automatique du certificat
+js/admin.js            espace d'administration
+
+img/oeuvres/           toiles, 3 tailles WebP (480/960/1600)
+img/atelier/           photos d'atelier + pascal-peint-*.webp
+img/signature.png      signature manuscrite détourée
+videos/atelier-*.mp4   3 vidéos compressées
+sw.js                  service worker (PWA)
+manifest.webmanifest   application installable
+```
+
+### Données persistantes (volume Docker `pascal-sun-data`, monté sur `/app/data`)
+
+| Fichier | Contenu |
+|---|---|
+| `catalogue.json` | œuvres, vernissages, journal, avis, Instagram, livraison, atelier, textes |
+| `orders.json` | commandes |
+| `newsletter.json` | contacts / clients (CRM) |
+| `commissions.json` | demandes de portrait |
+| `idees.json` | boîte à idées |
+| `push.json` | abonnements aux notifications |
+| `mail.json` | identifiants SMTP |
+| `backups/` | sauvegardes quotidiennes (30 jours) |
+| `uploads/` | photos envoyées depuis l'admin |
+
+Au **premier démarrage seulement**, `catalogue.json` est semé depuis
+`js/data.js`. Ensuite c'est le fichier qui fait foi : **modifier `js/data.js`
+ne change plus rien en production**. Pour changer les données en prod, passer
+par l'admin ou par l'API :
+
+```bash
+curl -s -c /tmp/ck -X POST https://pascal-sun.com/api/login \
+  -H "Content-Type: application/json" -d '{"password":"…"}' -o /dev/null
+curl -s https://pascal-sun.com/api/catalogue > /tmp/cat.json
+# … modifier /tmp/cat.json …
+curl -s -b /tmp/ck -X PUT https://pascal-sun.com/api/catalogue \
+  -H "Content-Type: application/json" --data-binary @/tmp/cat.json
+```
+
+---
+
+## 5. Fonctionnalités
+
+### Site public
+- **Bilingue FR / EN**, devises **XPF (défaut) / EUR / USD** avec arrondis commerciaux
+- **PWA installable** (guide d'installation illustré selon l'appareil)
+- Intro « pinceau » à la première visite : un pinceau dessine l'horizon, Moorea, le soleil, le lagon
+- **Galerie** : filtres par collection, **projecteurs** avec interrupteur (fondu jour/nuit, 7 dispositions d'éclairage réparties comme dans une vraie salle)
+- **Fiche œuvre** : vue 3D (toile qui tourne, tranche et dos), **réalité augmentée** (caméra + photo souvenir), **mise en situation** dans un salon à l'échelle (tableau déplaçable)
+- **Boutique** : original / tirage limité / affiche, stocks et statuts automatiques, frais de port par zone, livraison ou retrait, virement ou PayPal
+- Vernissages, journal de l'atelier, portraits sur commande, boîte à idées, avis, Instagram, newsletter, CGV
+
+### Espace admin (8 onglets)
+Œuvres (photos avec recadrage, prix, stocks, statuts) · Vernissages · Commandes
+(+ demandes de portrait, liens certificats) · Clients (CRM, invitations,
+newsletter, export CSV) · Boîte à idées (+ notifications push) · Journal & avis
+(+ diaporama atelier, Instagram) · Livraison · Textes & boutons · Statistiques
+(intégrées, proxy Umami) · Sauvegardes (téléchargement, rapport mensuel, config email)
+
+### Automatismes
+- Commande → original **réservé**, stock décompté, confirmation au client avec **lien du certificat**, alerte à Pascal (email + push)
+- Nouvelle œuvre enregistrée → **annonce automatique** aux abonnés
+- **Sauvegarde quotidienne** (30 jours conservés)
+- **Rapport mensuel** le 1er du mois (ventes, CA, visiteurs, pays)
+- Notifications push : commandes, idées, portraits, alertes œuvre
+
+---
+
+## 6. Décisions de conception à respecter
+
+1. **Un seul cadre** autour des toiles : cadre noir fin + passe-partout crème.
+   Aucune bordure ni ombre interne sur les images.
+2. **Aucune inclinaison décorative** — tout est parfaitement droit.
+3. Au survol : le cadre ne bouge pas, **la toile s'agrandit** (le passe-partout
+   se réduit, 15 % restant visible), avec reflet de vitre.
+4. **Proportions réelles** des toiles, jamais de rognage.
+5. Charte **« vie douce de Tahiti »** : vagues du lagon, soleil en halo, corail
+   / turquoise / sable. **Pas de motifs marquisiens**, pas d'esthétique japonaise.
+6. Paiement : **virement + PayPal uniquement** (pas de Stripe pour l'instant,
+   le code est prêt via `STRIPE_SECRET_KEY`).
+7. Prix ronds, affichés en XPF par défaut.
+8. Le certificat tient **sur une seule page A4** (ajustement automatique mesuré).
+
+### Pièges rencontrés (à ne pas refaire)
+
+- **Collision de classe CSS** : les images portent la classe `portrait` /
+  `landscape` (orientation). Ne jamais styler `.portrait` sans le préfixer
+  (`figure.portrait`), sinon toutes les toiles portrait héritent du style.
+- **`height: auto` obligatoire** sur les images qui ont des attributs
+  `width`/`height`, sinon elles sont écrasées.
+- **Cache** : les visuels d'œuvres sont en `no-cache` (serveur + service
+  worker les ignore) pour que les remplacements soient visibles tout de suite.
+- **Safari ≠ Chrome** pour la pagination à l'impression : toujours vérifier en
+  générant un vrai PDF (`chrome --headless --print-to-pdf`) et compter les pages.
+- Toujours **bumper `?v=`** dans les HTML, sinon les navigateurs gardent l'ancien CSS/JS.
+
+---
+
+## 7. Méthode de travail attendue
+
+- Vérifier visuellement dans le navigateur avant de déployer (serveur local
+  `PORT=5000 ADMIN_PASSWORD=t APP_SECRET=t node server.js`).
+- Mesurer plutôt que supposer (dimensions, luminosité des bords, nombre de
+  pages PDF, en-têtes HTTP).
+- Déployer, puis **confirmer en production** avant d'annoncer que c'est fait.
+- Écrire en français, dans un langage clair et non technique.
+- Commits en français, signés `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`.
+
+---
+
+## 8. Reste à faire / idées non réalisées
+
+- **Régénérer les 3 tailles** des photos recadrées depuis l'admin (elles n'ont
+  qu'une seule taille dans `/uploads/`, un peu lourdes sur mobile).
+- Compléter les **mentions légales** dans les CGV (numéro Tahiti, adresse) —
+  marquées entre crochets dans `cgv.html`.
+- Vérifier avec Pascal les **dimensions et prix** que j'ai estimés.
+- Soumettre le **sitemap** dans Google Search Console (propriété déjà vérifiée).
+- Idées en réserve : paiement carte (Stripe), alerte « nouvelle œuvre » par
+  SMS, version en reo Tahiti, avis clients vérifiés, page presse.
