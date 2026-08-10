@@ -312,9 +312,10 @@
       : `<span class="price">${fmtPrice(a.prixEUR)}</span>`;
     return `
       <article class="card reveal">
+        <span class="spot" aria-hidden="true"><span class="spot-beam"></span></span>
         <a href="oeuvre.html?id=${a.id}" aria-label="${esc(a.titre)}">
           ${badge}
-          <div class="frame">${imgTag(a, { className: a.orientation })}<span class="glass" aria-hidden="true"></span></div>
+          <div class="frame">${imgTag(a, { className: a.orientation })}<span class="lightwash" aria-hidden="true"></span><span class="glass" aria-hidden="true"></span></div>
           <div class="card-meta">
             <div>
               <h3>${esc(a.titre)}</h3>
@@ -369,7 +370,22 @@
     filters.innerHTML = keys.map((k) =>
       `<button class="chip ${k === "all" ? "active" : ""}" data-filter="${k}">
         ${k === "all" ? t("filter_all") : colName(k)}
-      </button>`).join("");
+      </button>`).join("") +
+      `<button class="lights-switch" id="lights-switch" aria-pressed="false">
+        <span class="bulb"></span><span class="lbl">${t("lights_on")}</span>
+      </button>`;
+
+    /* Interrupteur des projecteurs : la salle se tamise, les spots s'allument.
+       Le choix est mémorisé d'une visite à l'autre. */
+    const sw = document.getElementById("lights-switch");
+    function setLights(on) {
+      document.body.classList.toggle("lights-on", on);
+      sw.setAttribute("aria-pressed", String(on));
+      sw.querySelector(".lbl").textContent = on ? t("lights_off") : t("lights_on");
+      localStorage.setItem("ps_lights", on ? "1" : "0");
+    }
+    setLights(localStorage.getItem("ps_lights") === "1");
+    sw.addEventListener("click", () => setLights(!document.body.classList.contains("lights-on")));
 
     function draw(filter) {
       const list = filter === "all" ? ARTWORKS : ARTWORKS.filter((a) => a.collection === filter);
