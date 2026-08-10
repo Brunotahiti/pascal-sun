@@ -18,7 +18,8 @@ body[data-page="certificat"] {
 .cert-sheet {
   width: 210mm;
   max-width: 100%;
-  min-height: 297mm;
+  height: 297mm;
+  overflow: hidden;
   margin: 0 auto;
   background: var(--paper);
   box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .5);
@@ -30,8 +31,9 @@ body[data-page="certificat"] {
   border: 2px solid var(--ink);
   outline: 1px solid var(--ink);
   outline-offset: 5px;
-  padding: 14mm 12mm;
-  min-height: calc(297mm - 32mm - 12px);
+  padding: 11mm 10mm;
+  height: calc(297mm - 32mm - 12px);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -59,26 +61,26 @@ body[data-page="certificat"] {
 
 .cert-title {
   font-family: var(--serif);
-  font-size: 34px;
+  font-size: 30px;
   font-weight: 500;
   letter-spacing: .04em;
   text-align: center;
-  margin-top: 14mm;
+  margin-top: 9mm;
 }
 .cert-rule {
   width: 90px;
   height: 3px;
   background: var(--accent);
   border-radius: 2px;
-  margin: 10px auto 12mm;
+  margin: 8px auto 8mm;
 }
 
-.cert-body { display: grid; grid-template-columns: 62mm 1fr; gap: 10mm; align-items: start; }
-.cert-visual { border: 1px solid var(--line); background: #fff; padding: 4mm; }
+.cert-body { display: grid; grid-template-columns: 66mm 1fr; gap: 9mm; align-items: start; }
+.cert-visual { border: 3px solid #17120e; background: #f4efe6; padding: 3mm; }
 .cert-visual img { width: 100%; display: block; }
 
-.cert-facts { display: grid; gap: 5mm; }
-.cf { display: grid; gap: 2px; border-bottom: 1px solid var(--line); padding-bottom: 3mm; }
+.cert-facts { display: grid; gap: 3.2mm; }
+.cf { display: grid; gap: 1px; border-bottom: 1px solid var(--line); padding-bottom: 2mm; }
 .cf dt {
   font-family: var(--sans);
   font-size: 9px;
@@ -88,16 +90,16 @@ body[data-page="certificat"] {
   color: var(--ink-faint);
 }
 .cf dd { font-size: 14px; color: var(--ink); }
-.cf-title { font-family: var(--serif); font-size: 22px !important; font-weight: 600; }
+.cf-title { font-family: var(--serif); font-size: 20px !important; font-weight: 600; }
 .cf-buyer { font-family: var(--serif); font-size: 19px !important; font-weight: 600; }
 .cf-ref { font-family: monospace; letter-spacing: .06em; color: var(--ink-soft) !important; }
 
 .cert-text {
-  margin-top: 10mm;
+  margin-top: 7mm;
   font-family: var(--serif);
   font-style: italic;
-  font-size: 15px;
-  line-height: 1.7;
+  font-size: 14px;
+  line-height: 1.6;
   color: var(--ink-soft);
   text-align: center;
   max-width: 62ch;
@@ -106,7 +108,7 @@ body[data-page="certificat"] {
 
 .cert-foot {
   margin-top: auto;
-  padding-top: 12mm;
+  padding-top: 7mm;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -142,8 +144,8 @@ body[data-page="certificat"] {
 .cert-seal strong { font-family: var(--serif); font-size: 13px; display: block; margin: 2px 0; }
 
 @media (max-width: 640px) {
-  .cert-sheet { width: 100%; min-height: 0; padding: 8mm; }
-  .cert-frame { padding: 8mm 6mm; }
+  .cert-sheet { width: 100%; height: auto; overflow: visible; padding: 8mm; }
+  .cert-frame { padding: 8mm 6mm; height: auto; }
   .cert-body { grid-template-columns: 1fr; }
   .cert-visual { max-width: 62mm; }
   .cert-foot { flex-direction: column; align-items: center; gap: 24px; }
@@ -153,6 +155,8 @@ body[data-page="certificat"] {
   @page { size: A4; margin: 0; }
   body[data-page="certificat"] { background: #fff; padding: 0; }
   .no-print { display: none !important; }
-  .cert-sheet { box-shadow: none; width: 210mm; min-height: 297mm; margin: 0; }
+  .cert-sheet { box-shadow: none; width: 210mm; height: 297mm; margin: 0; overflow: hidden; page-break-after: avoid; break-after: avoid; }
+  .cert-frame, .cert-body, .cert-foot { break-inside: avoid; page-break-inside: avoid; }
+  html, body { height: 297mm; overflow: hidden; }
   .grain, .cursor-dot, .cursor-ring, .scroll-progress { display: none !important; }
 }
