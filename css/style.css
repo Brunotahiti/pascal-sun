@@ -33,7 +33,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-img, svg { max-width: 100%; display: block; }
+img, svg { max-width: 100%; height: auto; display: block; }
 
 a { color: inherit; text-decoration: none; }
 
@@ -532,11 +532,12 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
 
 .portrait {
-  background: #fff;
-  border: 1px solid var(--line);
-  padding: 14px;
-  transform: rotate(-.7deg);
-  box-shadow: 0 30px 60px -35px rgba(22,19,15,.4);
+  background: #f4efe6;
+  border: 5px solid #17120e;      /* cadre noir, comme les toiles */
+  padding: clamp(8px, 1vw, 14px);
+  box-shadow:
+    0 2px 5px rgba(22, 19, 15, .25),
+    0 26px 46px -24px rgba(22, 19, 15, .58);
   position: sticky;
   top: 104px;
 }
