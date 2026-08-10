@@ -6,7 +6,7 @@
    Les vidéos et l'admin ne sont jamais mis en cache.
    ========================================================================= */
 
-const VERSION = "ps-v6";
+const VERSION = "ps-v7";
 const CORE = [
   "/", "/galerie.html", "/expositions.html", "/artiste.html",
   "/panier.html", "/contact.html", "/oeuvre.html", "/merci.html",
@@ -52,6 +52,8 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET" || url.origin !== location.origin) return;
   if (url.pathname.startsWith("/admin") || url.pathname.startsWith("/videos/")) return;
+  // les visuels des œuvres sont toujours pris sur le réseau (ils évoluent)
+  if (url.pathname.startsWith("/img/oeuvres/") || url.pathname.startsWith("/img/atelier/")) return;
   if (url.pathname.startsWith("/api/") && url.pathname !== "/api/catalogue") return;
 
   const isPage = e.request.mode === "navigate" || url.pathname === "/api/catalogue";

@@ -959,6 +959,10 @@ app.use(express.static(__dirname, {
     if (/\.(html|js|css|svg|webmanifest)$/.test(filePath)) {
       res.setHeader("Cache-Control", "no-cache");
     }
+    // Les visuels des œuvres changent sans changer de nom : on revalide.
+    if (/img\/oeuvres\/|img\/atelier\/|signature\.png$/.test(filePath)) {
+      res.setHeader("Cache-Control", "no-cache");
+    }
   }
 }));
 
