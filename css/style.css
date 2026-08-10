@@ -707,6 +707,25 @@ figure.portrait {
   color: var(--accent);
 }
 
+/* Grande photo de l'artiste au travail, en tête de la page */
+.artist-hero {
+  margin: 0 0 clamp(36px, 5vw, 60px);
+  background: #f4efe6;
+  border: 5px solid #17120e;
+  padding: clamp(8px, 1vw, 14px);
+  box-shadow:
+    0 2px 5px rgba(22, 19, 15, .25),
+    0 30px 52px -26px rgba(22, 19, 15, .55);
+}
+.artist-hero img { width: 100%; height: auto; display: block; }
+.artist-hero figcaption {
+  padding: 13px 4px 2px;
+  font-size: 13px;
+  letter-spacing: .04em;
+  color: var(--ink-faint);
+  text-align: center;
+}
+
 .artist-signature { max-width: 300px; margin: clamp(30px, 5vw, 50px) 0 0 auto; opacity: .85; }
 
 .values { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(18px, 3vw, 36px); margin-top: clamp(40px, 6vw, 70px); }

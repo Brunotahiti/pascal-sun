@@ -380,6 +380,7 @@ var INSTA = { username: "", posts: [] };
 
 /* Diaporama de l'atelier (page L'artiste) — modifiable dans l'admin. */
 var ATELIER = [
+  "img/atelier/pascal-peint-1920.webp",
   "img/atelier/atelier-1.webp",
   "img/atelier/atelier-2.webp",
   "img/atelier/atelier-3.webp",
@@ -441,6 +442,7 @@ var I18N = {
     lights_off: "Éteindre les projecteurs",
     artist_eyebrow: "L'univers",
     artist_title: "L'art de Pascal Sun est une invitation à ralentir",
+    artist_hero_cap: "Pascal Sun dans son atelier, à Tahiti — le geste juste, cherché longtemps.",
     atelier_diapo_t: "Dans l'atelier",
     atelier_diapo_p: "Les toiles encadrées, prêtes à partir : quelques instants volés à l'atelier de Tahiti.",
     atelier_video_t: "L'atelier en mouvement",
@@ -653,6 +655,7 @@ var I18N = {
     lights_off: "Turn the spotlights off",
     artist_eyebrow: "The universe",
     artist_title: "Pascal Sun's art is an invitation to slow down",
+    artist_hero_cap: "Pascal Sun in his Tahiti studio — the right gesture, long sought.",
     atelier_diapo_t: "Inside the studio",
     atelier_diapo_p: "Framed canvases, ready to travel: a few stolen moments from the Tahiti studio.",
     atelier_video_t: "The studio in motion",
