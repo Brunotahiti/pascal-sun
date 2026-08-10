@@ -198,6 +198,7 @@
 }
 .ar-fallback h3 { font-family: var(--serif); font-size: 26px; font-weight: 500; margin-bottom: 12px; }
 .ar-fallback p { color: var(--ink-soft); font-size: 15px; margin-bottom: 22px; }
+.ar-fallback-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 
 .btn-light {
   display: inline-flex;

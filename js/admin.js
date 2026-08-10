@@ -87,6 +87,7 @@
     renderInsta();
     renderAtelier();
     renderShipping();
+    renderEclairage();
     renderTexts();
     wireChrome();
     markClean();
@@ -101,11 +102,17 @@
       avis: (data && data.avis) || [],
       instagram: (data && data.instagram) || { username: "", posts: [] },
       shipping: (data && data.shipping) || JSON.parse(JSON.stringify(typeof SHIPPING !== "undefined" ? SHIPPING : { zones: [], freeAbove: 0 })),
+      eclairage: (data && data.eclairage && Array.isArray(data.eclairage.sources))
+        ? data.eclairage
+        : JSON.parse(JSON.stringify(ECLAIRAGE_DEFAUT)),
       atelier: (data && data.atelier) || JSON.parse(JSON.stringify(typeof ATELIER !== "undefined" ? ATELIER : [])),
       uiTexts: (data && data.uiTexts) || { fr: {}, en: {} }
     };
     catalogue.uiTexts.fr = catalogue.uiTexts.fr || {};
     catalogue.uiTexts.en = catalogue.uiTexts.en || {};
+    /* L'aperçu de l'éclairage réutilise les fonctions du site : on branche
+       la configuration en cours d'édition sur la variable globale. */
+    ECLAIRAGE = catalogue.eclairage;
     if (typeof normalizeArtworks === "function") normalizeArtworks(catalogue.artworks);
   }
 
@@ -143,6 +150,13 @@
             </select>
           </label>
           <label class="flag"><input type="checkbox" data-k="nouveaute" ${a.nouveaute ? "checked" : ""}> Nouveauté</label>
+          <label class="flag">Éclairage
+            <select data-k="eclairage">
+              <option value="">Automatique</option>
+              ${(catalogue.eclairage.sources || []).map((s) =>
+                `<option value="${esc(s.key)}" ${a.eclairage === s.key ? "selected" : ""}>${esc(s.nom || s.key)}</option>`).join("")}
+            </select>
+          </label>
           <button type="button" class="aw-delete" data-act="delete">Supprimer cette œuvre</button>
         </div>
         <div class="produits-rows">
@@ -418,6 +432,130 @@
             `<span><input type="number" min="0" step="5" data-sk="${k}" value="${z[k] ?? 0}"> €</span>`).join("")}
         </div>`).join("")}`;
     $("#ship-free").value = catalogue.shipping.freeAbove || 0;
+  }
+
+  /* --------------------------------------------------------- éclairage -- */
+  /* Trois réglages par projecteur : où il est sur le mur, à quelle hauteur,
+     et de quel côté il vise. Le reste (faisceau, halo, ombre du cadre) en
+     découle — voir varsLumiere() dans data.js. */
+
+  const ECLR_CHAMPS = [
+    { k: "x",     label: "Position horizontale", min: -30,  max: 130, step: 1, unite: " %" },
+    { k: "y",     label: "Hauteur",              min: -30,  max: 130, step: 1, unite: " %" },
+    { k: "angle", label: "Orientation",          min: -180, max: 180, step: 2, unite: "°"  }
+  ];
+
+  function renderEclairage() {
+    const e = catalogue.eclairage;
+    $("#eclr-actif").checked = e.actif !== false;
+    $("#eclr-intensite").value = e.intensite ?? 100;
+    $("#eclr-portee").value = e.portee ?? 100;
+
+    $("#eclr-list").innerHTML = (e.sources || []).map((s, i) => `
+      <article class="eclr-row" data-si="${i}">
+        <input class="eclr-nom" data-ek="nom" value="${esc(s.nom || s.key)}" aria-label="Nom du projecteur">
+        ${ECLR_CHAMPS.map((c) => `
+          <label class="eclr-range">${c.label}
+            <input type="range" data-ek="${c.k}" min="${c.min}" max="${c.max}" step="${c.step}" value="${Number(s[c.k]) || 0}">
+            <output>${Number(s[c.k]) || 0}${c.unite}</output>
+          </label>`).join("")}
+        <button type="button" class="eclr-undo" data-act="eclr-row-reset" title="Position d'origine de ce projecteur">↺</button>
+      </article>`).join("");
+
+    renderApercuEclairage();
+  }
+
+  function renderApercuEclairage() {
+    const e = catalogue.eclairage;
+    const art = catalogue.artworks || [];
+    $("#eclr-preview").innerHTML = (e.sources || []).map((s, i) => {
+      const img = (art[i % (art.length || 1)] || {}).image || "";
+      return `
+        <figure class="pv-card" data-si="${i}" style="${styleLumiere(s)}">
+          <span class="pv-spot" aria-hidden="true"><span class="pv-beam"></span></span>
+          <div class="pv-frame"><img src="${esc(img)}" alt=""><span class="pv-wash" aria-hidden="true"></span></div>
+          <figcaption>${esc(s.nom || s.key)}</figcaption>
+        </figure>`;
+    }).join("");
+    majEclairageGlobal();
+  }
+
+  /* Intensité, portée, projecteurs visibles : appliqués à tout l'aperçu. */
+  function majEclairageGlobal() {
+    const e = catalogue.eclairage;
+    const box = $("#eclr-preview");
+    box.classList.toggle("pv-hidden", e.actif === false);
+    appliqueEclairageGlobal(box);
+    $("#eclr-intensite").nextElementSibling.textContent = (e.intensite ?? 100) + " %";
+    $("#eclr-portee").nextElementSibling.textContent = (e.portee ?? 100) + " %";
+  }
+
+  /* Une seule carte d'aperçu se rafraîchit pendant qu'on tire le curseur. */
+  function majApercuSource(i) {
+    const card = $(`#eclr-preview [data-si="${i}"]`);
+    if (card) card.setAttribute("style", styleLumiere(catalogue.eclairage.sources[i]));
+  }
+
+  function wireEclairage() {
+    $("#eclr-list").addEventListener("input", (ev) => {
+      const row = ev.target.closest("[data-si]");
+      const k = ev.target.dataset.ek;
+      if (!row || !k) return;
+      const i = +row.dataset.si;
+      const s = catalogue.eclairage.sources[i];
+
+      if (k === "nom") {
+        s.nom = ev.target.value;
+        const cap = $(`#eclr-preview [data-si="${i}"] figcaption`);
+        if (cap) cap.textContent = s.nom;
+      } else {
+        s[k] = Number(ev.target.value) || 0;
+        const champ = ECLR_CHAMPS.find((c) => c.k === k);
+        const out = ev.target.parentElement.querySelector("output");
+        if (out) out.textContent = s[k] + champ.unite;
+        majApercuSource(i);
+      }
+      markDirty();
+    });
+
+    /* Nom modifié : les listes déroulantes des fiches d'œuvres suivent. */
+    $("#eclr-list").addEventListener("change", (ev) => {
+      if (ev.target.dataset.ek === "nom") renderArtworks();
+    });
+
+    $("#eclr-list").addEventListener("click", (ev) => {
+      if (ev.target.dataset.act !== "eclr-row-reset") return;
+      const i = +ev.target.closest("[data-si]").dataset.si;
+      const origine = (ECLAIRAGE_DEFAUT.sources || []).find(
+        (s) => s.key === catalogue.eclairage.sources[i].key);
+      if (!origine) return;
+      catalogue.eclairage.sources[i] = JSON.parse(JSON.stringify(origine));
+      renderEclairage();
+      markDirty();
+    });
+
+    $("#eclr-actif").addEventListener("change", (ev) => {
+      catalogue.eclairage.actif = ev.target.checked;
+      majEclairageGlobal();
+      markDirty();
+    });
+
+    [["#eclr-intensite", "intensite"], ["#eclr-portee", "portee"]].forEach(([sel, key]) => {
+      $(sel).addEventListener("input", (ev) => {
+        catalogue.eclairage[key] = Number(ev.target.value) || 100;
+        majEclairageGlobal();
+        markDirty();
+      });
+    });
+
+    $("#eclr-reset").addEventListener("click", () => {
+      if (!confirm("Remettre tous les projecteurs à leur position d'origine ?")) return;
+      catalogue.eclairage = JSON.parse(JSON.stringify(ECLAIRAGE_DEFAUT));
+      ECLAIRAGE = catalogue.eclairage;
+      renderEclairage();
+      renderArtworks();
+      markDirty();
+    });
   }
 
   /* ------------------------------------------------ sauvegardes/rapport -- */
@@ -862,6 +1000,8 @@
         markDirty();
       }
     });
+
+    wireEclairage();
 
     $("#push-btn").addEventListener("click", enablePush);
 

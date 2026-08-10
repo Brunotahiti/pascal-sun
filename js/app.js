@@ -301,11 +301,6 @@
 
   /* ------------------------------------------------------------ cartes -- */
 
-  /* Répartition des éclairages, comme dans une salle réelle :
-     jamais deux voisines éclairées pareil. */
-  const ECLAIRAGES = ["lit-haut", "lit-haut-gauche", "lit-droite", "lit-bas",
-                      "lit-haut-droite", "lit-gauche", "lit-haut", "lit-bas-gauche"];
-
   function cardHTML(a, index) {
     const badge = a.statut === "vendu"
       ? `<span class="badge-sold">${t("statut_vendu")}</span>`
@@ -315,10 +310,14 @@
     const price = a.statut === "vendu"
       ? `<span class="price sold">${t("statut_vendu")}</span>`
       : `<span class="price">${fmtPrice(a.prixEUR)}</span>`;
-    const lumiere = ECLAIRAGES[(index || 0) % ECLAIRAGES.length];
+    /* Position du projecteur de cette toile (réglage admin ou automatique) */
+    const lumiere = styleLumiere(sourceLumiere(a, index));
+    const spot = ECLAIRAGE.actif === false
+      ? ""
+      : `<span class="spot" aria-hidden="true"><span class="spot-beam"></span></span>`;
     return `
-      <article class="card reveal ${lumiere}">
-        <span class="spot" aria-hidden="true"><span class="spot-beam"></span></span>
+      <article class="card reveal" style="${lumiere}">
+        ${spot}
         <a href="oeuvre.html?id=${a.id}" aria-label="${esc(a.titre)}">
           ${badge}
           <div class="frame">${imgTag(a, { className: a.orientation })}<span class="lightwash" aria-hidden="true"></span><span class="glass" aria-hidden="true"></span></div>
@@ -909,6 +908,7 @@
       if (Array.isArray(data.avis)) AVIS = data.avis;
       if (data.instagram) INSTA = Object.assign({ username: "", posts: [] }, data.instagram);
       if (data.shipping && Array.isArray(data.shipping.zones)) SHIPPING = data.shipping;
+      if (data.eclairage && Array.isArray(data.eclairage.sources)) ECLAIRAGE = data.eclairage;
       if (Array.isArray(data.atelier) && data.atelier.length) ATELIER = data.atelier;
       if (data.uiTexts) {
         ["fr", "en"].forEach((l) => {
@@ -927,6 +927,7 @@
 
     await loadCatalogue();
     if (typeof normalizeArtworks === "function") normalizeArtworks(ARTWORKS);
+    appliqueEclairageGlobal();   // intensité et portée des projecteurs
 
     renderHeader();
     renderFooter();

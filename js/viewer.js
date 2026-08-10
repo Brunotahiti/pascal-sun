@@ -29,6 +29,12 @@
       arSize: "Taille",
       arErrTitle: "Caméra indisponible",
       arErrText: "Votre navigateur a refusé l'accès à la caméra (ou il n'y en a pas). Essayez sur votre téléphone, ou visualisez l'œuvre en situation dans un salon.",
+      arErrHttp: "Les navigateurs n'autorisent la caméra que sur une adresse sécurisée en https. Ouvrez la page depuis https://pascal-sun.com.",
+      arErrInApp: "Le navigateur intégré à Instagram ou Facebook n'ouvre pas la caméra. Touchez le menu « ⋯ » en haut de l'écran, puis « Ouvrir dans le navigateur » (Safari ou Chrome).",
+      arErrDenied: "L'accès à la caméra a été refusé pour ce site. Autorisez-le dans les réglages du navigateur — sur iPhone : Réglages ▸ Safari ▸ Caméra ▸ Demander ou Autoriser — puis réessayez.",
+      arErrNone: "Aucune caméra n'a été trouvée sur cet appareil. Ouvrez la page depuis votre téléphone pour poser l'œuvre sur votre mur.",
+      arErrBusy: "La caméra est déjà utilisée par une autre application. Fermez-la, puis réessayez.",
+      arErrRetry: "Réessayer",
       arErrBtn: "Voir en situation",
       roomHint: "Faites glisser le tableau pour le placer · canapé 220 cm — l'œuvre fait",
       arShot: "Prendre une photo",
@@ -47,6 +53,12 @@
       arSize: "Size",
       arErrTitle: "Camera unavailable",
       arErrText: "Your browser denied camera access (or there is none). Try on your phone, or view the artwork in a room instead.",
+      arErrHttp: "Browsers only allow the camera over a secure https address. Please open the page from https://pascal-sun.com.",
+      arErrInApp: "Instagram's and Facebook's built-in browsers cannot open the camera. Tap the “⋯” menu at the top of the screen, then “Open in browser” (Safari or Chrome).",
+      arErrDenied: "Camera access was denied for this site. Allow it in your browser settings — on iPhone: Settings ▸ Safari ▸ Camera ▸ Ask or Allow — then try again.",
+      arErrNone: "No camera was found on this device. Open the page on your phone to hang the artwork on your own wall.",
+      arErrBusy: "The camera is already in use by another app. Close it, then try again.",
+      arErrRetry: "Try again",
       arErrBtn: "View in a room",
       roomHint: "Drag the artwork to place it · sofa 220 cm — the artwork is",
       arShot: "Take a photo",
@@ -229,11 +241,14 @@
     if (pane.dataset.live === "1") return;
     pane.innerHTML = "";
 
+    /* Sans https, aucun navigateur n'ouvre la caméra : on le dit clairement
+       plutôt que de laisser croire à un refus de l'utilisateur. */
+    if (!window.isSecureContext) return arFallback(pane, "https");
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      return arFallback(pane);
+      return arFallback(pane, estNavigateurIntegre() ? "inapp" : "aucune");
     }
 
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
+    demandeCamera()
       .then((s) => {
         stream = s;
         pane.dataset.live = "1";
@@ -342,17 +357,65 @@
         hint.textContent = `${tr.arHint} · ${art.dimensions}`;
         pane.appendChild(hint);
       })
-      .catch(() => arFallback(pane));
+      .catch((err) => arFallback(pane, causeCamera(err)));
   }
 
-  function arFallback(pane) {
+  /* Caméra arrière si l'appareil en a une, sinon n'importe laquelle :
+     sur un ordinateur portable, exiger « environment » fait tout échouer. */
+  function demandeCamera() {
+    const gum = (c) => navigator.mediaDevices.getUserMedia(c);
+    return gum({ video: { facingMode: { ideal: "environment" } }, audio: false })
+      .catch((err) => {
+        if (err && (err.name === "OverconstrainedError" || err.name === "NotFoundError")) {
+          return gum({ video: true, audio: false });
+        }
+        throw err;
+      });
+  }
+
+  /* Navigateurs intégrés à Instagram, Facebook, LinkedIn… : ils bloquent la
+     caméra sans jamais poser la question. Beaucoup de visiteurs arrivent
+     par un lien Instagram, c'est la panne la plus fréquente. */
+  function estNavigateurIntegre() {
+    return /Instagram|FBAN|FBAV|FB_IAB|LinkedInApp|Line\/|MicroMessenger|Snapchat/i
+      .test(navigator.userAgent);
+  }
+
+  function causeCamera(err) {
+    const nom = (err && err.name) || "";
+    if (nom === "NotFoundError" || nom === "OverconstrainedError" || nom === "DevicesNotFoundError") return "aucune";
+    if (nom === "NotReadableError" || nom === "TrackStartError" || nom === "AbortError") return "occupee";
+    if (estNavigateurIntegre()) return "inapp";
+    if (nom === "NotAllowedError" || nom === "SecurityError" || nom === "PermissionDeniedError") return "refus";
+    return "";
+  }
+
+  function arFallback(pane, cause) {
+    const texte = {
+      https: tr.arErrHttp,
+      inapp: tr.arErrInApp,
+      refus: tr.arErrDenied,
+      aucune: tr.arErrNone,
+      occupee: tr.arErrBusy
+    }[cause] || tr.arErrText;
+
+    /* Réessayer n'a de sens que si la situation peut changer sans quitter
+       la page : autorisation à redonner, ou caméra à libérer. */
+    const rejouable = cause === "refus" || cause === "occupee";
+
+    pane.dataset.live = "";
     pane.innerHTML = `
       <div class="ar-fallback">
         <h3>${tr.arErrTitle}</h3>
-        <p>${tr.arErrText}</p>
-        <button class="btn-light" data-goroom>⌂ ${tr.arErrBtn}</button>
+        <p>${texte}</p>
+        <div class="ar-fallback-btns">
+          ${rejouable ? `<button class="btn-light" data-retry>↺ ${tr.arErrRetry}</button>` : ""}
+          <button class="btn-light" data-goroom>⌂ ${tr.arErrBtn}</button>
+        </div>
       </div>`;
     pane.querySelector("[data-goroom]").addEventListener("click", () => activate("room"));
+    const retry = pane.querySelector("[data-retry]");
+    if (retry) retry.addEventListener("click", () => buildAR(pane));
   }
 
   function stopCamera() {

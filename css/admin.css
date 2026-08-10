@@ -594,3 +594,183 @@ button { font-family: var(--sans); cursor: pointer; }
   z-index: 60;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------------------------------------------------------- éclairage -- */
+/* Aperçu en direct : un mur de galerie en miniature, projecteurs allumés.
+   Les cartes reçoivent les mêmes variables (--sx, --sy, --sa, --hx, --hy)
+   que les vraies toiles du site ; seul le décor est refait ici, plus petit. */
+
+.eclr-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 26px 20px;
+  padding: 54px 26px 26px;
+  border-radius: 8px;
+  background-color: #171410;
+  background-image: radial-gradient(120% 60% at 50% 0%, rgba(255, 240, 214, .06), transparent 60%);
+  overflow: hidden;
+}
+
+.pv-card { position: relative; margin: 0; }
+.pv-frame {
+  position: relative;
+  background: #f4efe6;
+  border: 3px solid #17120e;
+  border-image: linear-gradient(135deg, #4a4137 0%, #221c16 38%, #14100c 70%, #0c0907 100%) 1;
+  padding: 5px;
+  overflow: hidden;
+  box-shadow:
+    var(--ox, 0px) var(--oy, 26px) 30px -12px rgba(0, 0, 0, .8),
+    0 0 30px -6px rgba(255, 238, 200, .22);
+}
+.pv-frame img { display: block; width: 100%; height: auto; background: #2a241d; }
+
+.pv-spot {
+  position: absolute;
+  left: var(--sx, 50%);
+  top: var(--sy, -8%);
+  transform: translateX(-50%) rotate(var(--sa, 0deg)) scale(.62);
+  transform-origin: 50% 13px;
+  width: 46px;
+  height: 34px;
+  pointer-events: none;
+  z-index: var(--sz, 3);
+}
+.pv-spot::before {
+  content: ""; position: absolute; left: 50%; top: 0;
+  width: 2px; height: 13px; margin-left: -1px;
+  background: #2a241d; border-radius: 1px;
+}
+.pv-spot::after {
+  content: ""; position: absolute; left: 50%; top: 12px;
+  width: 22px; height: 14px; margin-left: -11px;
+  background: linear-gradient(180deg, #3a3229, #17120e);
+  border-radius: 5px 5px 9px 9px;
+}
+.pv-beam {
+  position: absolute;
+  left: 50%;
+  top: 25px;
+  width: calc(210px * var(--beam, 1));
+  height: calc(165px * var(--beam, 1));
+  margin-left: calc(-105px * var(--beam, 1));
+  clip-path: polygon(45% 0, 55% 0, 96% 100%, 4% 100%);
+  background: linear-gradient(180deg,
+    rgba(255, 243, 214, .55) 0%,
+    rgba(255, 240, 205, .22) 40%,
+    rgba(255, 238, 200, 0) 100%);
+  filter: blur(3px) brightness(var(--glow-b, 1));
+  opacity: var(--glow, 1);
+}
+.pv-wash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(125% 85% at var(--hx, 50%) var(--hy, -12%),
+    rgba(255, 246, 224, .5) 0%,
+    rgba(255, 240, 210, .16) 42%,
+    rgba(22, 19, 15, .3) 100%);
+  filter: brightness(var(--glow-b, 1));
+  opacity: var(--glow, 1);
+  mix-blend-mode: soft-light;
+}
+/* « Afficher les projecteurs » décoché : la lumière reste, la lampe part. */
+.eclr-preview.pv-hidden .pv-spot { display: none; }
+
+.pv-card figcaption {
+  margin-top: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #8f867a;
+  text-align: center;
+}
+
+/* réglages globaux */
+.eclr-global {
+  display: flex;
+  align-items: center;
+  gap: 16px 34px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+}
+
+/* un projecteur par ligne */
+.eclr-list { margin-top: 22px; display: grid; gap: 10px; }
+.eclr-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) repeat(3, minmax(170px, 1.4fr)) auto;
+  align-items: center;
+  gap: 10px 20px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px 16px;
+}
+@media (max-width: 1100px) { .eclr-row { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 620px)  { .eclr-row { grid-template-columns: 1fr; } }
+
+.eclr-nom {
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  padding: 7px 9px;
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink);
+  min-width: 0;
+}
+.eclr-nom:hover { border-color: var(--line); }
+.eclr-nom:focus { outline: none; border-color: var(--accent); background: var(--paper); }
+
+.eclr-range {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  min-width: 0;
+}
+.eclr-range input[type="range"] {
+  grid-column: 1;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.eclr-range output {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: center;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.eclr-range { grid-template-rows: auto auto; }
+.eclr-range > input[type="range"] { grid-row: 2; }
+
+.eclr-undo {
+  border: 1px solid var(--line);
+  background: var(--paper);
+  border-radius: 999px;
+  width: 34px;
+  height: 34px;
+  font-size: 15px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: .2s;
+}
+.eclr-undo:hover { border-color: var(--accent); color: var(--accent); }

@@ -371,6 +371,86 @@ var SHIPPING = {
   retrait: true      // retrait gratuit à Tahiti
 };
 
+/* ------------------------------------------------ éclairage de galerie -- */
+/* Position des projecteurs de la salle, telle qu'on la voit sur la page
+   Galerie une fois les projecteurs allumés. Modifiable dans l'espace admin,
+   onglet Éclairage.
+     x  : 0 % = bord gauche de la toile, 100 % = bord droit (on peut sortir
+          du cadre : -20 % pour un projecteur posé à gauche du tableau)
+     y  : 0 % = haut de la toile, 100 % = bas (négatif = au-dessus)
+     angle : 0° = faisceau vertical, positif = incliné vers la gauche,
+          180° = lumière rasante venue du bas.
+   Le faisceau, le halo sur la toile et l'ombre portée du cadre se déduisent
+   tous de ces trois nombres : déplacer le projecteur déplace la lumière. */
+
+var ECLAIRAGE = {
+  actif: true,
+  intensite: 100,   // % — 100 = éclairage plein
+  portee: 100,      // % — largeur et longueur du faisceau
+  sources: [
+    { key: "haut",        nom: "Dessus",            x: 50,  y: -8, angle: 0 },
+    { key: "haut-gauche", nom: "Dessus à gauche",   x: 24,  y: -8, angle: 22 },
+    { key: "haut-droite", nom: "Dessus à droite",   x: 76,  y: -8, angle: -22 },
+    { key: "gauche",      nom: "Côté gauche",       x: -5,  y: 26, angle: 62 },
+    { key: "droite",      nom: "Côté droit",        x: 105, y: 26, angle: -62 },
+    { key: "bas",         nom: "Rasant du bas",     x: 50,  y: 81, angle: 180 },
+    { key: "bas-gauche",  nom: "Rasant bas gauche", x: 22,  y: 81, angle: 156 }
+  ],
+  /* Répartition automatique des toiles : comme dans une salle réelle,
+     jamais deux voisines éclairées de la même façon. */
+  ordre: ["haut", "haut-gauche", "droite", "bas", "haut-droite", "gauche", "haut", "bas-gauche"]
+};
+
+var ECLAIRAGE_DEFAUT = JSON.parse(JSON.stringify(ECLAIRAGE));
+
+/* Source d'une toile : le réglage propre à l'œuvre s'il existe, sinon la
+   répartition automatique. */
+function sourceLumiere(a, index) {
+  const src = ECLAIRAGE.sources || [];
+  const byKey = (k) => src.find((s) => s.key === k);
+  const ordre = ECLAIRAGE.ordre || [];
+  return (a && a.eclairage && byKey(a.eclairage))
+    || (ordre.length ? byKey(ordre[(index || 0) % ordre.length]) : null)
+    || src[0]
+    || { x: 50, y: -8, angle: 0 };
+}
+
+/* Variables CSS d'une source : projecteur, centre du halo, direction de
+   l'ombre portée. Tout suit la position du projecteur. */
+function varsLumiere(s) {
+  const x = Number(s.x) || 0, y = Number(s.y) || 0, a = Number(s.angle) || 0;
+  const inclinaison = Math.abs(a);
+  const dessus = inclinaison < 45;      // lumière plongeante
+  const dessous = inclinaison > 135;    // lumière rasante venue du bas
+  return {
+    "--sx": x + "%",
+    "--sy": y + "%",
+    "--sa": a + "deg",
+    /* le halo déborde légèrement du côté d'où vient la lumière */
+    "--hx": (dessus || dessous ? x : x + (a > 0 ? -8 : 8)) + "%",
+    "--hy": (dessus ? y - 6 : dessous ? y + 28 : y + 2) + "%",
+    /* l'ombre du cadre s'écarte de la source */
+    "--ox": Math.max(-30, Math.min(30, -(x - 50) * 0.5)).toFixed(1) + "px",
+    "--oy": (dessus ? 26 : dessous ? -20 : 14) + "px",
+    /* un projecteur au sol passe derrière le cadre */
+    "--sz": dessous ? "1" : "3"
+  };
+}
+
+function styleLumiere(s) {
+  const v = varsLumiere(s);
+  return Object.keys(v).map((k) => k + ":" + v[k]).join(";");
+}
+
+/* Réglages globaux (intensité, portée), posés une fois sur un conteneur. */
+function appliqueEclairageGlobal(root) {
+  const el = root || document.body;
+  const g = (Number(ECLAIRAGE.intensite) || 100) / 100;
+  el.style.setProperty("--glow", String(Math.min(1, g)));
+  el.style.setProperty("--glow-b", String(Math.max(1, g)));
+  el.style.setProperty("--beam", String((Number(ECLAIRAGE.portee) || 100) / 100));
+}
+
 /* ------------------------------------------------- journal & avis -- */
 /* Alimentés depuis l'espace admin (onglet Journal & avis). */
 

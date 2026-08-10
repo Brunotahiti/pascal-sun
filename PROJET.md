@@ -46,14 +46,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=28/?v=29/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=29/?v=30/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=29"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=30"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -111,7 +111,7 @@ panier.html            panier + livraison + paiement
 merci.html             confirmation de commande
 certificat.html?c=…    certificat d'authenticité imprimable (1 page A4)
 cgv.html               conditions générales de vente
-admin.html             espace d'administration (8 onglets)
+admin.html             espace d'administration (9 onglets)
 
 css/style.css          identité du site
 css/effects.css        curseur, grain, intro, marquee
@@ -119,7 +119,7 @@ css/viewer.css         visionneuse 3D / AR / salon
 css/certificat.css     certificat A4
 css/admin.css          espace admin
 
-js/data.js             DONNÉES : ARTWORKS, EVENTS, SHIPPING, ATELIER, I18N…
+js/data.js             DONNÉES : ARTWORKS, EVENTS, SHIPPING, ECLAIRAGE, ATELIER, I18N…
 js/app.js              moteur du site public
 js/viewer.js           vue 3D, réalité augmentée, mise en situation
 js/effects.js          intro « pinceau », curseur, boutons magnétiques
@@ -175,11 +175,11 @@ curl -s -b /tmp/ck -X PUT https://pascal-sun.com/api/catalogue \
 - **Boutique** : original / tirage limité / affiche, stocks et statuts automatiques, frais de port par zone, livraison ou retrait, virement ou PayPal
 - Vernissages, journal de l'atelier, portraits sur commande, boîte à idées, avis, Instagram, newsletter, CGV
 
-### Espace admin (8 onglets)
+### Espace admin (9 onglets)
 Œuvres (photos avec recadrage, prix, stocks, statuts) · Vernissages · Commandes
 (+ demandes de portrait, liens certificats) · Clients (CRM, invitations,
 newsletter, export CSV) · Boîte à idées (+ notifications push) · Journal & avis
-(+ diaporama atelier, Instagram) · Livraison · Textes & boutons · Statistiques
+(+ diaporama atelier, Instagram) · Livraison · **Éclairage** · Textes & boutons · Statistiques
 (intégrées, proxy Umami) · Sauvegardes (téléchargement, rapport mensuel, config email)
 
 ### Automatismes
@@ -205,6 +205,12 @@ newsletter, export CSV) · Boîte à idées (+ notifications push) · Journal & 
    le code est prêt via `STRIPE_SECRET_KEY`).
 7. Prix ronds, affichés en XPF par défaut.
 8. Le certificat tient **sur une seule page A4** (ajustement automatique mesuré).
+9. **Éclairage de la galerie** : sept projecteurs, réglables dans l'admin
+   (onglet Éclairage). Une source = trois nombres seulement — `x` et `y` en
+   pourcentage du cadre, `angle` en degrés. Le faisceau, le halo sur la toile
+   (`--hx` / `--hy`) et l'ombre portée (`--ox` / `--oy`) en sont **déduits**
+   par `varsLumiere()` dans `js/data.js` : ne jamais les régler à la main, et
+   ne jamais réintroduire de classes CSS `.lit-*` figées.
 
 ### Pièges rencontrés (à ne pas refaire)
 
@@ -218,6 +224,11 @@ newsletter, export CSV) · Boîte à idées (+ notifications push) · Journal & 
 - **Safari ≠ Chrome** pour la pagination à l'impression : toujours vérifier en
   générant un vrai PDF (`chrome --headless --print-to-pdf`) et compter les pages.
 - Toujours **bumper `?v=`** dans les HTML, sinon les navigateurs gardent l'ancien CSS/JS.
+- **Caméra AR** : `getUserMedia` exige un contexte sécurisé (https) et l'en-tête
+  `Permissions-Policy` doit contenir `camera=(self)` (`server.js`). Les
+  navigateurs intégrés d'Instagram et Facebook la bloquent sans rien demander —
+  d'où la panne la plus fréquente signalée par les visiteurs. Ne jamais avaler
+  l'erreur dans un `catch` muet : `causeCamera()` la traduit en message clair.
 
 ---
 

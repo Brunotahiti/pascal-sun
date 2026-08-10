@@ -71,7 +71,8 @@ app.use((_req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "SAMEORIGIN");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-  res.setHeader("Permissions-Policy", "geolocation=(), microphone=(), payment=()");
+  // camera=(self) : la visionneuse « Voir chez moi (AR) » en a besoin.
+  res.setHeader("Permissions-Policy", "camera=(self), geolocation=(), microphone=(), payment=()");
   res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   next();
 });
