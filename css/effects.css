@@ -208,6 +208,17 @@
 
 /* ------------------------------------------------- intro cinématique -- */
 
+/* Cache posé dès la première image par le script en tête de page, avant même
+   que le rideau animé n'existe. Sans lui, on aperçoit le site un instant. */
+html.intro-pending::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 299;
+  background: var(--paper);
+}
+html.intro-pending body { overflow: hidden; }
+
 .intro {
   position: fixed;
   inset: 0;

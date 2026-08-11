@@ -46,14 +46,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=30/?v=31/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=31/?v=32/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=31"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=32"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -224,6 +224,11 @@ newsletter, export CSV) · Boîte à idées (+ notifications push) · Journal & 
 - **Safari ≠ Chrome** pour la pagination à l'impression : toujours vérifier en
   générant un vrai PDF (`chrome --headless --print-to-pdf`) et compter les pages.
 - Toujours **bumper `?v=`** dans les HTML, sinon les navigateurs gardent l'ancien CSS/JS.
+- **Rien ne doit apparaître avant l'animation d'ouverture** : le rideau est monté
+  par `effects.js` au DOMContentLoaded, bien trop tard. Un script en tête de
+  `index.html` pose `html.intro-pending`, dont le `::before` couvre l'écran dès
+  la première image ; `decouvre()` le retire quand le vrai rideau prend le
+  relais, avec un filet de sécurité à 5 s. Ne jamais retirer ce script.
 - **Caméra AR** : `getUserMedia` exige un contexte sécurisé (https) et l'en-tête
   `Permissions-Policy` doit contenir `camera=(self)` (`server.js`). Les
   navigateurs intégrés d'Instagram et Facebook la bloquent sans rien demander —

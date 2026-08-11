@@ -451,48 +451,47 @@
     $("#eclr-intensite").value = e.intensite ?? 100;
     $("#eclr-portee").value = e.portee ?? 100;
 
-    $("#eclr-list").innerHTML = (e.sources || []).map((s, i) => `
-      <article class="eclr-row" data-si="${i}">
-        <input class="eclr-nom" data-ek="nom" value="${esc(s.nom || s.key)}" aria-label="Nom du projecteur">
-        ${ECLR_CHAMPS.map((c) => `
-          <label class="eclr-range">${c.label}
-            <input type="range" data-ek="${c.k}" min="${c.min}" max="${c.max}" step="${c.step}" value="${Number(s[c.k]) || 0}">
-            <output>${Number(s[c.k]) || 0}${c.unite}</output>
-          </label>`).join("")}
-        <button type="button" class="eclr-undo" data-act="eclr-row-reset" title="Position d'origine de ce projecteur">↺</button>
-      </article>`).join("");
-
-    renderApercuEclairage();
-  }
-
-  function renderApercuEclairage() {
-    const e = catalogue.eclairage;
+    /* Chaque projecteur : son aperçu à gauche, ses trois curseurs juste à
+       côté. On règle en regardant, sans faire l'aller-retour haut/bas. */
     const art = catalogue.artworks || [];
-    $("#eclr-preview").innerHTML = (e.sources || []).map((s, i) => {
+    $("#eclr-list").innerHTML = (e.sources || []).map((s, i) => {
       const img = (art[i % (art.length || 1)] || {}).image || "";
       return `
-        <figure class="pv-card" data-si="${i}" style="${styleLumiere(s)}">
-          <span class="pv-spot" aria-hidden="true"><span class="pv-beam"></span></span>
-          <div class="pv-frame"><img src="${esc(img)}" alt=""><span class="pv-wash" aria-hidden="true"></span></div>
-          <figcaption>${esc(s.nom || s.key)}</figcaption>
-        </figure>`;
+      <article class="eclr-row" data-si="${i}">
+        <figure class="eclr-apercu">
+          <div class="pv-card" style="${styleLumiere(s)}">
+            <span class="pv-spot" aria-hidden="true"><span class="pv-beam"></span></span>
+            <div class="pv-frame"><img src="${esc(img)}" alt=""><span class="pv-wash" aria-hidden="true"></span></div>
+          </div>
+        </figure>
+        <div class="eclr-fields">
+          <input class="eclr-nom" data-ek="nom" value="${esc(s.nom || s.key)}" aria-label="Nom du projecteur">
+          ${ECLR_CHAMPS.map((c) => `
+            <label class="eclr-range">${c.label}
+              <input type="range" data-ek="${c.k}" min="${c.min}" max="${c.max}" step="${c.step}" value="${Number(s[c.k]) || 0}">
+              <output>${Number(s[c.k]) || 0}${c.unite}</output>
+            </label>`).join("")}
+        </div>
+        <button type="button" class="eclr-undo" data-act="eclr-row-reset" title="Position d'origine de ce projecteur">↺</button>
+      </article>`;
     }).join("");
+
     majEclairageGlobal();
   }
 
-  /* Intensité, portée, projecteurs visibles : appliqués à tout l'aperçu. */
+  /* Intensité, portée, projecteurs visibles : appliqués à tous les aperçus. */
   function majEclairageGlobal() {
     const e = catalogue.eclairage;
-    const box = $("#eclr-preview");
-    box.classList.toggle("pv-hidden", e.actif === false);
-    appliqueEclairageGlobal(box);
+    const list = $("#eclr-list");
+    list.classList.toggle("pv-hidden", e.actif === false);
+    appliqueEclairageGlobal(list);
     $("#eclr-intensite").nextElementSibling.textContent = (e.intensite ?? 100) + " %";
     $("#eclr-portee").nextElementSibling.textContent = (e.portee ?? 100) + " %";
   }
 
-  /* Une seule carte d'aperçu se rafraîchit pendant qu'on tire le curseur. */
+  /* Un seul aperçu se rafraîchit pendant qu'on tire le curseur. */
   function majApercuSource(i) {
-    const card = $(`#eclr-preview [data-si="${i}"]`);
+    const card = $(`#eclr-list [data-si="${i}"] .pv-card`);
     if (card) card.setAttribute("style", styleLumiere(catalogue.eclairage.sources[i]));
   }
 
@@ -506,8 +505,6 @@
 
       if (k === "nom") {
         s.nom = ev.target.value;
-        const cap = $(`#eclr-preview [data-si="${i}"] figcaption`);
-        if (cap) cap.textContent = s.nom;
       } else {
         s[k] = Number(ev.target.value) || 0;
         const champ = ECLR_CHAMPS.find((c) => c.k === k);

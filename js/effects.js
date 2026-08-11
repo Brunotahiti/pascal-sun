@@ -12,7 +12,7 @@
   const finePointer = window.matchMedia("(pointer: fine)").matches;
 
   document.addEventListener("DOMContentLoaded", () => {
-    if (reduced) return;
+    if (reduced) { decouvre(); return; }
 
     introCurtain();
     mountChrome();
@@ -26,10 +26,18 @@
 
   /* ----------------------------------- rideau d'ouverture (accueil) -- */
 
+  /* Retire le cache posé en tête de page : soit le vrai rideau prend le
+     relais, soit il n'y a pas d'intro et la page doit s'afficher. */
+  function decouvre() {
+    document.documentElement.classList.remove("intro-pending");
+  }
+
   function introCurtain() {
-    if (document.body.dataset.page !== "home") return;
-    if (sessionStorage.getItem("ps_intro_seen")) return;
-    sessionStorage.setItem("ps_intro_seen", "1");
+    if (document.body.dataset.page !== "home") return decouvre();
+    let dejaVu = false;
+    try { dejaVu = !!sessionStorage.getItem("ps_intro_seen"); } catch (e) { /* stockage bloqué */ }
+    if (dejaVu) return decouvre();
+    try { sessionStorage.setItem("ps_intro_seen", "1"); } catch (e) { /* stockage bloqué */ }
 
     const intro = document.createElement("div");
     intro.className = "intro";
@@ -92,6 +100,7 @@
       </div>`;
     document.body.appendChild(intro);
     document.body.classList.add("intro-lock");
+    decouvre();   // le rideau animé remplace le cache initial, sans transition
 
     setTimeout(() => {
       intro.classList.add("done");
