@@ -4,15 +4,22 @@
     {
       "name": "galerie",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["-y", "serve", "."],
+      "runtimeArgs": [
+        "-y",
+        "serve",
+        "."
+      ],
       "port": 4173,
       "autoPort": true
     },
     {
       "name": "serveur",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["server.js"],
-      "port": 3000
+      "runtimeArgs": [
+        "server.js"
+      ],
+      "port": 3000,
+      "autoPort": true
     }
   ]
 }

@@ -766,8 +766,14 @@ figure.portrait, .artist-hero {
   box-shadow:
     0 2px 5px rgba(22, 19, 15, .25),
     0 26px 46px -24px rgba(22, 19, 15, .58);
-  position: sticky;
-  top: 104px;
+}
+
+/* Seul le petit portrait accompagne la lecture : il reste en vue pendant que
+   la biographie défile dans la colonne d'à côté. Surtout pas le grand bandeau
+   en tête de page — collé, il resterait à l'écran et toute la page défilerait
+   dessous, en transparaissant dans son cadre. */
+@media (min-width: 901px) {
+  .split figure.portrait { position: sticky; top: 104px; }
 }
 figure.portrait:hover, .artist-hero:hover {
   padding: calc(var(--mat) * 0.15);
@@ -778,7 +784,7 @@ figure.portrait:hover, .artist-hero:hover {
 /* la légende du bandeau artiste reste hors du cadre qui se resserre */
 .artist-hero { overflow: visible; }
 .artist-hero:hover { padding: calc(var(--mat) * 0.15); }
-@media (max-width: 900px) { figure.portrait { position: static; max-width: 440px; } }
+@media (max-width: 900px) { figure.portrait { max-width: 440px; } }
 
 .prose p { margin-bottom: 1.2em; color: var(--ink-soft); }
 .prose.cgv h2 {

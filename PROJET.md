@@ -46,14 +46,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=32/?v=33/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=33/?v=34/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=33"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=34"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -223,6 +223,13 @@ photos »** relance la même opération à la demande. `sharp` est chargé dans 
 
 ### Pièges rencontrés (à ne pas refaire)
 
+- **`position: sticky` posé sur le mauvais élément** : la règle collait à la fois
+  `figure.portrait` (voulu : la petite photo accompagne la lecture de la bio) et
+  `.artist-hero` (le grand bandeau en tête de page). Résultat : sur mobile et
+  dans Edge, le bandeau restait à l'écran et toute la page défilait dessous, en
+  transparaissant dans son cadre. Le sticky est désormais limité à
+  `.split figure.portrait` au-dessus de 900 px. Vérifier une correction de mise
+  en page **en largeur mobile aussi**, pas seulement en grand écran.
 - **Collision de classe CSS** : les images portent la classe `portrait` /
   `landscape` (orientation). Ne jamais styler `.portrait` sans le préfixer
   (`figure.portrait`), sinon toutes les toiles portrait héritent du style.
