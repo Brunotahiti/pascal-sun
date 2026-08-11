@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/admin.css?v=31">
+  <link rel="stylesheet" href="css/admin.css?v=32">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='38' fill='%2316130f'/></svg>">
 </head>
 <body>
@@ -226,6 +226,14 @@
           </div>
         </div>
         <div class="compose-panel" style="margin-bottom: 22px;">
+          <h3>🖼 Alléger les photos du site</h3>
+          <p class="compose-note" id="optim-note">Les photos remplacées depuis l'admin sont enregistrées telles quelles, en pleine taille. Ce bouton les recompresse en trois formats (téléphone, tablette, grand écran) : le site sert alors à chacun la taille qu'il lui faut, et se charge beaucoup plus vite. À lancer après avoir remplacé des photos.</p>
+          <div>
+            <button class="solid-btn" id="optim-btn">⚡ Optimiser les photos</button>
+          </div>
+          <p class="compose-status" id="optim-status"></p>
+        </div>
+        <div class="compose-panel" style="margin-bottom: 22px;">
           <h3>✉️ Emails automatiques</h3>
           <p class="compose-note" id="mail-note"></p>
           <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -300,7 +308,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="js/data.js?v=31"></script>
-  <script src="js/admin.js?v=31"></script>
+  <script src="js/data.js?v=32"></script>
+  <script src="js/admin.js?v=32"></script>
 </body>
 </html>

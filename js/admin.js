@@ -259,7 +259,7 @@
         const canvas = document.createElement("canvas");
         canvas.width = Math.round(sw * out); canvas.height = Math.round(sh * out);
         canvas.getContext("2d").drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob((b) => finish(b), "image/webp", 0.86);
+        encodeCanvas(canvas, 0.86).then(finish);
       }
 
       modal.querySelector('[data-c="cancel"]').addEventListener("click", () => finish(null));
@@ -273,7 +273,24 @@
     fd.append("file", blob, name);
     const r = await fetch("/api/upload", { method: "POST", body: fd });
     if (!r.ok) throw new Error("upload");
-    return (await r.json()).path;
+    return await r.json();   // { path, images? }
+  }
+
+  /* canvas.toBlob() retombe silencieusement sur le PNG quand le navigateur ne
+     sait pas encoder le format demandé — c'est ainsi que des « .webp » de 3 Mo
+     se sont retrouvés en ligne. On vérifie ce qui sort vraiment, et on essaie
+     le JPEG avant de se résoudre au PNG. */
+  function encodeCanvas(canvas, qualite) {
+    const essai = (type) => new Promise((resolve) => {
+      canvas.toBlob((b) => resolve(b && b.type === type ? b : null), type, qualite);
+    });
+    return essai("image/webp")
+      .then((b) => b || essai("image/jpeg"))
+      .then((b) => b || new Promise((resolve) => canvas.toBlob(resolve, "image/png")));
+  }
+
+  function extensionDe(blob) {
+    return { "image/webp": "webp", "image/jpeg": "jpg", "image/png": "png" }[blob.type] || "webp";
   }
 
   /* Réduction de la photo dans le navigateur : max 1600 px, WebP q.85. */
@@ -287,7 +304,7 @@
         canvas.width = Math.round(img.width * scale);
         canvas.height = Math.round(img.height * scale);
         canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("encode")), "image/webp", 0.85);
+        encodeCanvas(canvas, 0.85).then((blob) => blob ? resolve(blob) : reject(new Error("encode")));
         URL.revokeObjectURL(img.src);
       };
       img.onerror = reject;
@@ -319,12 +336,16 @@
     overlay.textContent = "Envoi…";
     photoBox.appendChild(overlay);
     try {
-      const path = await uploadBlob(card, blob, `${slugify(a.titre)}.webp`);
-      a.image = path;
-      a.images = null; // la nouvelle photo remplace les variantes responsives
-      $("img", photoBox).src = path;
+      const nom = `${slugify(a.titre)}.${extensionDe(blob)}`;
+      const res = await uploadBlob(card, blob, nom);
+      a.image = res.path;
+      // le serveur renvoie les trois tailles : le site sert la bonne à chacun
+      a.images = res.images || null;
+      $("img", photoBox).src = res.path;
       markDirty();
-      toast("Photo mise à jour — pensez à enregistrer.");
+      toast(res.images
+        ? "Photo mise à jour en trois tailles — pensez à enregistrer."
+        : "Photo mise à jour — pensez à enregistrer.");
     } catch {
       toast("Échec de l'envoi de la photo.");
     } finally {
@@ -985,6 +1006,35 @@
     });
 
     $("#report-btn").addEventListener("click", showReport);
+
+    /* Reprise des photos déjà en ligne : le serveur les redécline en trois
+       tailles et met le catalogue à jour, sans passer par l'enregistrement. */
+    $("#optim-btn").addEventListener("click", async () => {
+      if (dirty && !confirm("Des modifications ne sont pas enregistrées ; elles seront perdues. Continuer ?")) return;
+      const btn = $("#optim-btn"), etat = $("#optim-status");
+      btn.disabled = true;
+      etat.textContent = "Optimisation en cours… cela peut prendre une minute.";
+      try {
+        const r = await fetch("/api/images/optimiser", { method: "POST" });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || "");
+        if (!d.traitees) {
+          etat.textContent = "Toutes les photos sont déjà optimisées ✓";
+        } else {
+          const gain = d.avantKo ? Math.round(100 - (d.apresKo / d.avantKo) * 100) : 0;
+          etat.textContent = `${d.traitees} photo(s) allégée(s) : ${Math.round(d.avantKo / 1024)} Mo → `
+            + `${Math.round(d.apresKo / 1024 * 10) / 10} Mo, soit ${gain} % de moins ✓`
+            + (d.echecs.length ? ` — échec sur : ${d.echecs.join(", ")}` : "");
+          await loadCatalogue();
+          renderArtworks();
+          markClean();
+        }
+      } catch (e) {
+        etat.textContent = e.message === "sharp-indisponible"
+          ? "Outil de redimensionnement absent du serveur — prévenez le développeur."
+          : "Échec de l'optimisation.";
+      } finally { btn.disabled = false; }
+    });
     $("#ship-free").addEventListener("input", (e) => {
       catalogue.shipping.freeAbove = Number(e.target.value) || 0;
       markDirty();

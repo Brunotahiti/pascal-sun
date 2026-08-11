@@ -941,9 +941,105 @@ const upload = multer({
   limits: { fileSize: 15 * 1024 * 1024 }
 });
 
-app.post("/api/upload", requireAuth, upload.single("file"), (req, res) => {
+/* Trois tailles WebP par photo, fabriquées ici plutôt que dans le navigateur.
+   Le canvas de l'admin retombait silencieusement sur du PNG quand le
+   navigateur ne sait pas encoder le WebP : des photos de 3 Mo se retrouvaient
+   servies telles quelles, à tout le monde, téléphones compris. */
+const TAILLES = { small: 480, medium: 960, large: 1600 };
+
+/* sharp est optionnel : s'il manque (build sans binaire natif), le site
+   continue de fonctionner comme avant, sans déclinaisons. */
+let sharp = null;
+try { sharp = require("sharp"); }
+catch { console.warn("sharp indisponible : les photos ne seront pas redimensionnées."); }
+
+async function declinePhoto(fichier) {
+  if (!sharp) return null;
+  const base = fichier.replace(/\.[a-z0-9]+$/i, "").replace(/-(480|960|1600)$/, "");
+  const src = path.join(UPLOADS_DIR, fichier);
+  const images = {};
+  const image = sharp(src, { failOn: "none" }).rotate();
+  const meta = await image.metadata();
+
+  const source = meta.width || Infinity;
+  let dernier = null, dernierePlus = 0;
+
+  for (const [cle, largeur] of Object.entries(TAILLES)) {
+    // Jamais d'agrandissement, et pas deux fois le même fichier : si la photo
+    // fait 900 px de large, « 960 » et « 1600 » pointent sur le même visuel.
+    const cible = Math.min(largeur, source);
+    if (dernier && cible <= dernierePlus) { images[cle] = dernier; continue; }
+    const nom = `${base}-${largeur}.webp`;
+    await sharp(src, { failOn: "none" })
+      .rotate()
+      .resize({ width: cible, withoutEnlargement: true })
+      .webp({ quality: 80, effort: 5 })
+      .toFile(path.join(UPLOADS_DIR, nom));
+    dernier = `/uploads/${nom}`;
+    dernierePlus = cible;
+    images[cle] = dernier;
+  }
+  return images;
+}
+
+app.post("/api/upload", requireAuth, upload.single("file"), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: "file-required" });
-  res.json({ path: `/uploads/${req.file.filename}` });
+  const brut = `/uploads/${req.file.filename}`;
+  try {
+    const images = await declinePhoto(req.file.filename);
+    if (!images) return res.json({ path: brut });
+    // l'original envoyé ne sert plus : les trois déclinaisons le remplacent
+    fs.unlink(path.join(UPLOADS_DIR, req.file.filename), () => {});
+    res.json({ path: images.medium, images });
+  } catch (e) {
+    console.warn("redimensionnement impossible :", e.message);
+    res.json({ path: brut });
+  }
+});
+
+/* Reprise des photos déjà en ligne : celles qui n'ont pas de déclinaisons
+   (ou qui sont en réalité des PNG déguisés) sont régénérées en trois tailles
+   WebP, et le catalogue est mis à jour. */
+async function optimiserPhotosExistantes() {
+  if (!sharp) return { erreur: "sharp-indisponible" };
+
+  const catalogue = readJSON(CATALOGUE_FILE, null);
+  if (!catalogue || !Array.isArray(catalogue.artworks)) {
+    return { erreur: "catalogue-introuvable" };
+  }
+
+  let traitees = 0, avant = 0, apres = 0;
+  const echecs = [];
+
+  for (const a of catalogue.artworks) {
+    const img = a.image || "";
+    if (!img.startsWith("/uploads/")) continue;      // photos livrées : déjà optimisées
+    if (a.images && a.images.large) continue;        // déjà décliné
+    const fichier = path.basename(img);
+    const src = path.join(UPLOADS_DIR, fichier);
+    if (!fs.existsSync(src)) { echecs.push(a.titre); continue; }
+    try {
+      const poidsAvant = fs.statSync(src).size;
+      const images = await declinePhoto(fichier);
+      a.images = images;
+      a.image = images.medium;
+      avant += poidsAvant;
+      apres += fs.statSync(path.join(UPLOADS_DIR, path.basename(images.medium))).size;
+      fs.unlink(src, () => {});
+      traitees++;
+    } catch {
+      echecs.push(a.titre);
+    }
+  }
+
+  if (traitees) fs.writeFileSync(CATALOGUE_FILE, JSON.stringify(catalogue, null, 2));
+  return { traitees, echecs, avantKo: Math.round(avant / 1024), apresKo: Math.round(apres / 1024) };
+}
+
+app.post("/api/images/optimiser", requireAuth, async (_req, res) => {
+  const bilan = await optimiserPhotosExistantes();
+  if (bilan.erreur) return res.status(bilan.erreur === "sharp-indisponible" ? 503 : 400).json({ error: bilan.erreur });
+  res.json(bilan);
 });
 
 /* --------------------------------------------------------------- static -- */
@@ -967,4 +1063,20 @@ app.use(express.static(__dirname, {
   }
 }));
 
-app.listen(PORT, () => console.log(`Galerie Pascal Sun en écoute sur :${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Galerie Pascal Sun en écoute sur :${PORT}`);
+  /* Rattrapage au démarrage : les photos remplacées depuis l'admin avant la
+     mise en place du redimensionnement étaient servies en pleine taille (des
+     PNG de plusieurs Mo déguisés en .webp). L'opération est sans effet quand
+     tout est déjà décliné. */
+  setTimeout(() => {
+    optimiserPhotosExistantes()
+      .then((b) => {
+        if (b.erreur) return console.warn("Optimisation des photos ignorée :", b.erreur);
+        if (b.traitees) {
+          console.log(`Photos optimisées au démarrage : ${b.traitees} — ${b.avantKo} Ko → ${b.apresKo} Ko`);
+        }
+      })
+      .catch((e) => console.warn("Optimisation des photos échouée :", e.message));
+  }, 3000);
+});

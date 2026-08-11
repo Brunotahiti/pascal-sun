@@ -46,14 +46,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=31/?v=32/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=32/?v=33/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=32"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=33"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -95,7 +95,7 @@ servis par un petit serveur Node/Express.
 
 ```
 server.js              serveur Express : site + admin + API + emails + push
-package.json           express, multer, compression, nodemailer, web-push
+package.json           express, multer, compression, nodemailer, web-push, sharp
 Dockerfile             node:20-alpine
 docker-compose.yml     service web derrière Traefik, volume pascal-sun-data
 
@@ -182,6 +182,15 @@ newsletter, export CSV) · Boîte à idées (+ notifications push) · Journal & 
 (+ diaporama atelier, Instagram) · Livraison · **Éclairage** · Textes & boutons · Statistiques
 (intégrées, proxy Umami) · Sauvegardes (téléchargement, rapport mensuel, config email)
 
+### Images
+Toute photo envoyée depuis l'admin est déclinée **côté serveur** (`sharp`) en
+trois WebP — 480 / 960 / 1600 px, qualité 80, jamais agrandie — et le site sert
+la bonne taille via `srcset`. L'original envoyé est supprimé. Au démarrage, le
+serveur rattrape les photos restées en une seule taille (opération sans effet si
+tout est déjà décliné) ; le bouton **admin → Sauvegardes → « ⚡ Optimiser les
+photos »** relance la même opération à la demande. `sharp` est chargé dans un
+`try/catch` : s'il manque, le site fonctionne comme avant, sans déclinaisons.
+
 ### Automatismes
 - Commande → original **réservé**, stock décompté, confirmation au client avec **lien du certificat**, alerte à Pascal (email + push)
 - Nouvelle œuvre enregistrée → **annonce automatique** aux abonnés
@@ -224,6 +233,13 @@ newsletter, export CSV) · Boîte à idées (+ notifications push) · Journal & 
 - **Safari ≠ Chrome** pour la pagination à l'impression : toujours vérifier en
   générant un vrai PDF (`chrome --headless --print-to-pdf`) et compter les pages.
 - Toujours **bumper `?v=`** dans les HTML, sinon les navigateurs gardent l'ancien CSS/JS.
+- **`canvas.toBlob()` retombe silencieusement sur le PNG** quand le navigateur ne
+  sait pas encoder le format demandé. C'est ainsi que 11 photos « .webp » de 1 à
+  3 Mo (des PNG en réalité) se sont retrouvées en ligne, servies en pleine taille
+  à tout le monde : 18 Mo pour la page galerie. Toujours vérifier `blob.type`
+  après encodage (`encodeCanvas()` dans `js/admin.js`), et ne jamais se fier au
+  navigateur pour produire les images du site — c'est `sharp`, côté serveur, qui
+  fabrique les trois tailles.
 - **Rien ne doit apparaître avant l'animation d'ouverture** : le rideau est monté
   par `effects.js` au DOMContentLoaded, bien trop tard. Un script en tête de
   `index.html` pose `html.intro-pending`, dont le `::before` couvre l'écran dès
@@ -251,8 +267,6 @@ newsletter, export CSV) · Boîte à idées (+ notifications push) · Journal & 
 
 ## 8. Reste à faire / idées non réalisées
 
-- **Régénérer les 3 tailles** des photos recadrées depuis l'admin (elles n'ont
-  qu'une seule taille dans `/uploads/`, un peu lourdes sur mobile).
 - Compléter les **mentions légales** dans les CGV (numéro Tahiti, adresse) —
   marquées entre crochets dans `cgv.html`.
 - Vérifier avec Pascal les **dimensions et prix** que j'ai estimés.
