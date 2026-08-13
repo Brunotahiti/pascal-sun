@@ -46,14 +46,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=36/?v=37/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=37/?v=38/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=37"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=38"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -182,6 +182,13 @@ site) · Clients (CRM, invitations,
 newsletter, export CSV) · Boîte à idées (+ notifications push) · Journal & avis
 (+ diaporama atelier, Instagram) · Livraison · **Éclairage** · Textes & boutons · Statistiques
 (intégrées, proxy Umami) · Sauvegardes (téléchargement, rapport mensuel, config email)
+
+### Accueil
+La toile en tête d'accueil **change à chaque visite** : `oeuvreEnTete()` dans
+`js/app.js` avance d'un cran dans `ARTWORKS` et retient le rang dans
+`localStorage.ps_hero`, plutôt que de tirer au sort — ainsi toutes les œuvres
+passent à leur tour. La sélection « Œuvres récentes » exclut la toile déjà
+montrée en tête, pour ne pas afficher deux fois la même image sur la page.
 
 ### Images
 Toute photo envoyée depuis l'admin est déclinée **côté serveur** (`sharp`) en

@@ -349,12 +349,32 @@
 
   /* ------------------------------------------------------------ pages -- */
 
+  /* La toile en tête d'accueil change à chaque visite. On avance d'un cran
+     dans le catalogue plutôt que de tirer au sort : ainsi toutes les œuvres
+     passent à leur tour, sans qu'une même revienne deux fois de suite. */
+  function oeuvreEnTete() {
+    if (!ARTWORKS.length) return null;
+    let rang = 0;
+    try {
+      const precedent = parseInt(localStorage.getItem("ps_hero"), 10);
+      rang = Number.isInteger(precedent) ? precedent + 1 : 0;
+    } catch { /* stockage bloqué : on repart du début à chaque fois */ }
+    rang = ((rang % ARTWORKS.length) + ARTWORKS.length) % ARTWORKS.length;
+    try { localStorage.setItem("ps_hero", String(rang)); } catch { /* idem */ }
+    return ARTWORKS[rang];
+  }
+
   function pageHome() {
-    const featured = ARTWORKS.filter((a) => !a.vendu).slice(0, 3);
+    const hero = oeuvreEnTete();
+
+    // la sélection ne reprend pas la toile déjà montrée en tête
+    const featured = ARTWORKS
+      .filter((a) => !a.vendu && (!hero || a.id !== hero.id))
+      .slice(0, 3);
     const grid = document.getElementById("featured-grid");
     if (grid) grid.innerHTML = featured.map(cardHTML).join("");
 
-    const hero = ARTWORKS.find((a) => a.id === "retour-du-pecheur") || ARTWORKS[0];
+    if (!hero) return;
     const heroFig = document.getElementById("hero-art");
     if (heroFig) {
       heroFig.innerHTML = `
