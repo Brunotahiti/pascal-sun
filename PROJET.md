@@ -46,14 +46,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=33/?v=34/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=34/?v=35/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=34"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=35"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -214,7 +214,13 @@ photos »** relance la même opération à la demande. `sharp` est chargé dans 
    le code est prêt via `STRIPE_SECRET_KEY`).
 7. Prix ronds, affichés en XPF par défaut.
 8. Le certificat tient **sur une seule page A4** (ajustement automatique mesuré).
-9. **Éclairage de la galerie** : sept projecteurs, réglables dans l'admin
+9. **Entrée en salle** : projecteurs allumés sur la page Galerie, le menu du haut
+   se relève comme un rideau, le titre s'estompe sur place (aucun décalage : le
+   texte garde sa place, la signature est en absolu par-dessus) et la signature
+   de l'artiste s'éclaire à la sienne. Le menu disparaissant, la rangée de
+   filtres se colle en haut pour que l'interrupteur reste toujours atteignable —
+   une seule ligne qui glisse du doigt sur téléphone, interrupteur en tête.
+10. **Éclairage de la galerie** : sept projecteurs, réglables dans l'admin
    (onglet Éclairage). Une source = trois nombres seulement — `x` et `y` en
    pourcentage du cadre, `angle` en degrés. Le faisceau, le halo sur la toile
    (`--hx` / `--hy`) et l'ombre portée (`--ox` / `--oy`) en sont **déduits**
