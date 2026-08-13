@@ -466,7 +466,7 @@
         `<option value="${i}">${esc(a.titre)}</option>`).join("");
   }
 
-  /* Choisir une œuvre du catalogue pré-remplit la fiche. */
+  /* Choisir une œuvre du catalogue pré-remplit la fiche, photo comprise. */
   function remplirDepuisCatalogue() {
     const i = $("#cert-oeuvre").value;
     if (i === "") return;
@@ -476,7 +476,39 @@
     $("#cert-annee").value = a.annee || "";
     $("#cert-technique").value = a.technique_fr || "";
     $("#cert-dimensions").value = a.dimensions || "";
-    $("#cert-photo").dataset.chemin = (a.images && a.images.large) || a.image || "";
+    montrerPhotoCert((a.images && a.images.large) || a.image || "");
+  }
+
+  /* La photo retenue pour le certificat, avec son aperçu. */
+  function montrerPhotoCert(chemin) {
+    const img = $("#cert-apercu");
+    const box = $("#cert-photo-box");
+    box.dataset.chemin = chemin || "";
+    img.hidden = !chemin;
+    if (chemin) img.src = chemin;
+    $("#cert-photo-vide").hidden = !!chemin;
+    $("#cert-photo-crop").hidden = !chemin;
+    $("#cert-photo-retirer").hidden = !chemin;
+    $("#cert-photo-btn").textContent = chemin ? "📷 Remplacer" : "📷 Importer une photo";
+  }
+
+  /* Import : recadrage puis envoi immédiat, pour que Pascal voie tout de suite
+     ce qui figurera sur le certificat plutôt que de le découvrir après coup. */
+  async function importerPhotoCert(source) {
+    const box = $("#cert-photo-box");
+    const blob = await openCropper(source);
+    if (!blob) return;
+    const voile = document.createElement("div");
+    voile.className = "uploading";
+    voile.textContent = "Envoi…";
+    box.appendChild(voile);
+    try {
+      const res = await uploadBlob(null, blob, `certificat.${extensionDe(blob)}`);
+      montrerPhotoCert((res.images && res.images.large) || res.path);
+      $("#cert-status").textContent = "Photo importée ✓";
+    } catch {
+      $("#cert-status").textContent = "Échec de l'envoi de la photo.";
+    } finally { voile.remove(); }
   }
 
   /* Date de vente lue sur sa partie calendaire : reconstruite en heure locale,
@@ -506,22 +538,34 @@
       </div>`).join("")}</div>`;
   }
 
-  function wireCertificats() {
-    $("#cert-open").addEventListener("click", () => {
-      const p = $("#cert-panel");
-      p.hidden = !p.hidden;
-      if (!p.hidden) {
-        renderCertOeuvres();
-        renderCertificats();
-        $("#cert-date").value = new Date().toISOString().slice(0, 10);
-        p.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    });
+  /* Entrée dans l'onglet : liste des œuvres, certificats déjà émis, date du jour. */
+  function ouvrirCertificats() {
+    renderCertOeuvres();
+    renderCertificats();
+    if (!$("#cert-date").value) $("#cert-date").value = new Date().toISOString().slice(0, 10);
+  }
 
+  function wireCertificats() {
     $("#cert-oeuvre").addEventListener("change", remplirDepuisCatalogue);
     $("#cert-type").addEventListener("change", (e) => {
       $("#cert-edition-champ").hidden = e.target.value !== "tirage";
     });
+
+    /* ---- photo de l'œuvre ---- */
+    $("#cert-photo-btn").addEventListener("click", () => $("#cert-photo").click());
+    $("#cert-photo").addEventListener("change", async (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const url = URL.createObjectURL(f);
+      await importerPhotoCert(url);
+      URL.revokeObjectURL(url);
+      e.target.value = "";      // réimporter deux fois le même fichier reste possible
+    });
+    $("#cert-photo-crop").addEventListener("click", () => {
+      const chemin = $("#cert-photo-box").dataset.chemin;
+      if (chemin) importerPhotoCert(chemin);
+    });
+    $("#cert-photo-retirer").addEventListener("click", () => montrerPhotoCert(""));
 
     $("#cert-creer").addEventListener("click", async () => {
       const btn = $("#cert-creer"), etat = $("#cert-status");
@@ -534,15 +578,7 @@
       btn.disabled = true;
       etat.textContent = "Création…";
       try {
-        // photo choisie à la main : elle est envoyée et déclinée comme les autres
-        let image = $("#cert-photo").dataset.chemin || "";
-        const fichier = $("#cert-photo").files[0];
-        if (fichier) {
-          const blob = await shrinkImage(fichier);
-          const res = await uploadBlob(null, blob, `certificat.${extensionDe(blob)}`);
-          image = (res.images && res.images.large) || res.path;
-        }
-
+        const image = $("#cert-photo-box").dataset.chemin || "";
         const r = await fetch("/api/certificats", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -562,8 +598,7 @@
         ["cert-acheteur", "cert-titre", "cert-annee", "cert-technique", "cert-dimensions", "cert-edition"]
           .forEach((id) => { $("#" + id).value = ""; });
         $("#cert-oeuvre").value = "";
-        $("#cert-photo").value = "";
-        delete $("#cert-photo").dataset.chemin;
+        montrerPhotoCert("");
         renderCertificats();
       } catch (e) {
         etat.textContent = e.message === "titre-et-acheteur-requis"
@@ -1111,6 +1146,7 @@
         document.querySelectorAll(".pane").forEach((p) => p.classList.toggle("active", p.dataset.pane === t.dataset.tab));
         if (t.dataset.tab === "stats" && statsLoadedDays === null) loadStats(7);
         if (t.dataset.tab === "commandes") renderOrders();
+        if (t.dataset.tab === "certificats") ouvrirCertificats();
         if (t.dataset.tab === "clients") renderClients();
         if (t.dataset.tab === "idees") renderIdees();
         if (t.dataset.tab === "donnees") { renderBackups(); refreshMailNote(); }

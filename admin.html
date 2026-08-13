@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/admin.css?v=35">
+  <link rel="stylesheet" href="css/admin.css?v=36">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='38' fill='%2316130f'/></svg>">
 </head>
 <body>
@@ -33,6 +33,7 @@
         <button class="tab active" data-tab="oeuvres">Œuvres</button>
         <button class="tab" data-tab="expos">Vernissages</button>
         <button class="tab" data-tab="commandes">Commandes</button>
+        <button class="tab" data-tab="certificats">📜 Certificats</button>
         <button class="tab" data-tab="clients">Clients</button>
         <button class="tab" data-tab="idees">💡 Boîte à idées</button>
         <button class="tab" data-tab="journal">Journal &amp; avis</button>
@@ -80,13 +81,21 @@
             <h2>Commandes</h2>
             <p>Chaque commande réserve automatiquement l'original et décompte le stock des tirages. Mettez à jour le statut au fil du paiement et de l'expédition.</p>
           </div>
-          <button class="ghost-btn" id="cert-open">📜 Certificat hors site</button>
+        </div>
+        <div id="orders-list" class="artwork-list"></div>
+      </section>
+
+      <!-- CERTIFICATS HORS SITE -->
+      <section class="pane" data-pane="certificats">
+        <div class="pane-head">
+          <div>
+            <h2>📜 Certificats d'authenticité</h2>
+            <p>Pour les œuvres vendues à l'atelier, en vernissage ou par une galerie — celles qui ne sont pas passées par le panier du site. Le document est identique à celui des commandes en ligne, avec sa propre référence et son lien à envoyer à l'acheteur. Les certificats des ventes du site, eux, se trouvent sur chaque commande dans l'onglet Commandes.</p>
+          </div>
         </div>
 
-        <!-- Certificat pour une vente qui n'est pas passée par le site -->
-        <div class="compose-panel" id="cert-panel" hidden>
-          <h3>📜 Certificat d'authenticité — vente hors du site</h3>
-          <p class="compose-note">Pour une œuvre vendue à l'atelier, en vernissage ou par une galerie. Le certificat est identique à ceux des commandes du site, avec sa propre référence et son lien à envoyer à l'acheteur.</p>
+        <div class="compose-panel" id="cert-panel">
+          <h3>Nouveau certificat</h3>
 
           <div class="cert-form">
             <label class="cf-champ span2">Œuvre
@@ -122,20 +131,28 @@
             <label class="cf-champ span2" id="cert-edition-champ" hidden>Numéro d'édition
               <input id="cert-edition" placeholder="3 / 30">
             </label>
-            <label class="cf-champ span2">Photo de l'œuvre (facultatif)
-              <input id="cert-photo" type="file" accept="image/*">
-            </label>
+            <div class="cf-champ span2">Photo de l'œuvre
+              <div class="cert-photo" id="cert-photo-box">
+                <img id="cert-apercu" alt="" hidden>
+                <p class="cert-photo-vide" id="cert-photo-vide">Aucune photo pour l'instant — le certificat peut être émis sans, mais il est plus parlant avec.</p>
+                <div class="cert-photo-btns">
+                  <button type="button" class="replace-btn" id="cert-photo-btn">📷 Importer une photo</button>
+                  <button type="button" class="replace-btn crop" id="cert-photo-crop" hidden>✂ Recadrer</button>
+                  <button type="button" class="replace-btn" id="cert-photo-retirer" hidden>Retirer</button>
+                </div>
+                <input type="file" id="cert-photo" accept="image/*" hidden>
+              </div>
+            </div>
           </div>
 
           <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
             <button class="solid-btn" id="cert-creer">Créer le certificat</button>
             <span class="compose-status" id="cert-status"></span>
           </div>
-
-          <div id="cert-liste"></div>
         </div>
 
-        <div id="orders-list" class="artwork-list"></div>
+        <h3 style="font-family:var(--serif); font-size:22px; font-weight:600; margin:26px 0 12px;">Certificats déjà émis</h3>
+        <div id="cert-liste"></div>
       </section>
 
       <!-- CLIENTS -->
@@ -362,7 +379,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="js/data.js?v=35"></script>
-  <script src="js/admin.js?v=35"></script>
+  <script src="js/data.js?v=36"></script>
+  <script src="js/admin.js?v=36"></script>
 </body>
 </html>

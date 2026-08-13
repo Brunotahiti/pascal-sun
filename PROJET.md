@@ -46,14 +46,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=35/?v=36/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=36/?v=37/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=36"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=37"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -111,7 +111,7 @@ panier.html            panier + livraison + paiement
 merci.html             confirmation de commande
 certificat.html?c=…    certificat d'authenticité imprimable (1 page A4)
 cgv.html               conditions générales de vente
-admin.html             espace d'administration (9 onglets)
+admin.html             espace d'administration (12 onglets)
 
 css/style.css          identité du site
 css/effects.css        curseur, grain, intro, marquee
@@ -175,9 +175,10 @@ curl -s -b /tmp/ck -X PUT https://pascal-sun.com/api/catalogue \
 - **Boutique** : original / tirage limité / affiche, stocks et statuts automatiques, frais de port par zone, livraison ou retrait, virement ou PayPal
 - Vernissages, journal de l'atelier, portraits sur commande, boîte à idées, avis, Instagram, newsletter, CGV
 
-### Espace admin (9 onglets)
+### Espace admin (12 onglets)
 Œuvres (photos avec recadrage, prix, stocks, statuts) · Vernissages · Commandes
-(+ demandes de portrait, liens certificats) · Clients (CRM, invitations,
+(+ demandes de portrait, liens certificats) · **Certificats** (ventes hors
+site) · Clients (CRM, invitations,
 newsletter, export CSV) · Boîte à idées (+ notifications push) · Journal & avis
 (+ diaporama atelier, Instagram) · Livraison · **Éclairage** · Textes & boutons · Statistiques
 (intégrées, proxy Umami) · Sauvegardes (téléchargement, rapport mensuel, config email)
@@ -196,7 +197,7 @@ Deux origines, une seule page publique `certificat.html?c=<réf>` :
 - **ventes du site** — référence `<idCommande>-<n° de ligne>`, résolue dans
   `orders.json` ; le lien part dans l'email de confirmation ;
 - **ventes hors du site** (atelier, vernissage, galerie) — créées dans
-  **admin → Commandes → « 📜 Certificat hors site »**, stockées dans
+  **admin → onglet « 📜 Certificats »**, stockées dans
   `data/certificats.json`, référence `PS-A-XXXXXXX` tirée au sort. Choisir une
   œuvre du catalogue pré-remplit la fiche ; on peut aussi tout saisir à la main
   avec sa propre photo. `/api/certificat` cherche d'abord dans ce fichier, puis
@@ -262,6 +263,12 @@ depuis Tahiti — un certificat daté du 14 s'afficherait « 13 ».
 - **Safari ≠ Chrome** pour la pagination à l'impression : toujours vérifier en
   générant un vrai PDF (`chrome --headless --print-to-pdf`) et compter les pages.
 - Toujours **bumper `?v=`** dans les HTML, sinon les navigateurs gardent l'ancien CSS/JS.
+- **L'attribut `hidden` ne masque plus rien** dès qu'une règle d'auteur donne un
+  `display` à l'élément — le `display:none` du navigateur pour `[hidden]` est une
+  règle d'agent utilisateur, battue par n'importe quelle règle d'auteur. Le
+  panneau newsletter (`.compose-panel`, en grille) restait ainsi ouvert en
+  permanence. `[hidden] { display: none !important; }` en tête de `admin.css`
+  règle le cas une fois pour toutes.
 - **`canvas.toBlob()` retombe silencieusement sur le PNG** quand le navigateur ne
   sait pas encoder le format demandé. C'est ainsi que 11 photos « .webp » de 1 à
   3 Mo (des PNG en réalité) se sont retrouvées en ligne, servies en pleine taille
