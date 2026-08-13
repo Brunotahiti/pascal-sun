@@ -116,6 +116,15 @@
     if (typeof normalizeArtworks === "function") normalizeArtworks(catalogue.artworks);
   }
 
+  /* Le site affiche les prix en francs Pacifique : l'admin les rappelle à
+     côté de l'euro, qui reste la valeur saisie et stockée. */
+  const TAUX_XPF = 119.33;
+  function enFrancs(eur) {
+    const v = (Number(eur) || 0) * TAUX_XPF;
+    const pas = v >= 100000 ? 5000 : v >= 20000 ? 1000 : 500;
+    return (Math.round(v / pas) * pas).toLocaleString("fr-FR") + " F";
+  }
+
   /* ----------------------------------------------------------- œuvres -- */
 
   function artworkCard(a, i) {
@@ -137,7 +146,7 @@
         <div class="f"><label>Collection</label><select data-k="collection">${cols}</select></div>
         <div class="f"><label>Année</label><input data-k="annee" type="number" value="${esc(a.annee)}"></div>
         <div class="f"><label>Dimensions</label><input data-k="dimensions" value="${esc(a.dimensions)}" placeholder="80 × 60 cm"></div>
-        <div class="f"><label>Prix (EUR)</label><input data-k="prixEUR" type="number" value="${esc(a.prixEUR)}"></div>
+        <div class="f"><label>Prix (EUR) <span class="en-francs">${enFrancs(a.prixEUR)}</span></label><input data-k="prixEUR" type="number" value="${esc(a.prixEUR)}"></div>
         <div class="f span2"><label>Technique (FR)</label><input data-k="technique_fr" value="${esc(a.technique_fr)}"></div>
         <div class="f span4"><label>Description (FR)</label><textarea data-k="desc_fr">${esc(a.desc_fr)}</textarea></div>
         <div class="f span4"><label>Description (EN)</label><textarea data-k="desc_en">${esc(a.desc_en)}</textarea></div>
@@ -164,7 +173,7 @@
           <div class="prod-row" data-pi="${pi}">
             <label class="flag"><input type="checkbox" data-pk="actif" ${p.actif !== false ? "checked" : ""}>
               ${({ original: "Original", tirage: "Tirage limité", affiche: "Affiche" })[p.key] || p.key}</label>
-            <span class="prod-field">Prix € <input type="number" data-pk="prixEUR" value="${p.prixEUR}"></span>
+            <span class="prod-field">Prix € <input type="number" data-pk="prixEUR" value="${p.prixEUR}"><em class="en-francs">${enFrancs(p.prixEUR)}</em></span>
             ${p.key === "original" ? "" : `<span class="prod-field">Stock <input type="number" data-pk="stock" value="${p.stock ?? ""}"></span>`}
             ${p.key === "tirage" ? `<span class="prod-field">Édition de <input type="number" data-pk="edition" value="${p.edition ?? ""}"></span>` : ""}
           </div>`).join("")}
@@ -863,16 +872,16 @@
             </select>
           </div>
           <div class="order-lines">
-            ${o.lines.map((l, li) => `<div>• ${esc(l.titre)} — ${PRODUIT_NOMS[l.key] || l.key}${l.qty > 1 ? ` × ${l.qty}` : ""} — ${l.prixEUR * l.qty} €
+            ${o.lines.map((l, li) => `<div>• ${esc(l.titre)} — ${PRODUIT_NOMS[l.key] || l.key}${l.qty > 1 ? ` × ${l.qty}` : ""} — ${enFrancs(l.prixEUR * l.qty)}
               ${l.key !== "affiche" ? ` <a class="cert-link" href="/certificat.html?c=${esc(o.id)}-${li}" target="_blank">📜 certificat</a>` : ""}</div>`).join("")}
-            ${o.livraisonEUR !== undefined ? `<div>• Livraison ${o.zone ? "(" + esc(o.zone) + ")" : ""} — ${o.livraisonEUR ? o.livraisonEUR + " €" : "offerte"}</div>` : ""}
+            ${o.livraisonEUR !== undefined ? `<div>• Livraison ${o.zone ? "(" + esc(o.zone) + ")" : ""} — ${o.livraisonEUR ? enFrancs(o.livraisonEUR) : "offerte"}</div>` : ""}
           </div>
           <div class="order-client">
             <strong>${esc(o.client.name)}</strong> · <a href="mailto:${esc(o.client.email)}">${esc(o.client.email)}</a>
             ${o.client.country ? " · " + esc(o.client.country) : ""}
             · ${o.mode === "retrait" ? "Retrait à Tahiti" : "Livraison"}
             · ${({ card: "Carte", virement: "Virement", paypal: "PayPal" })[o.payment] || o.payment}
-            — <strong>${o.grandTotalEUR || o.totalEUR} €</strong>
+            — <strong>${enFrancs(o.grandTotalEUR || o.totalEUR)}</strong> <span class="en-francs">(${o.grandTotalEUR || o.totalEUR} €)</span>
             ${o.client.message ? `<div class="order-msg">« ${esc(o.client.message)} »</div>` : ""}
           </div>
         </div>
@@ -1344,12 +1353,20 @@
         if (!p) return;
         if (e.target.type === "checkbox") p[pk] = e.target.checked;
         else p[pk] = e.target.value === "" ? null : Number(e.target.value);
+        if (pk === "prixEUR") {
+          const rappel = e.target.parentElement.querySelector(".en-francs");
+          if (rappel) rappel.textContent = enFrancs(e.target.value);
+        }
         markDirty();
         return;
       }
 
       const k = e.target.dataset.k;
       if (!k) return;
+      if (k === "prixEUR") {
+        const rappel = e.target.closest(".f").querySelector(".en-francs");
+        if (rappel) rappel.textContent = enFrancs(e.target.value);
+      }
       if (e.target.type === "checkbox") a[k] = e.target.checked;
       else if (e.target.type === "number") a[k] = Number(e.target.value) || 0;
       else a[k] = e.target.value;

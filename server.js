@@ -283,12 +283,28 @@ const DEFAULT_SHIPPING = {
   freeAbove: 4000
 };
 
+/* Le site affiche les prix en francs Pacifique : les emails de commande
+   doivent parler la même monnaie. L'euro reste indiqué entre parenthèses,
+   utile pour un virement international. */
+const TAUX_XPF = 119.33;
+function enFrancs(eur) {
+  // mêmes paliers d'arrondi que fmtPrice() côté site : l'email doit annoncer
+  // exactement le prix que l'acheteur a vu à l'écran
+  const v = (Number(eur) || 0) * TAUX_XPF;
+  const pas = v >= 100000 ? 5000 : v >= 20000 ? 1000 : 500;
+  return (Math.round(v / pas) * pas).toLocaleString("fr-FR")
+    .replace(/\u202f|\u00a0/g, " ") + " F";
+}
+function prix(eur) {
+  return `${enFrancs(eur)} (${Math.round(Number(eur) || 0)} €)`;
+}
+
 function orderEmailText(order) {
   const lignes = order.lines.map((l) =>
-    `  • ${l.titre} — ${PRODUIT_FR[l.key] || l.key}${l.qty > 1 ? ` × ${l.qty}` : ""} — ${l.prixEUR * l.qty} €`).join("\n");
+    `  • ${l.titre} — ${PRODUIT_FR[l.key] || l.key}${l.qty > 1 ? ` × ${l.qty}` : ""} — ${prix(l.prixEUR * l.qty)}`).join("\n");
   const mode = order.mode === "retrait"
     ? "Retrait à Tahiti (gratuit)"
-    : `Livraison — ${order.zone || ""} : ${order.livraisonEUR ? order.livraisonEUR + " €" : "offerte"}`;
+    : `Livraison — ${order.zone || ""} : ${order.livraisonEUR ? prix(order.livraisonEUR) : "offerte"}`;
   const paiement = { card: "Carte bancaire", virement: "Virement bancaire", paypal: "PayPal" }[order.payment] || order.payment;
   return { lignes, mode, paiement };
 }
@@ -582,9 +598,9 @@ Māuruuru pour votre commande ! Elle est bien enregistrée sous la référence $
 
 ${lignes}
 
-Total œuvres : ${totalEUR} €
+Total œuvres : ${prix(totalEUR)}
 Réception : ${mode}
-Total à régler : ${order.grandTotalEUR} €
+Total à régler : ${prix(order.grandTotalEUR)}
 Paiement choisi : ${paiement}
 
 Votre certificat d'authenticité (à conserver) :
@@ -599,13 +615,13 @@ les originaux et tirages numérotés).
 Pascal Sun — Tahiti
 https://pascal-sun.com`);
 
-  sendPush("🛒 Nouvelle commande !", `${order.client.name} — ${order.grandTotalEUR} € (${order.id})`);
-  sendMail(ARTIST_NOTIFY, `🛒 Nouvelle commande ${order.id} — ${totalEUR} €`,
+  sendPush("🛒 Nouvelle commande !", `${order.client.name} — ${enFrancs(order.grandTotalEUR)} (${order.id})`);
+  sendMail(ARTIST_NOTIFY, `🛒 Nouvelle commande ${order.id} — ${enFrancs(totalEUR)}`,
 `Nouvelle commande sur la galerie !
 
 ${lignes}
 
-Total œuvres : ${totalEUR} € | Livraison : ${order.livraisonEUR} € | À régler : ${order.grandTotalEUR} €
+Total œuvres : ${prix(totalEUR)} | Livraison : ${prix(order.livraisonEUR)} | À régler : ${prix(order.grandTotalEUR)}
 Client : ${order.client.name} <${order.client.email}> ${order.client.country ? "· " + order.client.country : ""}
 Réception : ${mode}
 Paiement : ${paiement}
@@ -798,7 +814,7 @@ async function monthlyReport(when) {
 VENTES
   Commandes : ${orders.length}
   Œuvres originales vendues : ${vendues}
-  Chiffre d'affaires : ${ca} €  (≈ ${Math.round(ca * 119.33).toLocaleString("fr-FR")} F)
+  Chiffre d'affaires : ${enFrancs(ca)}  (${ca} €)
 
 AUDIENCE
   ${visites}
@@ -809,7 +825,7 @@ COMMUNAUTÉ
   Idées reçues : ${idees}
 
 ${orders.length ? "Détail des commandes :\n" + orders.map((o) =>
-  `  ${o.id} — ${o.client.name} — ${o.grandTotalEUR || o.totalEUR} € — ${o.statut}`).join("\n") : ""}
+  `  ${o.id} — ${o.client.name} — ${enFrancs(o.grandTotalEUR || o.totalEUR)} — ${o.statut}`).join("\n") : ""}
 
 → Tableau de bord : https://pascal-sun.com/admin`;
 

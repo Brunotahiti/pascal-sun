@@ -47,14 +47,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=42/?v=43/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=43/?v=44/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=43"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=44"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -237,7 +237,14 @@ depuis Tahiti — un certificat daté du 14 s'afficherait « 13 ».
    / turquoise / sable. **Pas de motifs marquisiens**, pas d'esthétique japonaise.
 6. Paiement : **virement + PayPal uniquement** (pas de Stripe pour l'instant,
    le code est prêt via `STRIPE_SECRET_KEY`).
-7. Prix ronds, affichés en XPF par défaut.
+7. Prix ronds, **en francs Pacifique partout par défaut** : le site (déjà),
+   mais aussi les emails de commande, les notifications et l'admin, qui
+   rappelle le montant en francs à côté de l'euro saisi. L'euro reste la
+   valeur **stockée** (`prixEUR`) et figure entre parenthèses dans les emails,
+   utile pour un virement international. ⚠️ Les arrondis doivent rester
+   identiques des deux côtés — paliers 5000 / 1000 / 500 dans `fmtPrice()`
+   (`js/app.js`), `enFrancs()` (`server.js`) et `enFrancs()` (`js/admin.js`) —
+   sinon l'email annonce un prix différent de celui vu à l'écran.
 8. Le certificat tient **sur une seule page A4** (ajustement automatique mesuré).
 9. **Entrée en salle** : projecteurs allumés sur la page Galerie, le menu du haut
    se relève comme un rideau, le titre s'estompe sur place (aucun décalage : le

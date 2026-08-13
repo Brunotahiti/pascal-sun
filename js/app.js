@@ -552,8 +552,8 @@
       brand: { "@type": "Person", name: "Pascal Sun" },
       offers: (a.produits || []).filter((p) => p.actif !== false).map((p) => ({
         "@type": "Offer",
-        price: p.prixEUR,
-        priceCurrency: "EUR",
+        price: Math.round(p.prixEUR * (CURRENCIES[store.currency] || { rate: 1 }).rate),
+        priceCurrency: store.currency,
         availability: p.key === "original" ? availability
           : (typeof p.stock === "number" && p.stock <= 0 ? "https://schema.org/SoldOut" : "https://schema.org/InStock"),
         url: `https://pascal-sun.com/oeuvre.html?id=${a.id}`
