@@ -47,14 +47,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=41/?v=42/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=42/?v=43/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=42"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=43"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -245,10 +245,12 @@ depuis Tahiti — un certificat daté du 14 s'afficherait « 13 ».
    de l'artiste s'éclaire à la sienne. Le menu disparaissant, la rangée de
    filtres se colle en haut pour que l'interrupteur reste toujours atteignable —
    une seule ligne qui glisse du doigt sur téléphone, interrupteur en tête.
-   Une fois agrandie, un point lumineux parcourt le paraphe comme si on
-   l'écrivait, traînée derrière lui : c'est un dégradé clair qui glisse dans le
-   pseudo-élément `::after`, que le masque de la signature contraint aux seuls
-   traits. Puis la braise reste et respire (`paraphe-braise`).
+   Une fois agrandie, **la signature s'écrit** : `::before` illumine la partie
+   déjà parcourue (`clip-path` qui s'ouvre de gauche à droite, `paraphe-encre`)
+   pendant que `::after` fait courir un point blanc à halo à la pointe de
+   l'écriture (`paraphe-point`). Les deux sont contraints aux traits par le
+   masque du paraphe. Le cycle se répète toutes les 8 s — un passage unique
+   n'était jamais vu. Puis la braise respire (`paraphe-braise`).
    La signature apparaît d'abord à sa taille, **puis** grandit de 30 % (départ à
    1,15 s, une fois le fondu terminé) : menée en même temps que l'apparition, la
    croissance était invisible — la signature semblait arriver déjà agrandie. Et
