@@ -47,14 +47,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=40/?v=41/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=41/?v=42/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=41"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=42"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -295,6 +295,12 @@ depuis Tahiti — un certificat daté du 14 s'afficherait « 13 ».
   après encodage (`encodeCanvas()` dans `js/admin.js`), et ne jamais se fier au
   navigateur pour produire les images du site — c'est `sharp`, côté serveur, qui
   fabrique les trois tailles.
+- **Les captures en `--virtual-time-budget` ne pilotent pas les animations CSS**
+  composées (transform/opacity) : elles tournent sur le fil du compositeur, en
+  temps réel. Une série de captures headless montre donc des images identiques
+  et fait croire qu'une animation ne bouge pas. Pour vérifier une animation,
+  figer son `currentTime` par script dans la page (`getAnimations()`, `pause()`)
+  puis capturer — c'est ce que fait la page de test `_salle.html?t=…`.
 - **Rien ne doit apparaître avant l'animation d'ouverture** : le rideau est monté
   par `effects.js` au DOMContentLoaded, bien trop tard. Un script en tête de
   `index.html` pose `html.intro-pending`, dont le `::before` couvre l'écran dès
