@@ -680,7 +680,9 @@ body.lights-on .salle-signature {
 .salle-paraphe {
   position: relative;
   z-index: 3;
-  width: min(400px, 58vw);
+  /* Taille de départ : agrandie de 30 %, elle atteint sa taille finale
+     voulue (≈ 676 px sur grand écran, ≈ 80 % de l'écran sur téléphone). */
+  width: min(520px, 62vw);
   aspect-ratio: 900 / 199;
   margin-top: clamp(10px, 2.5vw, 34px);   /* dans la flaque de lumière */
   background: linear-gradient(178deg,
@@ -698,6 +700,49 @@ body.lights-on .salle-signature {
 body.lights-on .salle-paraphe {
   transform: translateY(0) scale(1.3);
   transition: transform 1.9s cubic-bezier(.22, .68, .18, 1) 1.15s;
+  /* une fois le paraphe à sa taille, la braise reste et respire */
+  animation: paraphe-braise 6s ease-in-out 5.9s infinite;
+}
+
+/* Un point lumineux parcourt le paraphe comme si on l'écrivait, traînée
+   derrière lui. Le masque de la signature le contraint aux seuls traits :
+   la lumière semble courir le long de la plume. */
+.salle-paraphe::after {
+  content: "";
+  position: absolute;
+  top: -25%;
+  bottom: -25%;
+  left: 0;
+  width: 38%;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 243, 212, .16) 26%,
+    rgba(255, 248, 228, .55) 64%,
+    rgba(255, 252, 240, .92) 88%,
+    #fffdf6 99%);
+  transform: translateX(-115%);
+  opacity: 0;
+  pointer-events: none;
+}
+body.lights-on .salle-paraphe::after {
+  animation: paraphe-ecriture 2.7s cubic-bezier(.42, .03, .34, 1) 3.05s both;
+}
+
+@keyframes paraphe-ecriture {
+  0%   { opacity: 0; transform: translateX(-115%); }
+  9%   { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { opacity: 0; transform: translateX(250%); }
+}
+@keyframes paraphe-braise {
+  0%, 100% {
+    filter: drop-shadow(0 12px 20px rgba(0, 0, 0, .6))
+            brightness(calc(var(--glow-b, 1) * 1));
+  }
+  50% {
+    filter: drop-shadow(0 15px 26px rgba(0, 0, 0, .62))
+            brightness(calc(var(--glow-b, 1) * 1.18));
+  }
 }
 
 /* Le menu ayant disparu, l'interrupteur doit rester à portée : la rangée de
@@ -739,7 +784,8 @@ body.lights-on .filters::before {
 @media (prefers-reduced-motion: reduce) {
   .site-header, .page-head .eyebrow, .page-head .section-title,
   .page-head .lede, .salle-signature, .salle-paraphe { transition: none; }
-  body.lights-on .salle-paraphe { transform: scale(1.3); }
+  body.lights-on .salle-paraphe { transform: scale(1.3); animation: none; }
+  body.lights-on .salle-paraphe::after { animation: none; opacity: 0; }
 }
 
 /* interrupteur */

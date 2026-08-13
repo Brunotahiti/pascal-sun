@@ -668,7 +668,49 @@
       </article>`;
     }).join("");
 
+    renderToilesEclairage();
     majEclairageGlobal();
+  }
+
+  /* Toutes les toiles de la galerie, chacune avec le projecteur qui l'éclaire.
+     « Automatique » indique lequel la répartition lui donne aujourd'hui. */
+  function renderToilesEclairage() {
+    const sources = catalogue.eclairage.sources || [];
+    $("#eclr-toiles").innerHTML = (catalogue.artworks || []).map((a, i) => {
+      const src = sourceLumiere(a, i);
+      const srcAuto = sourceLumiere({}, i);   // ce que la répartition donnerait
+      const auto = !a.eclairage || !sources.some((s) => s.key === a.eclairage);
+      const img = (a.images && a.images.medium) || a.image || "";
+      return `
+      <article class="eclr-toile" data-ti="${i}">
+        <figure class="eclr-apercu petit">
+          <div class="pv-card" style="${styleLumiere(src)}">
+            <span class="pv-spot" aria-hidden="true"><span class="pv-beam"></span></span>
+            <div class="pv-frame"><img src="${esc(img)}" alt=""><span class="pv-wash" aria-hidden="true"></span></div>
+          </div>
+        </figure>
+        <h4>${esc(a.titre)}</h4>
+        <select data-tk="eclairage">
+          <option value="" ${auto ? "selected" : ""}>Automatique — ${esc(srcAuto.nom || srcAuto.key)}</option>
+          ${sources.map((s) =>
+            `<option value="${esc(s.key)}" ${a.eclairage === s.key ? "selected" : ""}>${esc(s.nom || s.key)}</option>`).join("")}
+        </select>
+      </article>`;
+    }).join("");
+  }
+
+  /* Déplacer un projecteur déplace la lumière sur toutes les toiles qu'il
+     éclaire : leurs vignettes suivent en direct. */
+  function majToilesDeLaSource(cle) {
+    (catalogue.artworks || []).forEach((a, i) => {
+      if (sourceLumiere(a, i).key === cle) majApercuToile(i);
+    });
+  }
+
+  /* Une seule vignette de toile se rafraîchit quand on change son projecteur. */
+  function majApercuToile(i) {
+    const carte = $(`#eclr-toiles [data-ti="${i}"] .pv-card`);
+    if (carte) carte.setAttribute("style", styleLumiere(sourceLumiere(catalogue.artworks[i], i)));
   }
 
   /* Intensité, portée, projecteurs visibles : appliqués à tous les aperçus. */
@@ -703,13 +745,16 @@
         const out = ev.target.parentElement.querySelector("output");
         if (out) out.textContent = s[k] + champ.unite;
         majApercuSource(i);
+        majToilesDeLaSource(s.key);
       }
       markDirty();
     });
 
     /* Nom modifié : les listes déroulantes des fiches d'œuvres suivent. */
     $("#eclr-list").addEventListener("change", (ev) => {
-      if (ev.target.dataset.ek === "nom") renderArtworks();
+      if (ev.target.dataset.ek !== "nom") return;
+      renderArtworks();          // les listes des fiches d'œuvres
+      renderToilesEclairage();   // et celles du tableau des toiles
     });
 
     $("#eclr-list").addEventListener("click", (ev) => {
@@ -720,6 +765,21 @@
       if (!origine) return;
       catalogue.eclairage.sources[i] = JSON.parse(JSON.stringify(origine));
       renderEclairage();
+      markDirty();
+    });
+
+    /* Projecteur imposé à une toile : la vignette suit, et la liste de sa
+       fiche dans l'onglet Œuvres reste d'accord avec celle-ci. */
+    $("#eclr-toiles").addEventListener("change", (ev) => {
+      if (ev.target.dataset.tk !== "eclairage") return;
+      const i = +ev.target.closest("[data-ti]").dataset.ti;
+      const choix = ev.target.value;
+      if (choix) catalogue.artworks[i].eclairage = choix;
+      else delete catalogue.artworks[i].eclairage;
+
+      majApercuToile(i);
+      const jumelle = $(`#artwork-list [data-i="${i}"] [data-k="eclairage"]`);
+      if (jumelle) jumelle.value = choix;
       markDirty();
     });
 

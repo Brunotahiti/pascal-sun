@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/admin.css?v=39">
+  <link rel="stylesheet" href="css/admin.css?v=40">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='38' fill='%2316130f'/></svg>">
 </head>
 <body>
@@ -281,7 +281,14 @@
         </div>
 
         <div class="eclr-list" id="eclr-list"></div>
-        <p class="compose-note" style="margin-top:16px;">Ces sept projecteurs sont répartis automatiquement sur les toiles, de façon qu'aucune voisine ne soit éclairée pareil. Pour imposer un projecteur précis à une toile, utilisez le réglage <strong>Éclairage</strong> sur sa fiche, dans l'onglet Œuvres.</p>
+
+        <div class="pane-head" style="margin-top: 46px;">
+          <div>
+            <h2>Éclairage de chaque toile</h2>
+            <p>Les sept projecteurs sont répartis automatiquement, de façon qu'aucune toile voisine ne soit éclairée pareil. Vous pouvez imposer un projecteur précis à une toile : choisissez-le dans sa liste, l'aperçu se met à jour aussitôt.</p>
+          </div>
+        </div>
+        <div class="eclr-toiles" id="eclr-toiles"></div>
       </section>
 
       <!-- SAUVEGARDES -->
@@ -379,7 +386,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="js/data.js?v=39"></script>
-  <script src="js/admin.js?v=39"></script>
+  <script src="js/data.js?v=40"></script>
+  <script src="js/admin.js?v=40"></script>
 </body>
 </html>

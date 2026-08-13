@@ -900,3 +900,44 @@ button { font-family: var(--sans); cursor: pointer; }
   .cert-row { grid-template-columns: 1fr; }
   .cert-row span:last-child { justify-content: flex-start !important; }
 }
+
+/* ------------------------------------------- éclairage de chaque toile -- */
+
+.eclr-toiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 18px;
+}
+.eclr-toile {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px;
+  display: grid;
+  gap: 9px;
+  align-content: start;
+}
+.eclr-toile h4 {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.eclr-toile select {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--paper);
+  padding: 8px 10px;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--ink);
+  width: 100%;
+  min-width: 0;
+}
+/* vignette réduite : le projecteur doit rester dans le cadre sombre */
+.eclr-apercu.petit { padding: 34px 32px 16px; }
+.eclr-apercu.petit .pv-spot { transform: translateX(-50%) rotate(var(--sa, 0deg)) scale(.46); }
+.eclr-apercu.petit .pv-frame { border-width: 2px; padding: 4px; }
+/* hauteur bornée : on parcourt treize toiles d'un coup d'œil, sans faire
+   défiler des mètres de page */
+.eclr-apercu.petit .pv-frame img { height: 118px; object-fit: cover; }
