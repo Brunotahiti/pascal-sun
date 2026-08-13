@@ -47,14 +47,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=38/?v=39/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=39/?v=40/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=39"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=40"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -245,7 +245,10 @@ depuis Tahiti — un certificat daté du 14 s'afficherait « 13 ».
    de l'artiste s'éclaire à la sienne. Le menu disparaissant, la rangée de
    filtres se colle en haut pour que l'interrupteur reste toujours atteignable —
    une seule ligne qui glisse du doigt sur téléphone, interrupteur en tête.
-   La signature grandit de 30 % pendant que la lumière monte, et **les prix et
+   La signature apparaît d'abord à sa taille, **puis** grandit de 30 % (départ à
+   1,15 s, une fois le fondu terminé) : menée en même temps que l'apparition, la
+   croissance était invisible — la signature semblait arriver déjà agrandie. Et
+   **les prix et
    sous-titres des toiles s'effacent** : en salle, les œuvres ne sont plus des
    articles, il ne reste que leur titre. Tout s'efface en gardant sa place —
    aucune ligne de la grille ne bouge pendant la transition.

@@ -648,8 +648,8 @@ body.lights-on .card-meta .price {
 }
 body.lights-on .salle-signature {
   opacity: 1;
-  transition-duration: 1.2s;
-  transition-delay: .55s;   /* le rideau se lève d'abord */
+  transition-duration: .8s;
+  transition-delay: .45s;   /* le rideau se lève d'abord */
 }
 
 /* halo chaud projeté sur le mur derrière la signature */
@@ -688,12 +688,17 @@ body.lights-on .salle-signature {
   -webkit-mask: url("../img/signature.png") center / contain no-repeat;
   mask: url("../img/signature.png") center / contain no-repeat;
   filter: drop-shadow(0 12px 20px rgba(0, 0, 0, .6)) brightness(var(--glow-b, 1));
-  /* Le paraphe grandit de 30 % pendant que la lumière monte : la signature
-     s'impose doucement à la place du titre effacé. */
   transform: translateY(10px) scale(1);
-  transition: transform 1.6s cubic-bezier(.22, .68, .18, 1) .55s;
+  transition: transform .8s var(--ease);   /* retour immédiat quand on éteint */
 }
-body.lights-on .salle-paraphe { transform: translateY(0) scale(1.3); }
+/* Le paraphe apparaît d'abord à sa taille, puis grandit de 30 % sous les
+   projecteurs. L'agrandissement démarre une fois la signature bien visible :
+   mené en même temps que l'apparition, on ne le voyait pas — elle semblait
+   arriver déjà à sa taille finale. */
+body.lights-on .salle-paraphe {
+  transform: translateY(0) scale(1.3);
+  transition: transform 1.9s cubic-bezier(.22, .68, .18, 1) 1.15s;
+}
 
 /* Le menu ayant disparu, l'interrupteur doit rester à portée : la rangée de
    filtres se cale en haut de l'écran, comme la réglette d'une salle. */
