@@ -28,6 +28,7 @@ laisser respirer une émotion. »*
 | Statistiques brutes | https://stats.pascal-sun.com | `admin` + même mot de passe |
 | Code source | https://github.com/Brunotahiti/pascal-sun (branche `master`) | compte GitHub `Brunotahiti`, `gh` CLI authentifié |
 | Email artiste | contact@pascal-sun.com | mot de passe saisi dans l'admin (jamais dans le code) |
+| Contacts directs de Pascal | 87 78 25 78 · sun.pascal09@gmail.com | affichés en pied de page et sur la page Contact (`ARTIST_PHONE`, `ARTIST_EMAIL_PERSO` dans `js/data.js`) |
 
 **Le mot de passe email** est stocké de façon permanente dans
 `data/mail.json` sur le volume Docker, saisi via **admin → onglet Sauvegardes
@@ -46,14 +47,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=37/?v=38/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=38/?v=39/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=38"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=39"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -244,6 +245,10 @@ depuis Tahiti — un certificat daté du 14 s'afficherait « 13 ».
    de l'artiste s'éclaire à la sienne. Le menu disparaissant, la rangée de
    filtres se colle en haut pour que l'interrupteur reste toujours atteignable —
    une seule ligne qui glisse du doigt sur téléphone, interrupteur en tête.
+   La signature grandit de 30 % pendant que la lumière monte, et **les prix et
+   sous-titres des toiles s'effacent** : en salle, les œuvres ne sont plus des
+   articles, il ne reste que leur titre. Tout s'efface en gardant sa place —
+   aucune ligne de la grille ne bouge pendant la transition.
 10. **Éclairage de la galerie** : sept projecteurs, réglables dans l'admin
    (onglet Éclairage). Une source = trois nombres seulement — `x` et `y` en
    pourcentage du cadre, `angle` en degrés. Le faisceau, le halo sur la toile

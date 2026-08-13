@@ -6,7 +6,7 @@
    Les vidéos et l'admin ne sont jamais mis en cache.
    ========================================================================= */
 
-const VERSION = "ps-v16";
+const VERSION = "ps-v17";
 const CORE = [
   "/", "/galerie.html", "/expositions.html", "/artiste.html",
   "/panier.html", "/contact.html", "/oeuvre.html", "/merci.html",

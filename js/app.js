@@ -211,7 +211,9 @@
             <li>${t("footer_ship")}</li>
             <li>${t("footer_cert")}</li>
             <li>${t("footer_secure")}</li>
+            <li><a href="tel:${ARTIST_PHONE_TEL}">${ARTIST_PHONE}</a></li>
             <li><a href="mailto:${ARTIST_EMAIL}">${ARTIST_EMAIL}</a></li>
+            <li><a href="mailto:${ARTIST_EMAIL_PERSO}">${ARTIST_EMAIL_PERSO}</a></li>
             <li><a href="cgv.html">${t("footer_cgv")}</a></li>
           </ul>
           <button class="app-install-btn" id="pwa-install">${t("app_install")}</button>
@@ -903,6 +905,18 @@
   }
 
   function pageContact() {
+    // téléphone et adresses cliquables : appel direct depuis un téléphone
+    const coord = document.getElementById("contact-coord");
+    if (coord) {
+      coord.innerHTML = `
+        <li><span>${t("contact_phone")}</span>
+          <a href="tel:${ARTIST_PHONE_TEL}">${ARTIST_PHONE}</a></li>
+        <li><span>Email</span>
+          <a href="mailto:${ARTIST_EMAIL_PERSO}">${ARTIST_EMAIL_PERSO}</a></li>
+        <li><span>${t("nav_contact")}</span>
+          <a href="mailto:${ARTIST_EMAIL}">${ARTIST_EMAIL}</a></li>`;
+    }
+
     const form = document.getElementById("contact-form");
     if (!form) return;
     form.addEventListener("submit", (e) => {

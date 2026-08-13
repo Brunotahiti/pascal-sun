@@ -694,6 +694,9 @@ var I18N = {
     footer_cert: "Certificat d'authenticité",
     footer_secure: "Paiement sécurisé",
     footer_cgv: "Conditions générales de vente",
+    contact_direct_t: "Joindre Pascal",
+    contact_direct_p: "Pour une question sur une œuvre, une visite de l'atelier ou un portrait sur commande, appelez ou écrivez directement à l'artiste.",
+    contact_phone: "Téléphone",
     footer_rights: "© 2026 Pascal Sun — Tous droits réservés.",
     footer_made: "Tahiti, Polynésie française",
     toast_added: "ajoutée à votre panier",
@@ -907,6 +910,9 @@ var I18N = {
     footer_cert: "Certificate of authenticity",
     footer_secure: "Secure payment",
     footer_cgv: "Terms of sale",
+    contact_direct_t: "Reach Pascal",
+    contact_direct_p: "For a question about a work, a studio visit or a commissioned portrait, call or write to the artist directly.",
+    contact_phone: "Phone",
     footer_rights: "© 2026 Pascal Sun — All rights reserved.",
     footer_made: "Tahiti, French Polynesia",
     toast_added: "added to your cart",
@@ -919,3 +925,10 @@ var I18N = {
 
 /* Adresse de contact de l'artiste — à remplacer par la vraie adresse. */
 const ARTIST_EMAIL = "contact@pascal-sun.com";
+
+/* Contacts directs de Pascal, affichés en pied de page et sur la page Contact.
+   L'adresse contact@ reste celle du site (formulaires, confirmations de
+   commande) ; celles-ci permettent de le joindre en personne. */
+const ARTIST_PHONE = "87 78 25 78";
+const ARTIST_PHONE_TEL = "+68987782578";      // indicatif Polynésie française
+const ARTIST_EMAIL_PERSO = "sun.pascal09@gmail.com";
