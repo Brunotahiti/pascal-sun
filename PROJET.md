@@ -46,14 +46,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=34/?v=35/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=35/?v=36/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=35"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=36"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -190,6 +190,22 @@ serveur rattrape les photos restées en une seule taille (opération sans effet 
 tout est déjà décliné) ; le bouton **admin → Sauvegardes → « ⚡ Optimiser les
 photos »** relance la même opération à la demande. `sharp` est chargé dans un
 `try/catch` : s'il manque, le site fonctionne comme avant, sans déclinaisons.
+
+### Certificats d'authenticité
+Deux origines, une seule page publique `certificat.html?c=<réf>` :
+- **ventes du site** — référence `<idCommande>-<n° de ligne>`, résolue dans
+  `orders.json` ; le lien part dans l'email de confirmation ;
+- **ventes hors du site** (atelier, vernissage, galerie) — créées dans
+  **admin → Commandes → « 📜 Certificat hors site »**, stockées dans
+  `data/certificats.json`, référence `PS-A-XXXXXXX` tirée au sort. Choisir une
+  œuvre du catalogue pré-remplit la fiche ; on peut aussi tout saisir à la main
+  avec sa propre photo. `/api/certificat` cherche d'abord dans ce fichier, puis
+  dans les commandes.
+
+⚠️ Les **dates de vente** sont stockées en AAAA-MM-JJ et reconstruites en heure
+locale à l'affichage (`dateVente()` dans `js/admin.js`, même logique dans
+`js/certificat.js`). Passer par `new Date(iso)` ferait reculer la date d'un jour
+depuis Tahiti — un certificat daté du 14 s'afficherait « 13 ».
 
 ### Automatismes
 - Commande → original **réservé**, stock décompté, confirmation au client avec **lien du certificat**, alerte à Pascal (email + push)

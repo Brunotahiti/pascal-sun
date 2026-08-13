@@ -27,6 +27,7 @@ const SECRET = process.env.APP_SECRET || "pascal-sun-dev-secret";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin";
 
 const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
+const CERTIFICATS_FILE = path.join(DATA_DIR, "certificats.json");
 const NEWSLETTER_FILE = path.join(DATA_DIR, "newsletter.json");
 
 fs.mkdirSync(UPLOADS_DIR, { recursive: true });
@@ -306,6 +307,7 @@ function collectData() {
     exportedAt: new Date().toISOString(),
     catalogue: readJSON(CATALOGUE_FILE, null),
     orders: readJSON(ORDERS_FILE, []),
+    certificats: readJSON(CERTIFICATS_FILE, []),
     contacts: readJSON(NEWSLETTER_FILE, []),
     commissions: readJSON(COMMISSIONS_FILE, []),
     idees: readJSON(IDEAS_FILE, [])
@@ -619,8 +621,76 @@ app.get("/api/orders", requireAuth, (_req, res) => res.json(readJSON(ORDERS_FILE
 /* Référence publique : <idCommande>-<n° de ligne>. La page certificat.html
    affiche le document, prêt à imprimer ou à enregistrer en PDF. */
 
+/* Certificats émis à la main depuis l'admin : ventes à l'atelier, en
+   vernissage ou via une galerie, qui ne passent pas par le site. Ils vivent
+   dans leur propre fichier et sont cherchés avant les commandes. */
+
+app.get("/api/certificats", requireAuth, (_req, res) =>
+  res.json(readJSON(CERTIFICATS_FILE, [])));
+
+app.post("/api/certificats", requireAuth, (req, res) => {
+  const b = req.body || {};
+  const titre = String(b.titre || "").trim();
+  const acheteur = String(b.acheteur || "").trim();
+  if (!titre || !acheteur) return res.status(400).json({ error: "titre-et-acheteur-requis" });
+
+  /* Référence tirée au sort plutôt que dérivée de l'horodatage : la page du
+     certificat est publique, et le nom de l'acheteur y figure. */
+  const alphabet = "ACDEFGHJKLMNPQRTUVWXY3479";   // sans caractères ambigus
+  const tirage = Array.from(crypto.randomBytes(7))
+    .map((n) => alphabet[n % alphabet.length]).join("");
+
+  const cert = {
+    ref: "PS-A-" + tirage,
+    // date de vente conservée telle que saisie (AAAA-MM-JJ) : convertie en
+    // horodatage, elle reculerait d'un jour selon le fuseau du lecteur
+    date: /^\d{4}-\d{2}-\d{2}$/.test(String(b.date || "")) ? b.date : new Date().toISOString(),
+    acheteur,
+    titre,
+    type: b.type === "tirage" ? "tirage" : "original",
+    edition: String(b.edition || "").trim() || null,
+    annee: String(b.annee || "").trim(),
+    technique: String(b.technique || "").trim(),
+    dimensions: String(b.dimensions || "").trim(),
+    image: String(b.image || "").trim(),
+    cree: new Date().toISOString()
+  };
+
+  const liste = readJSON(CERTIFICATS_FILE, []);
+  liste.unshift(cert);
+  writeJSON(CERTIFICATS_FILE, liste);
+  res.json(cert);
+});
+
+app.delete("/api/certificats/:ref", requireAuth, (req, res) => {
+  const liste = readJSON(CERTIFICATS_FILE, []);
+  const reste = liste.filter((c) => c.ref !== req.params.ref);
+  if (reste.length === liste.length) return res.status(404).json({ error: "introuvable" });
+  writeJSON(CERTIFICATS_FILE, reste);
+  res.json({ ok: true });
+});
+
 app.get("/api/certificat", (req, res) => {
   const ref = String(req.query.c || "");
+
+  // certificat émis à la main : il a la priorité sur les références de commande
+  const manuel = readJSON(CERTIFICATS_FILE, []).find((c) => c.ref === ref);
+  if (manuel) {
+    res.setHeader("Cache-Control", "no-store");
+    return res.json({
+      ref: manuel.ref,
+      date: manuel.date,
+      acheteur: manuel.acheteur,
+      titre: manuel.titre,
+      type: manuel.type,
+      edition: manuel.edition,
+      annee: manuel.annee,
+      technique: manuel.technique,
+      dimensions: manuel.dimensions,
+      image: manuel.image
+    });
+  }
+
   const m = ref.match(/^(.+)-(\d+)$/);
   if (!m) return res.status(400).json({ error: "reference-invalide" });
   const order = readJSON(ORDERS_FILE, []).find((o) => o.id === m[1]);

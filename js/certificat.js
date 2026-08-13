@@ -35,7 +35,12 @@
 
     const typeLabel = d.type === "original" ? t("prod_original") : t("prod_tirage");
     const editionLabel = d.edition ? `${t("cert_edition")} ${d.edition}` : t("cert_unique");
-    const dateStr = new Date(d.date).toLocaleDateString(lang === "en" ? "en-GB" : "fr-FR",
+    /* La date est lue sur sa partie calendaire et reconstruite en heure
+       locale : sinon un certificat daté du 14 s'affiche « 13 » chez un
+       lecteur situé à l'ouest de Greenwich — Tahiti la première. */
+    const jour = String(d.date).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    const dateObj = jour ? new Date(+jour[1], +jour[2] - 1, +jour[3]) : new Date(d.date);
+    const dateStr = dateObj.toLocaleDateString(lang === "en" ? "en-GB" : "fr-FR",
       { day: "numeric", month: "long", year: "numeric" });
 
     document.title = `${t("cert_title")} — ${d.titre}`;

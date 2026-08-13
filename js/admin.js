@@ -455,6 +455,142 @@
     $("#ship-free").value = catalogue.shipping.freeAbove || 0;
   }
 
+  /* ------------------------------------------ certificats hors du site -- */
+  /* Ventes à l'atelier, en vernissage ou par une galerie : elles ne passent
+     pas par le panier, mais l'acheteur a droit au même certificat. */
+
+  function renderCertOeuvres() {
+    $("#cert-oeuvre").innerHTML =
+      `<option value="">— Œuvre hors catalogue (à saisir) —</option>` +
+      catalogue.artworks.map((a, i) =>
+        `<option value="${i}">${esc(a.titre)}</option>`).join("");
+  }
+
+  /* Choisir une œuvre du catalogue pré-remplit la fiche. */
+  function remplirDepuisCatalogue() {
+    const i = $("#cert-oeuvre").value;
+    if (i === "") return;
+    const a = catalogue.artworks[+i];
+    if (!a) return;
+    $("#cert-titre").value = a.titre || "";
+    $("#cert-annee").value = a.annee || "";
+    $("#cert-technique").value = a.technique_fr || "";
+    $("#cert-dimensions").value = a.dimensions || "";
+    $("#cert-photo").dataset.chemin = (a.images && a.images.large) || a.image || "";
+  }
+
+  /* Date de vente lue sur sa partie calendaire : reconstruite en heure locale,
+     sinon un 14 mai s'affiche « 13 » depuis Tahiti. */
+  function dateVente(v) {
+    const j = String(v).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    const d = j ? new Date(+j[1], +j[2] - 1, +j[3]) : new Date(v);
+    return d.toLocaleDateString("fr-FR", { dateStyle: "medium" });
+  }
+
+  async function renderCertificats() {
+    const el = $("#cert-liste");
+    const liste = await fetch("/api/certificats").then((r) => r.json()).catch(() => []);
+    if (!liste.length) {
+      el.innerHTML = `<p class="metric-empty">Aucun certificat émis hors du site pour l'instant.</p>`;
+      return;
+    }
+    el.innerHTML = `<div class="contacts-table">${liste.map((c) => `
+      <div class="ct-row cert-row" data-ref="${esc(c.ref)}">
+        <span><strong>${esc(c.titre)}</strong><br><small>${esc(c.acheteur)} · ${dateVente(c.date)}</small></span>
+        <span class="cert-ref-cell"><code>${esc(c.ref)}</code></span>
+        <span style="display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap;">
+          <a class="ghost-btn" href="/certificat.html?c=${encodeURIComponent(c.ref)}" target="_blank">Ouvrir</a>
+          <button type="button" class="ghost-btn" data-act="cert-copier">Copier le lien</button>
+          <button type="button" class="aw-delete" data-act="cert-suppr">Supprimer</button>
+        </span>
+      </div>`).join("")}</div>`;
+  }
+
+  function wireCertificats() {
+    $("#cert-open").addEventListener("click", () => {
+      const p = $("#cert-panel");
+      p.hidden = !p.hidden;
+      if (!p.hidden) {
+        renderCertOeuvres();
+        renderCertificats();
+        $("#cert-date").value = new Date().toISOString().slice(0, 10);
+        p.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+
+    $("#cert-oeuvre").addEventListener("change", remplirDepuisCatalogue);
+    $("#cert-type").addEventListener("change", (e) => {
+      $("#cert-edition-champ").hidden = e.target.value !== "tirage";
+    });
+
+    $("#cert-creer").addEventListener("click", async () => {
+      const btn = $("#cert-creer"), etat = $("#cert-status");
+      const titre = $("#cert-titre").value.trim();
+      const acheteur = $("#cert-acheteur").value.trim();
+      if (!titre || !acheteur) {
+        etat.textContent = "Le titre de l'œuvre et le nom de l'acheteur sont obligatoires.";
+        return;
+      }
+      btn.disabled = true;
+      etat.textContent = "Création…";
+      try {
+        // photo choisie à la main : elle est envoyée et déclinée comme les autres
+        let image = $("#cert-photo").dataset.chemin || "";
+        const fichier = $("#cert-photo").files[0];
+        if (fichier) {
+          const blob = await shrinkImage(fichier);
+          const res = await uploadBlob(null, blob, `certificat.${extensionDe(blob)}`);
+          image = (res.images && res.images.large) || res.path;
+        }
+
+        const r = await fetch("/api/certificats", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            titre, acheteur, image,
+            annee: $("#cert-annee").value.trim(),
+            technique: $("#cert-technique").value.trim(),
+            dimensions: $("#cert-dimensions").value.trim(),
+            type: $("#cert-type").value,
+            edition: $("#cert-edition").value.trim(),
+            date: $("#cert-date").value
+          })
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || "");
+        etat.innerHTML = `Certificat <code>${esc(d.ref)}</code> créé ✓ — il apparaît dans la liste ci-dessous.`;
+        ["cert-acheteur", "cert-titre", "cert-annee", "cert-technique", "cert-dimensions", "cert-edition"]
+          .forEach((id) => { $("#" + id).value = ""; });
+        $("#cert-oeuvre").value = "";
+        $("#cert-photo").value = "";
+        delete $("#cert-photo").dataset.chemin;
+        renderCertificats();
+      } catch (e) {
+        etat.textContent = e.message === "titre-et-acheteur-requis"
+          ? "Le titre de l'œuvre et le nom de l'acheteur sont obligatoires."
+          : "Échec de la création du certificat.";
+      } finally { btn.disabled = false; }
+    });
+
+    $("#cert-liste").addEventListener("click", async (e) => {
+      const row = e.target.closest(".cert-row");
+      if (!row) return;
+      const ref = row.dataset.ref;
+      const lien = location.origin + "/certificat.html?c=" + encodeURIComponent(ref);
+
+      if (e.target.dataset.act === "cert-copier") {
+        try { await navigator.clipboard.writeText(lien); toast("Lien du certificat copié ✓"); }
+        catch { prompt("Copiez le lien du certificat :", lien); }
+      }
+      if (e.target.dataset.act === "cert-suppr") {
+        if (!confirm("Supprimer ce certificat ? Le lien déjà envoyé à l'acheteur cessera de fonctionner.")) return;
+        const r = await fetch("/api/certificats/" + encodeURIComponent(ref), { method: "DELETE" });
+        if (r.ok) { toast("Certificat supprimé ✓"); renderCertificats(); }
+        else toast("Suppression impossible.");
+      }
+    });
+  }
+
   /* --------------------------------------------------------- éclairage -- */
   /* Trois réglages par projecteur : où il est sur le mur, à quelle hauteur,
      et de quel côté il vise. Le reste (faisceau, halo, ombre du cadre) en
@@ -1049,6 +1185,7 @@
     });
 
     wireEclairage();
+    wireCertificats();
 
     $("#push-btn").addEventListener("click", enablePush);
 

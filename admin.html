@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/admin.css?v=34">
+  <link rel="stylesheet" href="css/admin.css?v=35">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='38' fill='%2316130f'/></svg>">
 </head>
 <body>
@@ -80,7 +80,61 @@
             <h2>Commandes</h2>
             <p>Chaque commande réserve automatiquement l'original et décompte le stock des tirages. Mettez à jour le statut au fil du paiement et de l'expédition.</p>
           </div>
+          <button class="ghost-btn" id="cert-open">📜 Certificat hors site</button>
         </div>
+
+        <!-- Certificat pour une vente qui n'est pas passée par le site -->
+        <div class="compose-panel" id="cert-panel" hidden>
+          <h3>📜 Certificat d'authenticité — vente hors du site</h3>
+          <p class="compose-note">Pour une œuvre vendue à l'atelier, en vernissage ou par une galerie. Le certificat est identique à ceux des commandes du site, avec sa propre référence et son lien à envoyer à l'acheteur.</p>
+
+          <div class="cert-form">
+            <label class="cf-champ span2">Œuvre
+              <select id="cert-oeuvre"></select>
+            </label>
+            <label class="cf-champ span2">Nom de l'acheteur *
+              <input id="cert-acheteur" placeholder="Prénom et nom">
+            </label>
+
+            <label class="cf-champ span2">Titre de l'œuvre *
+              <input id="cert-titre" placeholder="Le retour de pêche">
+            </label>
+            <label class="cf-champ">Année
+              <input id="cert-annee" placeholder="2025">
+            </label>
+            <label class="cf-champ">Date de la vente
+              <input id="cert-date" type="date">
+            </label>
+
+            <label class="cf-champ span2">Technique
+              <input id="cert-technique" placeholder="Acrylique sur toile">
+            </label>
+            <label class="cf-champ">Dimensions
+              <input id="cert-dimensions" placeholder="80 × 60 cm">
+            </label>
+            <label class="cf-champ">Nature
+              <select id="cert-type">
+                <option value="original">Original — pièce unique</option>
+                <option value="tirage">Tirage limité</option>
+              </select>
+            </label>
+
+            <label class="cf-champ span2" id="cert-edition-champ" hidden>Numéro d'édition
+              <input id="cert-edition" placeholder="3 / 30">
+            </label>
+            <label class="cf-champ span2">Photo de l'œuvre (facultatif)
+              <input id="cert-photo" type="file" accept="image/*">
+            </label>
+          </div>
+
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <button class="solid-btn" id="cert-creer">Créer le certificat</button>
+            <span class="compose-status" id="cert-status"></span>
+          </div>
+
+          <div id="cert-liste"></div>
+        </div>
+
         <div id="orders-list" class="artwork-list"></div>
       </section>
 
@@ -308,7 +362,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="js/data.js?v=34"></script>
-  <script src="js/admin.js?v=34"></script>
+  <script src="js/data.js?v=35"></script>
+  <script src="js/admin.js?v=35"></script>
 </body>
 </html>

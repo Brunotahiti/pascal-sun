@@ -792,3 +792,59 @@ button { font-family: var(--sans); cursor: pointer; }
   transition: .2s;
 }
 .eclr-undo:hover { border-color: var(--accent); color: var(--accent); }
+
+/* -------------------------------------- certificats émis hors du site -- */
+
+.cert-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+@media (max-width: 900px) { .cert-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .cert-form { grid-template-columns: 1fr; } }
+
+.cf-champ {
+  display: grid;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  min-width: 0;
+}
+.cf-champ.span2 { grid-column: span 2; }
+@media (max-width: 560px) { .cf-champ.span2 { grid-column: span 1; } }
+
+.cert-form select {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  padding: 11px 13px;
+  font-family: var(--sans);
+  font-size: 14.5px;
+  color: var(--ink);
+  width: 100%;
+  min-width: 0;
+}
+.cert-form input[type="file"] {
+  border: 1px dashed var(--line);
+  background: transparent;
+  font-size: 13px;
+  padding: 9px 11px;
+}
+
+.cert-row { grid-template-columns: 1.4fr auto 1fr; align-items: center; gap: 12px; }
+.cert-row small { color: var(--ink-faint); font-weight: 400; letter-spacing: 0; text-transform: none; }
+.cert-ref-cell code {
+  font-size: 12.5px;
+  background: var(--paper-deep);
+  border-radius: 4px;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+.cert-row .ghost-btn, .cert-row .aw-delete { padding: 7px 13px; font-size: 11px; }
+@media (max-width: 760px) {
+  .cert-row { grid-template-columns: 1fr; }
+  .cert-row span:last-child { justify-content: flex-start !important; }
+}
