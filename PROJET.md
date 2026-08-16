@@ -200,6 +200,26 @@ tout est déjà décliné) ; le bouton **admin → Sauvegardes → « ⚡ Optimi
 photos »** relance la même opération à la demande. `sharp` est chargé dans un
 `try/catch` : s'il manque, le site fonctionne comme avant, sans déclinaisons.
 
+### Vernissages & invitations
+Chaque vernissage (onglet **Vernissages**) peut recevoir **son affiche** —
+celle de la galerie ou de l'hôtel — et fournit un **lien public à diffuser** :
+`/invitation.html?e=<id>`.
+
+La page d'invitation montre l'affiche **encadrée comme une toile du site**
+(`<article class="card">` + `.frame`, donc cadre noir, vitre et agrandissement
+au survol) avec un **passe-partout blanc** (`.invit-affiche .frame`), la date,
+le lieu, un lien vers la galerie, et un formulaire de réponse.
+- L'invité confirme ou décline, en laissant nom, email et nombre de personnes.
+- **Qui confirme entre dans `newsletter.json`** (source `vernissage`) — c'est
+  l'objet même de l'invitation.
+- Réponses dans `data/rsvp.json`, audience du lien dans `data/invitations.json`
+  (ouvertures, visiteurs distincts par identifiant local tiré au sort, origine).
+- Pascal est prévenu par email + notification à chaque réponse, et voit sous
+  chaque vernissage : ouvertures, personnes distinctes, confirmations, invités
+  attendus, origines, et la liste nominative.
+- Ouverture du lien : animation `vagueInvitation()` (lagon qui monte, TEVAIROA
+  et LE BORA BORA by Pearl Resorts), 4,8 s au total.
+
 ### Certificats d'authenticité
 Deux origines, une seule page publique `certificat.html?c=<réf>` :
 - **ventes du site** — référence `<idCommande>-<n° de ligne>`, résolue dans
@@ -335,7 +355,33 @@ depuis Tahiti — un certificat daté du 14 s'afficherait « 13 ».
 
 ---
 
-## 8. Reste à faire / idées non réalisées
+## 8. Reste à faire — par ordre suggéré
+
+**Demandé et pas encore fait** (fin de session du 16/08/2026) :
+
+1. **Mettre en valeur le bouton « Allumer les projecteurs »** sur la page
+   Galerie : il se confond aujourd'hui avec les chips de filtres alors qu'il
+   ouvre la plus belle partie du site (entrée en salle d'exposition). Rapide.
+2. **Collections des vernissages** : pouvoir attribuer une ou plusieurs
+   collections à un vernissage, et **renommer les boutons de filtres** de la
+   galerie depuis l'admin (aujourd'hui `COLLECTIONS` est figé dans
+   `js/data.js`, il faut le rendre éditable comme `uiTexts`).
+3. **Refaire l'animation d'ouverture de l'invitation** : l'actuelle est une
+   esquisse honnête (trois houles + les deux noms). Il la faut vraiment
+   « wahou », représentant le lagon de Bora Bora, nom de l'hôtel bien mis en
+   valeur.
+4. **Chat client ↔ Pascal** : messagerie sur le site, stockage, notifications,
+   et une interface de réponse côté admin. C'est le plus gros morceau.
+
+**Deux pièges de vérification à ne pas refaire** (ils ont coûté deux
+allers-retours dans la session) :
+- Les captures headless en temps virtuel **ne pilotent pas** les animations CSS
+  composées. Figer `currentTime` via `getAnimations()` puis capturer.
+- Une animation courte peut être **terminée** avant que l'outil ne l'observe :
+  chaque appel au navigateur prend plusieurs secondes. L'observer depuis la
+  page elle-même (iframe + `setInterval`), pas depuis l'extérieur.
+
+## 8 bis. Idées non réalisées
 
 - Compléter les **mentions légales** dans les CGV (numéro Tahiti, adresse) —
   marquées entre crochets dans `cgv.html`.
