@@ -16,8 +16,23 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=49">
-  <link rel="stylesheet" href="css/effects.css?v=49">
+  <link rel="stylesheet" href="css/style.css?v=50">
+  <link rel="stylesheet" href="css/effects.css?v=50">
+  <script>
+    /* Le lagon doit couvrir la page dès la toute première image. L'animation
+       n'est montée qu'une fois le catalogue chargé : d'ici là, on apercevrait
+       l'invitation une fraction de seconde. Ce cache est retiré par
+       vagueInvitation(), avec un filet de sécurité à 5 s. */
+    (function () {
+      try {
+        if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        document.documentElement.classList.add("intro-pending");
+        setTimeout(function () {
+          document.documentElement.classList.remove("intro-pending");
+        }, 5000);
+      } catch (e) { /* la page s'affiche normalement */ }
+    })();
+  </script>
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#f7f3ec">
   <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
@@ -37,8 +52,8 @@
 
   <footer class="site-footer" id="site-footer"></footer>
 
-  <script src="js/data.js?v=49"></script>
-  <script src="js/app.js?v=49"></script>
-  <script src="js/effects.js?v=49"></script>
+  <script src="js/data.js?v=50"></script>
+  <script src="js/app.js?v=50"></script>
+  <script src="js/effects.js?v=50"></script>
 </body>
 </html>

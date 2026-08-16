@@ -1013,7 +1013,8 @@
      Les textes viennent du vernissage : `hote` (le nom mis en valeur, sinon
      le lieu) et `hote_sur` (la mention au-dessus, sinon la ville). */
   function vagueInvitation(ev) {
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const leve = () => document.documentElement.classList.remove("intro-pending");
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) { leve(); return; }
     const hote = (ev.hote || ev.lieu || "").trim();
     const sur = (ev.hote_sur || ev.ville || "").trim();
     /* « Le Bora Bora by Pearl Resorts » : la marque passe en petit dessous */
@@ -1095,6 +1096,8 @@
       <p class="vague-passer">${t("inv_passer")}</p>`;
     document.body.appendChild(v);
     document.body.classList.add("vague-lock");
+    /* le cache posé en tête de page peut se retirer : le lagon a pris le relais */
+    requestAnimationFrame(leve);
     let fini = false;
     const fermer = () => {
       if (fini) return; fini = true;
@@ -1111,7 +1114,11 @@
     if (!box) return;
     const id = new URLSearchParams(location.search).get("e");
     const ev = (EVENTS || []).find((e) => e.id === id) || (EVENTS || [])[0];
-    if (!ev) { box.innerHTML = `<p class="cert-loading">${t("inv_absente")}</p>`; return; }
+    if (!ev) {
+      document.documentElement.classList.remove("intro-pending");
+      box.innerHTML = `<p class="cert-loading">${t("inv_absente")}</p>`;
+      return;
+    }
 
     const d = new Date(ev.date + "T00:00:00");
     const dateLongue = d.toLocaleDateString(store.lang === "en" ? "en-GB" : "fr-FR",

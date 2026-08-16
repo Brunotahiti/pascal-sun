@@ -33,6 +33,9 @@
   }
 
   function introCurtain() {
+    /* L'invitation a sa propre ouverture (le lagon, dans app.js) : c'est elle
+       qui lève le cache, une fois montée. Ici on ne touche à rien. */
+    if (document.body.dataset.page === "invitation") return;
     if (document.body.dataset.page !== "home") return decouvre();
     let dejaVu = false;
     try { dejaVu = !!sessionStorage.getItem("ps_intro_seen"); } catch (e) { /* stockage bloqué */ }
