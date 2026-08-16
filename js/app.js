@@ -1145,6 +1145,7 @@
 
       ${desc ? `<p class="lede invit-desc">${esc(desc)}</p>` : ""}
       ${collectionsHTML(ev)}
+      <p class="invit-apercu"><a href="galerie.html">${t("inv_apercu")} →</a></p>
 
       <form class="invit-reponse" id="rsvp-form">
         <h2>${t("inv_repondre")}</h2>
@@ -1162,8 +1163,10 @@
       </form>
 
       <div class="invit-galerie">
+        <p class="eyebrow">${t("inv_galerie_sur")}</p>
+        <h2>${t("inv_galerie_titre")}</h2>
         <p class="lede">${t("inv_decouvrir")}</p>
-        <a class="btn" href="galerie.html">${t("hero_cta")}</a>
+        <a class="btn invit-cta" href="galerie.html${(ev.collections || []).length === 1 ? "?col=" + encodeURIComponent(ev.collections[0]) : ""}"><span class="bulb"></span>${t("hero_cta")} →</a>
       </div>`;
 
     /* Comptage des ouvertures du lien : c'est la mesure de sa diffusion.

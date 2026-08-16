@@ -759,6 +759,9 @@ function gabaritInvitation(ev, motPerso, nom) {
       ${sur ? `<p style="margin:14px 0 2px;font-size:10px;font-weight:bold;letter-spacing:3px;color:#8c8478;text-transform:uppercase;">${esc(sur)}</p>` : ""}
       ${hote ? `<p style="margin:4px 0 0;font-family:Georgia,serif;font-size:22px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;color:#16130f;">${esc(hote)}</p>` : ""}
       <div style="width:120px;height:2px;background:#d4593a;margin:18px auto 0;font-size:0;">&nbsp;</div>
+      <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin-top:20px;"><tr><td align="center" bgcolor="#d4593a" style="background:#d4593a;border-radius:999px;">
+        <a href="${lien}" style="display:inline-block;background:#d4593a;color:#ffffff;text-decoration:none;font-size:13px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;padding:14px 28px;border-radius:999px;border:2px solid #d4593a;">Répondre à l'invitation&nbsp;→</a>
+      </td></tr></table>
     </td></tr>
 
     ${affiche ? `<tr><td style="padding:26px 34px 0;text-align:center;">
@@ -783,9 +786,14 @@ function gabaritInvitation(ev, motPerso, nom) {
       ${ev.desc_fr ? `<p style="margin:20px 0 0;font-size:15px;line-height:1.7;color:#4a443c;">${esc(ev.desc_fr)}</p>` : ""}
     </td></tr>
 
-    <tr><td align="center" style="padding:30px 34px 8px;">
-      <a href="${lien}" style="display:inline-block;background:#16130f;color:#f7f3ec;text-decoration:none;font-size:13px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;padding:15px 30px;border-radius:999px;">Voir l'invitation et répondre</a>
-      <p style="margin:14px 0 0;font-size:12px;color:#8c8478;">Un mot suffit : dites-nous si vous serez là.</p>
+    <tr><td align="center" style="padding:32px 34px 10px;">
+      <!-- bouton corail : une couleur franche que le mode sombre des
+           messageries n'inverse pas, contrairement au noir sur blanc -->
+      <table role="presentation" cellpadding="0" cellspacing="0" align="center"><tr><td align="center" bgcolor="#d4593a" style="background:#d4593a;border-radius:999px;">
+        <a href="${lien}" style="display:inline-block;background:#d4593a;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;padding:20px 40px;border-radius:999px;border:2px solid #d4593a;">Voir l'invitation et répondre&nbsp;→</a>
+      </td></tr></table>
+      <p style="margin:16px 0 0;font-size:13px;color:#8c8478;">Un mot suffit : dites-nous si vous serez là.</p>
+      <p style="margin:6px 0 0;font-size:12px;color:#8c8478;">Ou copiez ce lien : <a href="${lien}" style="color:#d4593a;">${lien}</a></p>
     </td></tr>
 
     <tr><td style="padding:26px 34px 30px;text-align:center;border-top:1px solid #e7e0d3;margin-top:20px;">

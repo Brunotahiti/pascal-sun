@@ -1708,8 +1708,43 @@ html[lang="fr"] .only-en { display: none !important; }
 }
 .invit-btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
 .invit-btns .btn { flex: 1 1 180px; justify-content: center; }
-.invit-galerie { margin-top: clamp(40px, 6vw, 64px); }
-.invit-galerie .lede { margin: 0 auto 18px; }
+/* Le bandeau qui mène à la galerie : encadré, titré, avec un grand bouton
+   corail dont l'ampoule respire — on doit avoir envie d'entrer. */
+.invit-galerie {
+  margin: clamp(40px, 6vw, 64px) auto 0;
+  max-width: 640px;
+  padding: clamp(28px, 4vw, 44px) clamp(22px, 4vw, 40px);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--accent);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, .6);
+  text-align: center;
+}
+.invit-galerie .eyebrow { justify-content: center; margin-bottom: 8px; }
+.invit-galerie h2 { font-family: var(--serif); font-weight: 500; font-size: clamp(26px, 3.6vw, 36px); margin: 0 0 10px; }
+.invit-galerie .lede { margin: 0 auto 22px; }
+.invit-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 30px;
+  font-size: 13px;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 10px 26px -10px rgba(212, 89, 58, .7);
+}
+.invit-cta:hover { background: #c04a2c; border-color: #c04a2c; transform: translateY(-1px); box-shadow: 0 14px 30px -10px rgba(212, 89, 58, .8); }
+.invit-cta .bulb {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #fff, #ffe2a8 60%, #ffcf7a);
+  box-shadow: 0 0 10px 3px rgba(255, 224, 160, .8);
+  animation: bulb-breathe 2.6s ease-in-out infinite;
+}
+/* lien discret plus haut, pour ceux qui ne descendent pas jusqu'en bas */
+.invit-apercu { margin: -18px auto 34px; text-align: center; }
+.invit-apercu a { font-family: var(--sans); font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); text-decoration: none; }
+.invit-apercu a:hover { text-decoration: underline; text-underline-offset: 5px; }
 
 /* L'affiche du vernissage est un tirage sur papier blanc : le passe-partout
    qui se resserre au survol doit rester blanc, pas crème comme le site. */
