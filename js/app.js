@@ -1021,11 +1021,15 @@
     const hoteHaut = m ? m[1] : hote;
     const hoteBas = m ? m[2] : "";
 
+    /* En portrait, le dessin est cadré sur son cœur (300→900) : le soleil se
+       lève alors derrière le flanc de l'Otemanu plutôt qu'au large. */
+    const portrait = innerHeight > innerWidth * 1.1;
+    const sx = portrait ? 745 : 905, sy = portrait ? 434 : 426;
     const bung = (x, y, k, d) => `<g class="bung" style="animation-delay:${d}s"><use href="#inv-bung" transform="translate(${x} ${y}) scale(${k})"/></g>`;
     const v = document.createElement("div");
     v.className = "vague-intro";
     v.innerHTML = `
-      <svg class="lagon" viewBox="${innerHeight > innerWidth * 1.1 ? "300 0 600 700" : "0 0 1200 700"}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <svg class="lagon" viewBox="${portrait ? "300 0 600 700" : "0 0 1200 700"}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <defs>
           <linearGradient id="inv-ciel" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stop-color="#f7f3ec"/><stop offset=".5" stop-color="#f1efe6"/><stop offset=".86" stop-color="#f5e0ca"/><stop offset="1" stop-color="#ecd6bf"/>
@@ -1033,7 +1037,9 @@
           <linearGradient id="inv-eau" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stop-color="#bbe2dc"/><stop offset=".28" stop-color="#63b9b3"/><stop offset="1" stop-color="#2c8683"/>
           </linearGradient>
-          <radialGradient id="inv-halo"><stop offset="0" stop-color="#ffe6bc" stop-opacity="1"/><stop offset=".4" stop-color="#ffd8a4" stop-opacity=".45"/><stop offset="1" stop-color="#ffd8a4" stop-opacity="0"/></radialGradient>
+          <!-- le soleil de Pascal Sun : le disque corail de la marque, dans un
+               halo chaud qui teinte le ciel du matin -->
+          <radialGradient id="inv-halo"><stop offset="0" stop-color="#f6c1ac" stop-opacity=".95"/><stop offset=".35" stop-color="#f4c9a6" stop-opacity=".5"/><stop offset="1" stop-color="#ffd8a4" stop-opacity="0"/></radialGradient>
           <linearGradient id="inv-mont" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#41514e"/><stop offset="1" stop-color="#1e2a29"/></linearGradient>
           <symbol id="inv-bung" overflow="visible">
             <path d="M-2 0 L14 -11 L30 0 Z"/><rect x="1" y="0" width="26" height="12"/>
@@ -1043,7 +1049,7 @@
         </defs>
 
         <rect class="ciel" x="-200" y="0" width="1600" height="700" fill="url(#inv-ciel)"/>
-        <g class="soleil"><circle cx="712" cy="404" r="200" fill="url(#inv-halo)"/><circle cx="712" cy="404" r="46" fill="#ffd9a0"/></g>
+        <g class="soleil"><circle cx="${sx}" cy="${sy}" r="240" fill="url(#inv-halo)"/><circle cx="${sx}" cy="${sy}" r="62" fill="#d4593a"/></g>
 
         <!-- l'Otemanu, centré : c'est lui qu'on doit voir même sur téléphone -->
         <path class="mont mont-loin" d="M296 462 L346 428 L400 406 L452 424 L500 462 Z" fill="#8a9c98"/>

@@ -47,14 +47,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=48/?v=49/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=49/?v=50/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=49"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=50"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -259,6 +259,14 @@ lieu qui accueille le vernissage (`surPlaceHTML()` dans `js/app.js`).
   `galerie`), prévient Pascal (email + push) **et envoie le même message à la
   galerie** si `contact_email` est renseigné. Les demandes s'affichent sous le
   vernissage dans l'admin (« Visiteurs à recontacter »), `GET /api/rappels`.
+- **Le soleil de Pascal Sun** dans l'animation : le disque corail de la marque
+  (`#d4593a`), se levant hors du lagon dans un halo chaud — au large derrière
+  les bungalows en paysage (`cx=905`), derrière le flanc de l'Otemanu en
+  portrait (`cx=745`), position choisie par `portrait` dans `vagueInvitation()`.
+- **Envoi de l'invitation** : le champ « Adresses email des invités » est
+  toujours visible avec son bouton « Envoyer l'invitation à ces adresses »
+  (compteur d'adresses prêtes / à corriger en direct) ; « Envoyer aussi à tout le
+  carnet de contacts » est un second bouton, à part.
 - Cocotiers de l'animation : palmes en aplat calculées (fonction `palme()` en
   Python dans l'historique du commit — feuille effilée arquée vers le haut puis
   retombante) ; ne pas revenir à des palmes en simples traits.

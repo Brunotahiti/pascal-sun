@@ -340,7 +340,7 @@ body.vague-lock { overflow: hidden; }
 .vague-intro .lagon { position: absolute; inset: 0; width: 100%; height: 100%; }
 
 /* le jour se lève */
-.vague-intro .soleil { transform-origin: 712px 404px; transform: translateY(70px) scale(.9); opacity: 0; animation: inv-soleil 2.4s var(--ease) .1s forwards; }
+.vague-intro .soleil { transform-box: fill-box; transform-origin: center; transform: translateY(70px) scale(.9); opacity: 0; animation: inv-soleil 2.4s var(--ease) .1s forwards; }
 @keyframes inv-soleil { to { transform: none; opacity: 1; } }
 
 /* l'Otemanu sort de la brume — de bas en haut, comme le jour qui l'atteint */
@@ -385,7 +385,7 @@ body.vague-lock { overflow: hidden; }
   content: "";
   position: absolute;
   left: 50%; top: 50%;
-  width: min(1100px, 150vw); height: min(620px, 92vh);
+  width: min(820px, 130vw); height: min(560px, 88vh);
   transform: translate(-50%, -58%);
   background: radial-gradient(60% 52% at 50% 46%, rgba(247, 243, 236, .92), rgba(247, 243, 236, .74) 45%, rgba(247, 243, 236, 0) 72%);
   z-index: -1;

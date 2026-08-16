@@ -1018,3 +1018,5 @@ button { font-family: var(--sans); cursor: pointer; }
 }
 .lien-btn:hover { text-decoration: underline; }
 .ev-vente { font-weight: 700; }
+.ev-envoi-tous { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.ev-compte { min-height: 16px; margin: 4px 0 0; }

@@ -444,16 +444,18 @@
         <div class="f span4 ev-envoi" data-envoi="${esc(ev.id)}">
           <label>Envoyer l'invitation par email</label>
           <textarea class="ev-mot" rows="3" placeholder="Un mot d'accompagnement (facultatif) : « C'est avec joie que je vous convie… »"></textarea>
-          <div class="ev-envoi-cibles">
-            <label class="ev-col"><input type="radio" name="cible-${esc(ev.id)}" value="tous" checked> Tous les contacts du carnet</label>
-            <label class="ev-col"><input type="radio" name="cible-${esc(ev.id)}" value="choix"> Adresses choisies</label>
-          </div>
-          <textarea class="ev-adresses" rows="2" placeholder="Une adresse par ligne, ou séparées par des virgules" hidden></textarea>
+
+          <label style="margin-top:12px;">Adresses email des invités</label>
+          <textarea class="ev-adresses" rows="4" placeholder="Une adresse par ligne, ou séparées par des virgules&#10;marie@example.com&#10;teva@example.pf"></textarea>
+          <p class="compose-note ev-compte"></p>
           <div class="ev-envoi-btns">
+            <button type="button" class="solid-btn" data-act="ev-envoyer">💌 Envoyer l'invitation à ces adresses</button>
             <button type="button" class="ghost-btn" data-act="ev-apercu">👁 Voir l'invitation telle qu'elle partira</button>
-            <button type="button" class="save-btn" data-act="ev-envoyer">💌 Envoyer l'invitation</button>
           </div>
           <p class="compose-note ev-envoi-note"></p>
+          <div class="ev-envoi-tous">
+            <button type="button" class="ghost-btn" data-act="ev-envoyer-tous">📣 Envoyer aussi à tout le carnet de contacts</button>
+          </div>
           <div class="ev-apercu-boite" hidden><iframe class="ev-apercu-cadre" title="Aperçu de l'invitation"></iframe></div>
         </div>
 
@@ -1610,16 +1612,14 @@
         renderEvents(); markDirty();
       }
 
-      /* choix des destinataires : la zone d'adresses n'apparaît qu'au besoin */
-      if (e.target.type === "radio") return;
-
-      if (acte === "ev-apercu" || acte === "ev-envoyer") {
+      if (acte === "ev-apercu" || acte === "ev-envoyer" || acte === "ev-envoyer-tous") {
         const zone = carte.querySelector("[data-envoi]");
         const note = zone.querySelector(".ev-envoi-note");
         const message = zone.querySelector(".ev-mot").value.trim();
-        const tous = zone.querySelector("input[value=tous]").checked;
+        const tous = acte === "ev-envoyer-tous";
         const emails = zone.querySelector(".ev-adresses").value
-          .split(/[\n,;]+/).map((x) => x.trim()).filter(Boolean);
+          .split(/[\n,;\s]+/).map((x) => x.trim()).filter(Boolean);
+        const invalides = emails.filter((x) => !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x));
 
         if (acte === "ev-apercu") {
           note.textContent = "Préparation de l'aperçu…";
@@ -1637,8 +1637,9 @@
           return;
         }
 
-        if (!tous && !emails.length) { note.textContent = "Indiquez au moins une adresse."; return; }
-        const combien = tous ? "tous les contacts du carnet" : `${emails.length} adresse(s)`;
+        if (!tous && !emails.length) { note.textContent = "Saisissez d'abord les adresses des invités dans le champ ci-dessus."; return; }
+        if (!tous && invalides.length) { note.textContent = `Adresse(s) à corriger : ${invalides.join(", ")}`; return; }
+        const combien = tous ? "tous les contacts du carnet" : `${emails.length} adresse${emails.length > 1 ? "s" : ""}`;
         if (!confirm(`Envoyer l'invitation « ${ev.titre} » à ${combien} ?`)) return;
         const btn = e.target;
         btn.disabled = true;
@@ -1667,12 +1668,16 @@
       }
     });
 
+    listeEv.addEventListener("input", (e) => {
+      if (!e.target.classList.contains("ev-adresses")) return;
+      const zone = e.target.closest("[data-envoi]");
+      const liste = e.target.value.split(/[\n,;\s]+/).map((x) => x.trim()).filter(Boolean);
+      const ok = liste.filter((x) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x));
+      zone.querySelector(".ev-compte").textContent = liste.length
+        ? `${ok.length} adresse${ok.length > 1 ? "s" : ""} prête${ok.length > 1 ? "s" : ""}${liste.length - ok.length ? ` · ${liste.length - ok.length} à corriger` : ""}`
+        : "";
+    });
     listeEv.addEventListener("change", async (e) => {
-      if (e.target.type === "radio") {
-        const zone = e.target.closest("[data-envoi]");
-        zone.querySelector(".ev-adresses").hidden = e.target.value !== "choix";
-        return;
-      }
       if (e.target.type !== "file" || !e.target.files[0]) return;
       const carte = e.target.closest("[data-ei]");
       const ev = catalogue.events[+carte.dataset.ei];
