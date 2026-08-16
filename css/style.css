@@ -6,6 +6,8 @@
 :root {
   --paper: #f7f3ec;
   --paper-deep: #efe9de;
+  /* Passe-partout des encadrements : blanc, comme une toile tendue. */
+  --mat-color: #fff;
   --ink: #16130f;
   --ink-soft: #4a443c;
   --ink-faint: #8c8478;
@@ -260,7 +262,7 @@ a { color: inherit; text-decoration: none; }
 .hero-art {
   position: relative;
   padding: clamp(10px, 1.2vw, 16px);
-  background: #f4efe6;
+  background: var(--mat-color);
   /* même moulure biseautée que les cadres de la sélection */
   border: 9px solid #17120e;
   border-image: linear-gradient(138deg,
@@ -371,18 +373,18 @@ a { color: inherit; text-decoration: none; }
   min-height: 40vh; /* réserve la place des toiles pendant leur chargement */
 }
 /* fond neutre pendant le chargement (les dimensions viennent des attributs) */
-.card .frame img, .hero-art img { background: var(--paper-deep); }
+.card .frame img, .hero-art img { background: var(--mat-color); }
 @media (max-width: 980px) { .grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 620px) { .grid { grid-template-columns: 1fr; } }
 
-/* Encadrement de référence : cadre noir fin + passe-partout crème,
+/* Encadrement de référence : cadre noir fin + passe-partout blanc,
    comme une œuvre montée chez l'encadreur. Au survol, le passe-partout
    s'affine et la toile vient vers vous — le cadre, lui, reste. */
 .card { position: relative; }
 .card .frame {
   --mat: clamp(8px, 1vw, 14px);        /* passe-partout fin */
   position: relative;
-  background: #f4efe6;                 /* passe-partout */
+  background: var(--mat-color);        /* passe-partout */
   border: 4px solid #17120e;           /* cadre bois noir fin */
   border-image: linear-gradient(var(--biseau, 135deg),
                 #4a4137 0%, #221c16 38%, #14100c 70%, #0c0907 100%) 1;
@@ -410,7 +412,7 @@ a { color: inherit; text-decoration: none; }
 /* ------------------------------------------- accrochage de l'accueil -- */
 /* Sur la page d'accueil, les toiles sont accrochées à un mur : un fond
    légèrement plus soutenu que la page, très peu éclairé sur les bords.
-   Le passe-partout crème ressort alors du mur, et le cadre redevient un
+   Le passe-partout blanc ressort alors du mur, et le cadre redevient un
    objet posé dessus plutôt qu'une image imprimée dans la page. */
 
 .section.mur {
@@ -936,7 +938,7 @@ figure.portrait:hover .glass, .artist-hero:hover .glass, .diapo:hover .glass {
 .artwork-visual {
   position: sticky;
   top: 104px;
-  background: #f4efe6;
+  background: var(--mat-color);
   border: 6px solid #17120e;
   padding: clamp(10px, 1.3vw, 18px);
   box-shadow:
@@ -1002,7 +1004,7 @@ figure.portrait:hover .glass, .artist-hero:hover .glass, .diapo:hover .glass {
 figure.portrait, .artist-hero {
   position: relative;
   --mat: clamp(8px, 1vw, 14px);
-  background: #f4efe6;
+  background: var(--mat-color);
   border: 5px solid #17120e;      /* cadre noir, comme les toiles */
   padding: var(--mat);
   overflow: hidden;
@@ -1051,7 +1053,7 @@ figure.portrait:hover, .artist-hero:hover {
 /* Grande photo de l'artiste au travail, en tête de la page */
 .artist-hero {
   margin: 0 0 clamp(36px, 5vw, 60px);
-  background: #f4efe6;
+  background: var(--mat-color);
   border: 5px solid #17120e;
   padding: clamp(8px, 1vw, 14px);
   box-shadow:
@@ -1429,7 +1431,7 @@ figure.portrait:hover, .artist-hero:hover {
   position: relative;
   max-width: 760px;
   margin-top: clamp(28px, 4vw, 46px);
-  background: #f4efe6;
+  background: var(--mat-color);
   border: 4px solid #17120e;
   padding: clamp(8px, 1vw, 14px);
   box-shadow:

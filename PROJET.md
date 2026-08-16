@@ -47,14 +47,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=45/?v=46/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=46/?v=47/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=46"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=47"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -285,8 +285,10 @@ depuis Tahiti — un certificat daté du 14 s'afficherait « 13 ».
 
 ## 6. Décisions de conception à respecter
 
-1. **Un seul cadre** autour des toiles : cadre noir fin + passe-partout crème.
-   Aucune bordure ni ombre interne sur les images.
+1. **Un seul cadre** autour des toiles : cadre noir fin + **passe-partout blanc**
+   (`--mat-color` dans `css/style.css`, blanc comme une toile tendue — il vaut
+   pour tous les encadrements : galerie, accueil, fiche œuvre, artiste,
+   diaporama, certificat). Aucune bordure ni ombre interne sur les images.
 2. **Aucune inclinaison décorative** — tout est parfaitement droit.
 3. Au survol : le cadre ne bouge pas, **la toile s'agrandit** (le passe-partout
    se réduit, 15 % restant visible), avec reflet de vitre.

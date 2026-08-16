@@ -74,7 +74,7 @@ body[data-page="certificat"] {
 }
 
 .cert-body { display: grid; grid-template-columns: 66mm 1fr; gap: 9mm; align-items: start; }
-.cert-visual { border: 3px solid #17120e; background: #f4efe6; padding: 3mm; }
+.cert-visual { border: 3px solid #17120e; background: #fff; padding: 3mm; }
 .cert-visual img { width: 100%; display: block; }
 
 .cert-facts { display: grid; gap: 3.2mm; }
