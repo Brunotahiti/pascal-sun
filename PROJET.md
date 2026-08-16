@@ -47,14 +47,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=46/?v=47/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=47/?v=48/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=47"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=48"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -243,6 +243,16 @@ le lieu, un lien vers la galerie, et un formulaire de réponse.
 - Les deux lignes en grand viennent du vernissage : **`hote`** (le nom mis en
   valeur — un « by … » passe automatiquement en petit dessous) et **`hote_sur`**
   (la mention au-dessus). Vides, ce sont le lieu et la ville qui servent.
+
+### Acquérir une œuvre sur place (galerie du vernissage)
+Sur la fiche d'une œuvre **encore disponible**, sous « Ajouter au panier », une
+seconde voie s'ajoute : voir la toile en vrai et l'acheter directement auprès du
+lieu qui accueille le vernissage (`surPlaceHTML()` dans `js/app.js`).
+- Elle n'apparaît que si un vernissage **à venir** porte `vente_sur_place: true`
+  (case à cocher dans l'admin) ; passée la date, elle disparaît d'elle-même.
+- Le nom affiché est `hote` (sinon `lieu`), la mention `hote_sur` (sinon `ville`).
+- `contact_tel` et `contact_email` donnent le bouton d'appel et le lien d'écriture
+  (objet du message pré-rempli avec le titre de l'œuvre).
 
 ### Invitation envoyée par email
 Depuis **admin → Vernissages**, sous chaque vernissage : un mot d'accompagnement

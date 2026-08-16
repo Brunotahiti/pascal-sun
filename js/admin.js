@@ -397,6 +397,16 @@
         <div class="f span2"><label>Ville / Île</label><input data-k="ville" value="${esc(ev.ville)}" placeholder="Papeete, Tahiti"></div>
         <div class="f span2"><label>Nom mis en valeur à l'ouverture</label><input data-k="hote" value="${esc(ev.hote || "")}" placeholder="Le Bora Bora by Pearl Resorts"></div>
         <div class="f span2"><label>Mention au-dessus</label><input data-k="hote_sur" value="${esc(ev.hote_sur || "")}" placeholder="Tevairoa, Bora Bora"></div>
+        <div class="f span4">
+          <label class="ev-col ev-vente">
+            <input type="checkbox" data-k="vente_sur_place" ${ev.vente_sur_place ? "checked" : ""}>
+            Proposer d'acquérir les œuvres directement auprès de ce lieu
+          </label>
+          <p class="compose-note" style="margin:4px 0 0;">Sur chaque fiche d'œuvre encore disponible, une seconde voie s'ajoute sous « Ajouter au panier » : voir la toile en vrai et l'acheter sur place, avec le téléphone et l'email ci-dessous. Elle s'efface d'elle-même une fois la date du vernissage passée.</p>
+        </div>
+        <div class="f span2"><label>Téléphone de la galerie / l'hôtel</label><input data-k="contact_tel" value="${esc(ev.contact_tel || "")}" placeholder="40 60 33 00"></div>
+        <div class="f span2"><label>Email de la galerie / l'hôtel</label><input data-k="contact_email" value="${esc(ev.contact_email || "")}" placeholder="galerie@hotel.pf"></div>
+
         <div class="f span4"><p class="compose-note" style="margin:-6px 0 0;">Ces deux lignes s'affichent en grand pendant l'animation d'ouverture de l'invitation (le lagon qui se lève). Laissées vides, ce sont le lieu et la ville qui s'affichent. Un « by … » passe automatiquement en petit sous le nom.</p></div>
         <div class="f span4"><label>Description (FR)</label><textarea data-k="desc_fr">${esc(ev.desc_fr)}</textarea></div>
         <div class="f span4"><label>Description (EN)</label><textarea data-k="desc_en">${esc(ev.desc_en)}</textarea></div>
@@ -1697,7 +1707,7 @@
       }
       const k = e.target.dataset.k;
       if (!k) return;
-      ev[k] = e.target.value;
+      ev[k] = e.target.type === "checkbox" ? e.target.checked : e.target.value;
       markDirty();
     });
     evList.addEventListener("click", (e) => {

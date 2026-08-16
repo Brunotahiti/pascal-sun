@@ -1017,3 +1017,4 @@ button { font-family: var(--sans); cursor: pointer; }
   color: var(--accent); cursor: pointer; text-transform: none; letter-spacing: 0;
 }
 .lien-btn:hover { text-decoration: underline; }
+.ev-vente { font-weight: 700; }

@@ -40,6 +40,41 @@
     return `<div class="ev-collections"><span>${t("ev_collections")}</span>${cles.map((k) =>
       `<a class="chip" href="galerie.html?col=${encodeURIComponent(k)}">${esc(colName(k))}</a>`).join("")}</div>`;
   }
+  /* Le vernissage en cours : celui dont la date n'est pas passée, le plus
+     proche. C'est lui qui peut proposer l'achat sur place. */
+  function vernissageEnCours() {
+    const today = new Date().toISOString().slice(0, 10);
+    return (EVENTS || [])
+      .filter((e) => e && e.date && e.date >= today && e.vente_sur_place)
+      .sort((a, b) => a.date.localeCompare(b.date))[0] || null;
+  }
+
+  /* Deuxième voie pour acquérir une toile : s'adresser directement à la
+     galerie ou à l'hôtel qui accueille le vernissage. On ne la propose que
+     pour les œuvres encore disponibles, et pour les originaux — un tirage
+     ou une affiche part de l'atelier. */
+  function surPlaceHTML(a) {
+    if ((a.statut || "disponible") !== "disponible") return "";
+    const ev = vernissageEnCours();
+    if (!ev) return "";
+    const maison = (ev.hote || ev.lieu || "").trim();
+    if (!maison) return "";
+    const tel = (ev.contact_tel || "").trim();
+    const mail = (ev.contact_email || "").trim();
+    const sujet = encodeURIComponent(`${t("sur_place_sujet")} : « ${a.titre} »`);
+    return `
+      <div class="sur-place">
+        <p class="sp-titre">${t("sur_place_titre")}</p>
+        <p class="sp-maison">${esc(maison)}${(ev.hote_sur || ev.ville) ? ` · ${esc(ev.hote_sur || ev.ville)}` : ""}</p>
+        <p class="sp-texte">${t("sur_place_texte")}</p>
+        <div class="sp-liens">
+          ${tel ? `<a class="btn ghost" href="tel:${esc(tel.replace(/[^0-9+]/g, ""))}">☎ ${esc(tel)}</a>` : ""}
+          ${mail ? `<a class="btn ghost" href="mailto:${esc(mail)}?subject=${sujet}">✉ ${t("sur_place_ecrire")}</a>` : ""}
+          <a class="btn ghost" href="invitation.html?e=${encodeURIComponent(ev.id)}">${t("sur_place_vernissage")}</a>
+        </div>
+      </div>`;
+  }
+
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
   /* Balise <img> optimisée : lazy + décodage asynchrone, et srcset
@@ -520,6 +555,7 @@
         <button class="btn" id="acquire-btn" ${selectedKey ? "" : "disabled"}>${selectedKey ? t("add_to_cart") : t("sold_out")}</button>
         <a class="btn ghost" href="galerie.html">${t("back_gallery")}</a>
       </div>
+      ${surPlaceHTML(a)}
       ${a.statut !== "disponible" ? `
       <div class="notify-box">
         <p>${t("notify_hint")}</p>
