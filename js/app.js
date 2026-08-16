@@ -32,6 +32,14 @@
   const produitLabel = (key) => t(({ original: "prod_original", tirage: "prod_tirage", affiche: "prod_affiche" })[key] || key);
   const imgLarge = (a) => (a.images && a.images.large) || a.image;
   const colName = (key) => (COLLECTIONS[key] ? COLLECTIONS[key][store.lang] || COLLECTIONS[key].fr : key);
+  /* Les collections présentées lors d'un vernissage : petites pastilles qui
+     ouvrent la galerie sur la collection. */
+  function collectionsHTML(ev) {
+    const cles = (ev.collections || []).filter((k) => COLLECTIONS[k]);
+    if (!cles.length) return "";
+    return `<div class="ev-collections"><span>${t("ev_collections")}</span>${cles.map((k) =>
+      `<a class="chip" href="galerie.html?col=${encodeURIComponent(k)}">${esc(colName(k))}</a>`).join("")}</div>`;
+  }
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
   /* Balise <img> optimisée : lazy + décodage asynchrone, et srcset
@@ -393,9 +401,13 @@
     const filters = document.getElementById("filters");
     if (!grid || !filters) return;
 
+    /* Un vernissage ou une invitation peuvent ouvrir la galerie directement
+       sur une collection : galerie.html?col=<clé>. */
     const keys = ["all", ...Object.keys(COLLECTIONS)];
+    const demande = new URLSearchParams(location.search).get("col");
+    const initial = demande && COLLECTIONS[demande] ? demande : "all";
     filters.innerHTML = keys.map((k) =>
-      `<button class="chip ${k === "all" ? "active" : ""}" data-filter="${k}">
+      `<button class="chip ${k === initial ? "active" : ""}" data-filter="${k}">
         ${k === "all" ? t("filter_all") : colName(k)}
       </button>`).join("") +
       `<button class="lights-switch" id="lights-switch" aria-pressed="false">
@@ -430,7 +442,7 @@
       draw(btn.dataset.filter);
     });
 
-    draw("all");
+    draw(initial);
   }
 
   function pageArtwork() {
@@ -755,6 +767,7 @@
             <h3>${esc(ev.titre)}</h3>
             <div class="place">${esc(ev.lieu)} · ${esc(ev.ville)}</div>
             <p>${esc(desc || "")}</p>
+            ${collectionsHTML(ev)}
             ${rsvp}
           </div>
         </div>`;
@@ -965,6 +978,7 @@
       </div>
 
       ${desc ? `<p class="lede invit-desc">${esc(desc)}</p>` : ""}
+      ${collectionsHTML(ev)}
 
       <form class="invit-reponse" id="rsvp-form">
         <h2>${t("inv_repondre")}</h2>
@@ -1067,6 +1081,9 @@
       if (data.shipping && Array.isArray(data.shipping.zones)) SHIPPING = data.shipping;
       if (data.eclairage && Array.isArray(data.eclairage.sources)) ECLAIRAGE = data.eclairage;
       if (Array.isArray(data.atelier) && data.atelier.length) ATELIER = data.atelier;
+      if (Array.isArray(data.collections) && data.collections.length) {
+        COLLECTIONS = collectionsDepuisListe(data.collections);
+      }
       if (data.uiTexts) {
         ["fr", "en"].forEach((l) => {
           if (data.uiTexts[l]) I18N[l] = Object.assign({}, I18N[l], data.uiTexts[l]);

@@ -327,6 +327,7 @@ var EVENTS = [
   {
     id: "vernissage-lagon",
     titre: "Vernissage — Collection Lagon",
+    collections: ["ocean"],
     lieu: "Galerie d'art, front de mer",
     ville: "Papeete, Tahiti",
     date: "2026-09-18",
@@ -479,12 +480,26 @@ const CURRENCIES = {
 
 /* --------------------------------------------------------- collections -- */
 
-const COLLECTIONS = {
+/* Valeurs de départ. En production, l'admin (onglet « Textes & boutons »)
+   fait foi : `catalogue.collections` — une liste ordonnée `{ key, fr, en }`
+   — remplace cet objet au chargement (`collectionsDepuisListe`). L'ordre de
+   la liste est l'ordre des boutons de filtres de la galerie. */
+var COLLECTIONS = {
   ocean:     { fr: "Océan & pirogues",   en: "Ocean & canoes" },
   vahine:    { fr: "Vahine",             en: "Vahine" },
   village:   { fr: "Vie de village",     en: "Village life" },
   autrefois: { fr: "Scènes d'autrefois", en: "Scenes of yesteryear" }
 };
+function collectionsDepuisListe(liste) {
+  const o = {};
+  (liste || []).forEach((c) => {
+    if (c && c.key && (c.fr || c.en)) o[c.key] = { fr: c.fr || c.en, en: c.en || c.fr };
+  });
+  return o;
+}
+function collectionsEnListe(objet) {
+  return Object.entries(objet || {}).map(([key, v]) => ({ key, fr: v.fr, en: v.en }));
+}
 
 /* ---------------------------------------------------------------- i18n -- */
 
@@ -518,6 +533,7 @@ var I18N = {
     gallery_title: "La galerie",
     gallery_lede: "Œuvres originales disponibles à l'acquisition. Cliquez sur une toile pour la découvrir en grand, lire son histoire et l'acquérir.",
     filter_all: "Toutes",
+    ev_collections: "Collections présentées",
     lights_on: "Allumer les projecteurs",
     lights_off: "Éteindre les projecteurs",
     artist_eyebrow: "L'univers",
@@ -748,6 +764,7 @@ var I18N = {
     gallery_title: "The gallery",
     gallery_lede: "Original works available for acquisition. Click a canvas to see it up close, read its story and make it yours.",
     filter_all: "All",
+    ev_collections: "Collections on show",
     lights_on: "Turn the spotlights on",
     lights_off: "Turn the spotlights off",
     artist_eyebrow: "The universe",

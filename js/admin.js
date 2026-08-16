@@ -106,15 +106,24 @@
         ? data.eclairage
         : JSON.parse(JSON.stringify(ECLAIRAGE_DEFAUT)),
       atelier: (data && data.atelier) || JSON.parse(JSON.stringify(typeof ATELIER !== "undefined" ? ATELIER : [])),
+      collections: (data && Array.isArray(data.collections) && data.collections.length)
+        ? data.collections
+        : collectionsEnListe(COLLECTIONS),
       uiTexts: (data && data.uiTexts) || { fr: {}, en: {} }
     };
     catalogue.uiTexts.fr = catalogue.uiTexts.fr || {};
     catalogue.uiTexts.en = catalogue.uiTexts.en || {};
+    syncCollections();
     /* L'aperçu de l'éclairage réutilise les fonctions du site : on branche
        la configuration en cours d'édition sur la variable globale. */
     ECLAIRAGE = catalogue.eclairage;
     if (typeof normalizeArtworks === "function") normalizeArtworks(catalogue.artworks);
   }
+
+  /* Les collections en cours d'édition alimentent la variable globale que
+     partagent les fiches d'œuvres et de vernissages. */
+  function syncCollections() { COLLECTIONS = collectionsDepuisListe(catalogue.collections); }
+  const nomCollection = (k) => (COLLECTIONS[k] ? COLLECTIONS[k].fr : k);
 
   /* Le site affiche les prix en francs Pacifique : l'admin les rappelle à
      côté de l'euro, qui reste la valeur saisie et stockée. */
@@ -134,8 +143,8 @@
   /* ----------------------------------------------------------- œuvres -- */
 
   function artworkCard(a, i) {
-    const cols = Object.entries(COLLECTIONS)
-      .map(([k, v]) => `<option value="${k}" ${a.collection === k ? "selected" : ""}>${v.fr}</option>`)
+    const cols = (catalogue.collections || [])
+      .map((c) => `<option value="${esc(c.key)}" ${a.collection === c.key ? "selected" : ""}>${esc(c.fr)}</option>`)
       .join("");
     return `
     <article class="aw-card" data-i="${i}">
@@ -381,6 +390,14 @@
         <div class="f span2"><label>Ville / Île</label><input data-k="ville" value="${esc(ev.ville)}" placeholder="Papeete, Tahiti"></div>
         <div class="f span4"><label>Description (FR)</label><textarea data-k="desc_fr">${esc(ev.desc_fr)}</textarea></div>
         <div class="f span4"><label>Description (EN)</label><textarea data-k="desc_en">${esc(ev.desc_en)}</textarea></div>
+        <div class="f span4">
+          <label>Collections présentées</label>
+          <div class="ev-cols">
+            ${(catalogue.collections || []).map((c) => `
+              <label class="ev-col"><input type="checkbox" data-col="${esc(c.key)}" ${(ev.collections || []).includes(c.key) ? "checked" : ""}> ${esc(c.fr)}</label>`).join("")}
+          </div>
+          <p class="compose-note">Elles s'affichent sur la page Vernissages et sur l'invitation, chacune ouvrant la galerie sur la collection. Les noms se changent dans l'onglet « Textes &amp; boutons ».</p>
+        </div>
         <div class="f span4">
           <label>Affiche du vernissage (celle de la galerie ou de l'hôtel)</label>
           <div class="cert-photo" data-affiche>
@@ -910,7 +927,30 @@
 
   /* ----------------------------------------------------------- textes -- */
 
+  /* Boutons de filtres de la galerie = collections. Renommables, ordonnables,
+     on peut en ajouter ; on ne supprime que celles qu'aucune toile n'utilise. */
+  function renderCollections() {
+    const liste = catalogue.collections || [];
+    $("#cols-list").innerHTML = liste.map((c, i) => {
+      const nb = catalogue.artworks.filter((a) => a.collection === c.key).length;
+      return `
+      <div class="text-row col-row" data-ci="${i}">
+        <div class="k">
+          <span class="col-ordre">
+            <button type="button" class="ghost-btn" data-act="col-up" title="Monter" ${i === 0 ? "disabled" : ""}>↑</button>
+            <button type="button" class="ghost-btn" data-act="col-down" title="Descendre" ${i === liste.length - 1 ? "disabled" : ""}>↓</button>
+          </span>
+          <small>${nb} ${nb > 1 ? "toiles" : "toile"}</small>
+        </div>
+        <input data-lang="fr" placeholder="Nom en français" value="${esc(c.fr || "")}">
+        <input data-lang="en" placeholder="Name in English" value="${esc(c.en || "")}">
+        <button type="button" class="aw-delete col-suppr" data-act="col-del" ${nb ? `disabled title="Encore ${nb} toile(s) dans cette collection"` : ""}>Supprimer</button>
+      </div>`;
+    }).join("");
+  }
+
   function renderTexts() {
+    renderCollections();
     $("#texts-grid").innerHTML = EDITABLE_TEXTS.map(({ key, label, hint }) => `
       <div class="text-row" data-key="${key}">
         <div class="k">${label}${hint ? `<small>${hint}</small>` : ""}</div>
@@ -1527,9 +1567,18 @@
     const evList = $("#event-list");
     evList.addEventListener("input", (e) => {
       const card = e.target.closest("[data-ei]");
+      if (!card) return;
+      const ev = catalogue.events[+card.dataset.ei];
+      if (e.target.dataset.col) {
+        // cases à cocher des collections : l'ordre reste celui des filtres
+        ev.collections = [...card.querySelectorAll("[data-col]:checked")].map((c) => c.dataset.col);
+        if (!ev.collections.length) delete ev.collections;
+        markDirty();
+        return;
+      }
       const k = e.target.dataset.k;
-      if (!card || !k) return;
-      catalogue.events[+card.dataset.ei][k] = e.target.value;
+      if (!k) return;
+      ev[k] = e.target.value;
       markDirty();
     });
     evList.addEventListener("click", (e) => {
@@ -1684,6 +1733,50 @@
         $("#compose-status").textContent = `Envoyé à ${d.sent}/${d.total} contacts ✓`;
       } catch { $("#compose-status").textContent = "Échec de l'envoi."; }
       finally { $("#compose-send").disabled = false; }
+    });
+
+    /* ------ collections (boutons de filtres) ------ */
+    const colsList = $("#cols-list");
+    colsList.addEventListener("input", (e) => {
+      const row = e.target.closest("[data-ci]");
+      if (!row || !e.target.dataset.lang) return;
+      catalogue.collections[+row.dataset.ci][e.target.dataset.lang] = e.target.value.trim();
+      syncCollections();
+      markDirty();
+    });
+    colsList.addEventListener("click", (e) => {
+      const row = e.target.closest("[data-ci]");
+      const acte = e.target.dataset.act;
+      if (!row || !acte) return;
+      const i = +row.dataset.ci;
+      const L = catalogue.collections;
+      if (acte === "col-up" && i > 0) [L[i - 1], L[i]] = [L[i], L[i - 1]];
+      if (acte === "col-down" && i < L.length - 1) [L[i + 1], L[i]] = [L[i], L[i + 1]];
+      if (acte === "col-del") {
+        if (catalogue.artworks.some((a) => a.collection === L[i].key)) return;
+        if (!confirm(`Supprimer le bouton « ${L[i].fr} » ?`)) return;
+        const [supprimee] = L.splice(i, 1);
+        catalogue.events.forEach((ev) => {
+          if (ev.collections) ev.collections = ev.collections.filter((k) => k !== supprimee.key);
+        });
+      }
+      syncCollections();
+      renderCollections(); renderArtworks(); renderEvents();
+      markDirty();
+    });
+    $("#add-col").addEventListener("click", () => {
+      const fr = prompt("Nom de la nouvelle collection (en français) :");
+      if (!fr || !fr.trim()) return;
+      let key = slugify(fr.trim()).replace(/-/g, "_") || "collection";
+      let base = key, n = 2;
+      while (COLLECTIONS[key]) key = `${base}_${n++}`;
+      catalogue.collections.push({ key, fr: fr.trim(), en: fr.trim() });
+      syncCollections();
+      renderCollections(); renderArtworks(); renderEvents();
+      markDirty();
+      const rows = colsList.querySelectorAll("[data-ci]");
+      const derniere = rows[rows.length - 1];
+      if (derniere) { derniere.scrollIntoView({ block: "center" }); derniere.querySelector("[data-lang=en]").focus(); }
     });
 
     $("#texts-grid").addEventListener("input", (e) => {

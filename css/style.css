@@ -793,7 +793,7 @@ body.lights-on .filters::before {
   }
   body.lights-on .filters::-webkit-scrollbar { display: none; }
   body.lights-on .filters > * { flex: none; }
-  body.lights-on .lights-switch { order: -1; }
+  body.lights-on .lights-switch { order: -1; margin: 0; }
   body.lights-on .filters::before {
     background: linear-gradient(180deg, #171410 82%, rgba(23, 20, 16, 0));
   }
@@ -807,42 +807,68 @@ body.lights-on .filters::before {
   body.lights-on .salle-paraphe::after { animation: none; opacity: 0; }
 }
 
-/* interrupteur */
+/* interrupteur — il n'est pas un filtre de plus : c'est la porte de la salle
+   d'exposition. Rejeté à droite de la rangée, plein d'encre, ampoule dorée qui
+   respire et halo chaud, pour qu'on ne le confonde plus avec les chips. */
 .lights-switch {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 9px;
-  border: 1px solid var(--line);
-  background: transparent;
+  gap: 11px;
+  margin-left: auto;
+  border: 1px solid var(--ink);
+  background: var(--ink);
   border-radius: 999px;
-  padding: 9px 17px;
+  padding: 11px 22px 11px 16px;
   font-family: var(--sans);
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: .1em;
+  letter-spacing: .12em;
   text-transform: uppercase;
-  color: var(--ink-soft);
+  color: var(--paper);
   cursor: pointer;
-  transition: .25s;
+  transition: .3s;
   white-space: nowrap;
+  box-shadow: 0 0 0 0 rgba(255, 190, 90, 0), 0 6px 18px -8px rgba(22, 19, 15, .5);
 }
-.lights-switch:hover { border-color: var(--ink); color: var(--ink); }
+.lights-switch:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 22px 2px rgba(255, 190, 90, .28), 0 10px 22px -8px rgba(22, 19, 15, .55);
+}
 .lights-switch .bulb {
-  width: 11px; height: 11px;
+  width: 13px; height: 13px;
   border-radius: 50%;
-  background: var(--line);
-  box-shadow: none;
+  background: radial-gradient(circle at 40% 35%, #fff4d6, #ffbf5c 55%, #e8923c);
+  box-shadow: 0 0 10px 3px rgba(255, 191, 92, .55);
+  animation: bulb-breathe 2.6s ease-in-out infinite;
   transition: .35s;
 }
-body.lights-on .lights-switch {
-  border-color: #4a4238;
-  color: #d9d2c6;
-  background: rgba(255, 240, 210, .06);
+@keyframes bulb-breathe {
+  0%, 100% { box-shadow: 0 0 8px 2px rgba(255, 191, 92, .45); }
+  50%      { box-shadow: 0 0 16px 5px rgba(255, 191, 92, .85); }
 }
-body.lights-on .lights-switch:hover { border-color: #7d7466; color: #fff; }
+/* en salle, l'interrupteur se fond dans la réglette sombre : ampoule allumée
+   pleine, texte doux, on ne l'appelle plus, il est juste là pour éteindre */
+body.lights-on .lights-switch {
+  border-color: #6d6459;
+  color: #e8e1d5;
+  background: rgba(255, 240, 210, .08);
+  box-shadow: none;
+}
+body.lights-on .lights-switch:hover { border-color: #a49b8d; color: #fff; transform: none; box-shadow: none; }
 body.lights-on .lights-switch .bulb {
   background: #ffd98a;
   box-shadow: 0 0 10px 2px rgba(255, 217, 138, .75);
+  animation: none;
+}
+/* Sur téléphone, les chips prennent plusieurs lignes : l'interrupteur a la
+   sienne, pleine largeur, centré — une vraie porte d'entrée. (En salle, la
+   réglette repasse en une ligne et `flex: none` reprend la main.) */
+@media (max-width: 900px) {
+  .lights-switch { margin: 6px 0 0; flex: 1 0 100%; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lights-switch .bulb { animation: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1386,6 +1412,12 @@ figure.portrait:hover, .artist-hero:hover {
 .tl-card h3 { font-family: var(--serif); font-size: clamp(21px, 2.4vw, 27px); font-weight: 600; }
 .tl-card .place { font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin: 6px 0 10px; }
 .timeline.past .tl-card .place { color: var(--ink-faint); }
+/* collections présentées lors d'un vernissage : pastilles qui ouvrent la
+   galerie sur la collection */
+.ev-collections { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0 18px; }
+.ev-collections > span { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); margin-right: 4px; }
+.ev-collections .chip { padding: 7px 14px; font-size: 11px; text-decoration: none; }
+.invit .ev-collections { justify-content: center; margin: -14px auto 34px; }
 .tl-card p { color: var(--ink-soft); font-size: 15px; }
 .tl-card .btn { margin-top: 16px; padding: 10px 22px; font-size: 12px; }
 .timeline.past .tl-card { opacity: .75; }
