@@ -478,6 +478,11 @@ const CURRENCIES = {
   XPF: { symbol: "F",   rate: 119.33, locale: "fr-FR", position: "after"  }
 };
 
+/* ------------------------------------------------------------ paiement -- */
+/* Coordonnées de paiement de l'artiste, saisies dans l'admin (onglet
+   Livraison & paiement) et remplacées au chargement par catalogue.paiement. */
+var PAIEMENT = { titulaire: "", iban: "", bic: "", banque: "", paypal: "" };
+
 /* --------------------------------------------------------- collections -- */
 
 /* Valeurs de départ. En production, l'admin (onglet « Textes & boutons »)
@@ -582,6 +587,21 @@ var I18N = {
     delivery_mode: "Réception",
     delivery_ship: "Livraison (monde entier, assurée)",
     delivery_pickup: "Retrait à Tahiti (atelier / vernissage)",
+    delivery_galerie: "Réserver et retirer à la galerie du vernissage",
+    delivery_galerie_note: "L'œuvre est mise de côté à votre nom. Vous la réglez et l'emportez à la galerie, le soir du vernissage ou pendant l'exposition.",
+    pay_surplace: "Paiement sur place, à la galerie",
+    reserver_galerie: "Réserver en ligne pour le vernissage",
+    reserver_galerie_note: "Elle sera mise de côté à votre nom : vous la réglez et l'emportez à la galerie.",
+    merci_galerie: "Votre œuvre est réservée à votre nom. Elle vous attend à la galerie : vous la réglez et l'emportez sur place. Pascal et la galerie sont prévenus.",
+    merci_virement: "Pour régler par virement, voici les coordonnées bancaires de l'artiste. Indiquez la référence de commande en libellé.",
+    merci_paypal: "Pour régler par PayPal :",
+    merci_paypal_btn: "Payer avec PayPal",
+    merci_montant: "Montant à régler",
+    merci_ref: "Référence à rappeler :",
+    rib_titulaire: "Titulaire",
+    rib_iban: "IBAN",
+    rib_bic: "BIC",
+    rib_banque: "Banque",
     payment_method: "Paiement sécurisé",
     pay_card: "Carte bancaire",
     pay_transfer: "Virement bancaire",
@@ -830,6 +850,21 @@ var I18N = {
     delivery_mode: "Delivery",
     delivery_ship: "Worldwide insured shipping",
     delivery_pickup: "Pickup in Tahiti (studio / opening)",
+    delivery_galerie: "Reserve and collect at the opening's gallery",
+    delivery_galerie_note: "The work is set aside in your name. You pay for it and take it home at the gallery, on the opening night or during the show.",
+    pay_surplace: "Pay on site, at the gallery",
+    reserver_galerie: "Reserve online for the opening",
+    reserver_galerie_note: "It will be set aside in your name: you pay and collect it at the gallery.",
+    merci_galerie: "Your artwork is reserved in your name. It awaits you at the gallery: you pay and collect it there. Pascal and the gallery have been notified.",
+    merci_virement: "To pay by bank transfer, here are the artist's bank details. Please quote the order reference.",
+    merci_paypal: "To pay with PayPal:",
+    merci_paypal_btn: "Pay with PayPal",
+    merci_montant: "Amount due",
+    merci_ref: "Reference to quote:",
+    rib_titulaire: "Account holder",
+    rib_iban: "IBAN",
+    rib_bic: "BIC",
+    rib_banque: "Bank",
     payment_method: "Secure payment",
     pay_card: "Credit card",
     pay_transfer: "Bank transfer",

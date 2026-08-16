@@ -106,6 +106,7 @@
         ? data.eclairage
         : JSON.parse(JSON.stringify(ECLAIRAGE_DEFAUT)),
       atelier: (data && data.atelier) || JSON.parse(JSON.stringify(typeof ATELIER !== "undefined" ? ATELIER : [])),
+      paiement: Object.assign({ titulaire: "", iban: "", bic: "", banque: "", paypal: "" }, (data && data.paiement) || {}),
       collections: (data && Array.isArray(data.collections) && data.collections.length)
         ? data.collections
         : collectionsEnListe(COLLECTIONS),
@@ -601,6 +602,21 @@
             `<span><input type="number" min="0" step="5" data-sk="${k}" value="${z[k] ?? 0}"> €</span>`).join("")}
         </div>`).join("")}`;
     $("#ship-free").value = catalogue.shipping.freeAbove || 0;
+    renderPaiement();
+  }
+
+  const CHAMPS_PAIEMENT = ["titulaire", "banque", "iban", "bic", "paypal"];
+  function renderPaiement() {
+    const P = catalogue.paiement || {};
+    CHAMPS_PAIEMENT.forEach((k) => { const el = $(`#pay-${k}`); if (el) el.value = P[k] || ""; });
+    etatPaiement();
+  }
+  function etatPaiement() {
+    const P = catalogue.paiement || {};
+    const parts = [];
+    parts.push(P.iban ? "✅ Virement : l'IBAN sera montré aux acheteurs." : "⚠️ Virement : sans IBAN, l'acheteur devra attendre votre email pour payer.");
+    parts.push(P.paypal ? "✅ PayPal proposé dans le panier." : "PayPal non proposé (champ vide).");
+    $("#pay-etat").textContent = parts.join(" ");
   }
 
   /* ------------------------------------------ certificats hors du site -- */
@@ -1050,13 +1066,15 @@
           <div class="order-lines">
             ${o.lines.map((l, li) => `<div>• ${esc(l.titre)} — ${PRODUIT_NOMS[l.key] || l.key}${l.qty > 1 ? ` × ${l.qty}` : ""} — ${enFrancs(l.prixEUR * l.qty)}
               ${l.key !== "affiche" ? ` <a class="cert-link" href="/certificat.html?c=${esc(o.id)}-${li}" target="_blank">📜 certificat</a>` : ""}</div>`).join("")}
-            ${o.livraisonEUR !== undefined ? `<div>• Livraison ${o.zone ? "(" + esc(o.zone) + ")" : ""} — ${o.livraisonEUR ? enFrancs(o.livraisonEUR) : "offerte"}</div>` : ""}
+            ${o.mode === "galerie" ? `<div>• 🥂 Réservée pour le vernissage — retrait et paiement à ${esc(o.galerie || "la galerie")}${o.galerieDate ? " le " + dateVente(o.galerieDate) : ""}</div>`
+              : o.mode === "retrait" ? `<div>• Retrait à Tahiti — gratuit</div>`
+              : o.livraisonEUR !== undefined ? `<div>• Livraison ${o.zone ? "(" + esc(o.zone) + ")" : ""} — ${o.livraisonEUR ? enFrancs(o.livraisonEUR) : "offerte"}</div>` : ""}
           </div>
           <div class="order-client">
             <strong>${esc(o.client.name)}</strong> · <a href="mailto:${esc(o.client.email)}">${esc(o.client.email)}</a>
             ${o.client.country ? " · " + esc(o.client.country) : ""}
-            · ${o.mode === "retrait" ? "Retrait à Tahiti" : "Livraison"}
-            · ${({ card: "Carte", virement: "Virement", paypal: "PayPal" })[o.payment] || o.payment}
+            · ${o.mode === "galerie" ? `🥂 Réservée — retrait à ${esc(o.galerie || "la galerie du vernissage")}` : o.mode === "retrait" ? "Retrait à Tahiti" : "Livraison"}
+            · ${({ card: "Carte", virement: "Virement", paypal: "PayPal", surplace: "Sur place à la galerie" })[o.payment] || o.payment}
             — <strong>${enFrancs(o.grandTotalEUR || o.totalEUR)}</strong> <span class="en-francs">(${o.grandTotalEUR || o.totalEUR} €)</span>
             ${o.client.message ? `<div class="order-msg">« ${esc(o.client.message)} »</div>` : ""}
           </div>
@@ -1555,6 +1573,17 @@
           ? "Outil de redimensionnement absent du serveur — prévenez le développeur."
           : "Échec de l'optimisation.";
       } finally { btn.disabled = false; }
+    });
+    CHAMPS_PAIEMENT.forEach((k) => {
+      const el = $(`#pay-${k}`);
+      if (!el) return;
+      el.addEventListener("input", () => {
+        let v = el.value.trim();
+        if (k === "iban" || k === "bic") { v = v.toUpperCase(); if (el.value !== v) { const p = el.selectionStart; el.value = v; el.setSelectionRange(p, p); } }
+        catalogue.paiement[k] = v;
+        etatPaiement();
+        markDirty();
+      });
     });
     $("#ship-free").addEventListener("input", (e) => {
       catalogue.shipping.freeAbove = Number(e.target.value) || 0;

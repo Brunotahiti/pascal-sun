@@ -67,6 +67,11 @@
         <p class="sp-titre">${t("sur_place_titre")}</p>
         <p class="sp-maison">${esc(maison)}${(ev.hote_sur || ev.ville) ? ` · ${esc(ev.hote_sur || ev.ville)}` : ""}</p>
         <p class="sp-texte">${t("sur_place_texte")}</p>
+        ${(a.produits || []).some((p) => p.key === "original" && p.actif === false) ? "" : `
+        <div class="sp-reserver">
+          <button class="btn" type="button" id="reserver-galerie"><span class="bulb"></span>${t("reserver_galerie")}</button>
+          <p class="sp-texte">${t("reserver_galerie_note")}</p>
+        </div>`}
         <div class="sp-liens">
           ${tel ? `<a class="btn ghost" href="tel:${esc(tel.replace(/[^0-9+]/g, ""))}">☎ ${esc(tel)}</a>` : ""}
           ${mail ? `<a class="btn ghost" href="mailto:${esc(mail)}?subject=${sujet}">✉ ${t("sur_place_ecrire")}</a>` : ""}
@@ -93,6 +98,15 @@
 
   /* Envoi de la demande de rappel : nom + au moins un moyen de contact. */
   function brancheRappel(a) {
+    const btnRes = document.getElementById("reserver-galerie");
+    if (btnRes) btnRes.addEventListener("click", () => {
+      /* l'original entre au panier, et le panier s'ouvre en mode réservation */
+      const cart = store.cart.filter((x) => !(x.id === a.id && x.key === "original"));
+      cart.push({ id: a.id, key: "original", qty: 1 });
+      store.cart = cart;
+      updateCartCount();
+      location.href = "panier.html?mode=galerie";
+    });
     const form = document.getElementById("rappel-form");
     if (!form) return;
     const ev = vernissageEnCours();
@@ -697,10 +711,37 @@
         .filter((l) => l.art && l.produit);
     }
 
+    /* Réservation à la galerie du vernissage : le choix n'existe que si un
+       vernissage à venir vend sur place. */
+    const evGalerie = vernissageEnCours();
+    const modeGroup = document.querySelector('#order-form input[name="mode"]')?.closest(".choice-group");
+    if (evGalerie && modeGroup) {
+      const d = new Date(evGalerie.date + "T00:00:00");
+      const quand = d.toLocaleDateString(store.lang === "en" ? "en-GB" : "fr-FR", { day: "numeric", month: "long" });
+      const lab = document.createElement("label");
+      lab.className = "choice choice-galerie";
+      lab.innerHTML = `<input type="radio" name="mode" value="galerie"><span>${t("delivery_galerie")}<small>${esc(evGalerie.hote || evGalerie.lieu)} · ${quand}</small></span>`;
+      modeGroup.appendChild(lab);
+      const note = document.createElement("p");
+      note.className = "form-note galerie-note"; note.hidden = true; note.textContent = t("delivery_galerie_note");
+      modeGroup.after(note);
+      const payGroup = document.querySelector('#order-form input[name="payment"]')?.closest(".choice-group");
+      if (payGroup) {
+        const sp = document.createElement("label");
+        sp.className = "choice choice-surplace"; sp.hidden = true;
+        sp.innerHTML = `<input type="radio" name="payment" value="surplace"><span>${t("pay_surplace")}</span>`;
+        payGroup.prepend(sp);
+      }
+      if (new URLSearchParams(location.search).get("mode") === "galerie") lab.querySelector("input").checked = true;
+    }
+    /* PayPal n'est proposé que si l'artiste a renseigné son compte */
+    const payPaypal = document.querySelector('#order-form input[name="payment"][value="paypal"]');
+    if (payPaypal && !PAIEMENT.paypal) payPaypal.closest(".choice").hidden = true;
+
     /* Frais de livraison : même calcul que le serveur (source de vérité). */
     function shippingEUR(lines) {
       const mode = (form && new FormData(form).get("mode")) || "livraison";
-      if (mode === "retrait") return 0;
+      if (mode === "retrait" || mode === "galerie") return 0;
       const zoneKey = (document.getElementById("of-zone") || {}).value || "pf";
       const zone = (SHIPPING.zones || []).find((z) => z.key === zoneKey) || SHIPPING.zones[0];
       const total = lines.reduce((s, l) => s + l.produit.prixEUR * l.qty, 0);
@@ -740,13 +781,24 @@
       const mode = (form && new FormData(form).get("mode")) || "livraison";
       const port = shippingEUR(lines);
       document.getElementById("order-subtotal").textContent = fmtPrice(total);
+      const surPlace = mode === "retrait" || mode === "galerie";
       document.getElementById("order-shipping").textContent =
-        mode === "retrait" ? t("ship_pickup_free") : (port === 0 ? t("ship_free") : fmtPrice(port));
+        surPlace ? t("ship_pickup_free") : (port === 0 ? t("ship_free") : fmtPrice(port));
       document.getElementById("order-total").textContent = fmtPrice(total + port);
       const zf = document.getElementById("zone-field");
-      if (zf) zf.style.display = mode === "retrait" ? "none" : "";
+      if (zf) zf.style.display = surPlace ? "none" : "";
       document.getElementById("ship-note").textContent =
-        mode === "retrait" ? "" : `${t("ship_note")} ${SHIPPING.freeAbove ? t("ship_free_note") + " " + fmtPrice(SHIPPING.freeAbove) + "." : ""}`;
+        surPlace ? "" : `${t("ship_note")} ${SHIPPING.freeAbove ? t("ship_free_note") + " " + fmtPrice(SHIPPING.freeAbove) + "." : ""}`;
+      /* réservation à la galerie : paiement sur place proposé et choisi d'office */
+      const galerie = mode === "galerie";
+      const noteG = document.querySelector(".galerie-note"); if (noteG) noteG.hidden = !galerie;
+      const spChoice = document.querySelector(".choice-surplace");
+      if (spChoice) {
+        spChoice.hidden = !galerie;
+        const spInput = spChoice.querySelector("input");
+        if (galerie && !form.querySelector('input[name="payment"]:checked:not([value=surplace])')?.dataset.touche) spInput.checked = true;
+        if (!galerie && spInput.checked) form.querySelector('input[name="payment"][value="virement"]').checked = true;
+      }
     }
 
     listEl.addEventListener("click", (e) => {
@@ -775,6 +827,8 @@
     }
     document.querySelectorAll('#order-form input[name="mode"]').forEach((r) =>
       r.addEventListener("change", draw));
+    document.querySelectorAll('#order-form input[name="payment"]').forEach((r) =>
+      r.addEventListener("change", () => { r.dataset.touche = "1"; }));
 
     const form = document.getElementById("order-form");
     if (form) form.addEventListener("submit", async (e) => {
@@ -788,7 +842,8 @@
         client: {
           name: data.get("name"), email: data.get("email"),
           country: data.get("country"), message: data.get("message"),
-          mode: data.get("mode") || "livraison", zone: data.get("zone") || "pf", payment
+          mode: data.get("mode") || "livraison", zone: data.get("zone") || "pf", payment,
+          event: data.get("mode") === "galerie" && evGalerie ? evGalerie.id : ""
         }
       };
       const submitBtn = form.querySelector("button[type=submit]");
@@ -823,6 +878,39 @@
     });
 
     draw();
+  }
+
+  /* Page de remerciement : selon le paiement choisi, les coordonnées de
+     l'artiste (RIB, PayPal) ou la réservation à la galerie. */
+  async function pageMerci() {
+    const box = document.getElementById("merci-paiement");
+    if (!box) return;
+    const cmd = new URLSearchParams(location.search).get("cmd");
+    if (!cmd) return;
+    let d;
+    try { d = await fetch(`/api/commande/${encodeURIComponent(cmd)}/paiement`).then((r) => r.ok ? r.json() : null); } catch { d = null; }
+    if (!d) return;
+    const montant = `<p class="merci-montant"><span>${t("merci_montant")}</span><strong>${fmtPrice(d.grandTotalEUR)}</strong></p>`;
+    if (d.mode === "galerie") {
+      box.innerHTML = `<div class="merci-bloc"><p>${t("merci_galerie")}</p>
+        ${d.galerie ? `<p class="merci-galerie">${esc(d.galerie)}${d.eventDate ? ` · ${esc(d.eventDate)}` : ""}</p>` : ""}${montant}</div>`;
+    } else if (d.payment === "paypal" && d.paiement.paypal) {
+      const lien = /^https?:\/\//i.test(d.paiement.paypal) ? d.paiement.paypal
+        : /^[^@\s]+@[^@\s]+$/.test(d.paiement.paypal) ? "" : `https://paypal.me/${d.paiement.paypal.replace(/^paypal\.me\//i, "")}`;
+      box.innerHTML = `<div class="merci-bloc"><p>${t("merci_paypal")}</p>${montant}
+        ${lien ? `<a class="btn" href="${esc(lien)}" target="_blank" rel="noopener">${t("merci_paypal_btn")} →</a>` : `<p class="merci-rib"><span>PayPal</span><strong>${esc(d.paiement.paypal)}</strong></p>`}
+        <p class="form-note">${t("merci_ref")} <strong>${esc(cmd)}</strong></p></div>`;
+    } else if (d.payment === "virement" && d.paiement.iban) {
+      const P = d.paiement;
+      box.innerHTML = `<div class="merci-bloc"><p>${t("merci_virement")}</p>${montant}
+        <dl class="merci-rib">
+          ${P.titulaire ? `<div><dt>${t("rib_titulaire")}</dt><dd>${esc(P.titulaire)}</dd></div>` : ""}
+          <div><dt>${t("rib_iban")}</dt><dd><code>${esc(P.iban)}</code></dd></div>
+          ${P.bic ? `<div><dt>${t("rib_bic")}</dt><dd><code>${esc(P.bic)}</code></dd></div>` : ""}
+          ${P.banque ? `<div><dt>${t("rib_banque")}</dt><dd>${esc(P.banque)}</dd></div>` : ""}
+          <div><dt>${t("merci_ref")}</dt><dd><strong>${esc(cmd)}</strong></dd></div>
+        </dl></div>`;
+    }
   }
 
   function pageExpos() {
@@ -1250,6 +1338,7 @@
       if (data.shipping && Array.isArray(data.shipping.zones)) SHIPPING = data.shipping;
       if (data.eclairage && Array.isArray(data.eclairage.sources)) ECLAIRAGE = data.eclairage;
       if (Array.isArray(data.atelier) && data.atelier.length) ATELIER = data.atelier;
+      if (data.paiement && typeof data.paiement === "object") PAIEMENT = Object.assign({}, PAIEMENT, data.paiement);
       if (Array.isArray(data.collections) && data.collections.length) {
         COLLECTIONS = collectionsDepuisListe(data.collections);
       }
@@ -1278,6 +1367,7 @@
 
     switch (document.body.dataset.page) {
       case "home":    pageHome(); homeExtras(); break;
+      case "merci":   pageMerci(); break;
       case "artist":  pageArtist(); break;
       case "journal": pageJournal(); break;
       case "invitation": pageInvitation(); break;

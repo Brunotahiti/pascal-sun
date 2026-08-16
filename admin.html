@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/admin.css?v=52">
+  <link rel="stylesheet" href="css/admin.css?v=53">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='38' fill='%2316130f'/></svg>">
 </head>
 <body>
@@ -37,7 +37,7 @@
         <button class="tab" data-tab="clients">Clients</button>
         <button class="tab" data-tab="idees">💡 Boîte à idées</button>
         <button class="tab" data-tab="journal">Journal &amp; avis</button>
-        <button class="tab" data-tab="livraison">Livraison</button>
+        <button class="tab" data-tab="livraison">Livraison &amp; paiement</button>
         <button class="tab" data-tab="eclairage">Éclairage</button>
         <button class="tab" data-tab="textes">Textes &amp; boutons</button>
         <button class="tab" data-tab="stats">Statistiques</button>
@@ -256,6 +256,19 @@
           <label style="font-size:11px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-faint);">Livraison offerte à partir de (€, 0 = jamais)</label>
           <input id="ship-free" type="number" min="0" step="100">
         </div>
+
+        <h3 class="sous-titre" style="margin-top:34px;">💳 Paiement — coordonnées de l'artiste</h3>
+        <p class="compose-note" style="margin:-6px 0 14px;">Ces coordonnées sont montrées à l'acheteur juste après sa commande (page de remerciement) et reprises dans son email de confirmation, avec la référence à rappeler. Laissez PayPal vide pour ne pas le proposer.</p>
+        <div class="compose-panel">
+          <div class="cert-form">
+            <label class="cf-champ span2">Titulaire du compte<input id="pay-titulaire" placeholder="Pascal Sun"></label>
+            <label class="cf-champ span2">Banque<input id="pay-banque" placeholder="Banque de Tahiti"></label>
+            <label class="cf-champ span3">IBAN<input id="pay-iban" placeholder="FR76 …" style="font-family:ui-monospace,Menlo,monospace;letter-spacing:.04em;"></label>
+            <label class="cf-champ">BIC<input id="pay-bic" placeholder="BTAHPFPP" style="font-family:ui-monospace,Menlo,monospace;"></label>
+            <label class="cf-champ span4">PayPal — lien paypal.me ou adresse email du compte<input id="pay-paypal" placeholder="paypal.me/pascalsun ou pascal@exemple.com"></label>
+          </div>
+          <p class="compose-note" id="pay-etat"></p>
+        </div>
       </section>
 
       <!-- ÉCLAIRAGE -->
@@ -397,7 +410,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="js/data.js?v=52"></script>
-  <script src="js/admin.js?v=52"></script>
+  <script src="js/data.js?v=53"></script>
+  <script src="js/admin.js?v=53"></script>
 </body>
 </html>

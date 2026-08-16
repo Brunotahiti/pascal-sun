@@ -306,11 +306,36 @@ function prix(eur) {
 function orderEmailText(order) {
   const lignes = order.lines.map((l) =>
     `  • ${l.titre} — ${PRODUIT_FR[l.key] || l.key}${l.qty > 1 ? ` × ${l.qty}` : ""} — ${prix(l.prixEUR * l.qty)}`).join("\n");
-  const mode = order.mode === "retrait"
+  const mode = order.mode === "galerie"
+    ? `Réservée à votre nom — à retirer à ${order.galerie || "la galerie du vernissage"}${order.galerieDate ? " (" + dateLongueFR(order.galerieDate) + ")" : ""}`
+    : order.mode === "retrait"
     ? "Retrait à Tahiti (gratuit)"
     : `Livraison — ${order.zone || ""} : ${order.livraisonEUR ? prix(order.livraisonEUR) : "offerte"}`;
-  const paiement = { card: "Carte bancaire", virement: "Virement bancaire", paypal: "PayPal" }[order.payment] || order.payment;
+  const paiement = { card: "Carte bancaire", virement: "Virement bancaire", paypal: "PayPal", surplace: "Sur place, à la galerie" }[order.payment] || order.payment;
   return { lignes, mode, paiement };
+}
+
+/* Consignes de paiement, selon ce que l'artiste a renseigné dans l'admin
+   (onglet Livraison & paiement). */
+function consignesPaiement(order, catalogue) {
+  const P = (catalogue && catalogue.paiement) || {};
+  if (order.payment === "surplace") {
+    return `Vous réglez l'œuvre directement à la galerie, le soir du vernissage ou pendant l'exposition. Elle est mise de côté à votre nom.`;
+  }
+  if (order.payment === "paypal" && P.paypal) {
+    const lien = /^https?:\/\//i.test(P.paypal) ? P.paypal
+      : /^[^@\s]+@[^@\s]+$/.test(P.paypal) ? "" : `https://paypal.me/${P.paypal.replace(/^paypal\.me\//i, "")}`;
+    return `Pour régler par PayPal (${prix(order.grandTotalEUR)}) :\n  ${lien || "à l'adresse " + P.paypal}\n  Référence à indiquer : ${order.id}`;
+  }
+  if (order.payment === "virement" && P.iban) {
+    return `Pour régler par virement (${prix(order.grandTotalEUR)}) :\n` +
+      (P.titulaire ? `  Titulaire : ${P.titulaire}\n` : "") +
+      `  IBAN : ${P.iban}\n` +
+      (P.bic ? `  BIC : ${P.bic}\n` : "") +
+      (P.banque ? `  Banque : ${P.banque}\n` : "") +
+      `  Libellé : ${order.id}`;
+  }
+  return "";
 }
 
 /* --------------------------------------------- sauvegardes quotidiennes -- */
@@ -462,6 +487,11 @@ function upsertContact({ email, name, country, source, orderTotalEUR }) {
     c = { email, name: name || "", country: country || "", sources: [], orders: 0, totalEUR: 0, notes: "", createdAt: new Date().toISOString() };
     contacts.push(c);
   }
+  /* les contacts venus des invitations (rsvp) ont pu être créés sans ces
+     champs : on les complète plutôt que de planter */
+  if (!Array.isArray(c.sources)) c.sources = c.source ? [c.source] : [];
+  c.orders = Number(c.orders) || 0;
+  c.totalEUR = Number(c.totalEUR) || 0;
   if (name) c.name = name;
   if (country) c.country = country;
   if (source && !c.sources.includes(source)) c.sources.push(source);
@@ -535,7 +565,7 @@ app.post("/api/orders", formLimit, (req, res) => {
     const qty = Math.max(1, Math.min(20, parseInt(it.qty, 10) || 1));
 
     if (it.key === "original") {
-      if (art.statut === "vendu" || art.vendu) continue;
+      if (art.statut === "vendu" || art.vendu || art.statut === "reserve") continue;  // déjà partie ou mise de côté
       art.statut = "reserve"; // réservation automatique dès la demande
       lines.push({ id: art.id, titre: art.titre, key: "original", qty: 1, prixEUR: produit.prixEUR });
       totalEUR += produit.prixEUR;
@@ -551,12 +581,21 @@ app.post("/api/orders", formLimit, (req, res) => {
 
   if (!lines.length) return res.status(409).json({ error: "articles-indisponibles" });
 
+  /* Réservation à la galerie du vernissage : uniquement si un vernissage à
+     venir vend sur place. L'œuvre est mise de côté, réglée à la galerie. */
+  const today = new Date().toISOString().slice(0, 10);
+  const evGalerie = client.mode === "galerie"
+    ? (catalogue.events || []).find((e) => e.id === String(client.event || "") && e.vente_sur_place && e.date >= today)
+      || (catalogue.events || []).filter((e) => e.vente_sur_place && e.date >= today).sort((a, b) => a.date.localeCompare(b.date))[0]
+    : null;
+  const modeCmd = client.mode === "galerie" ? (evGalerie ? "galerie" : "retrait") : client.mode === "retrait" ? "retrait" : "livraison";
+
   /* Frais de livraison calculés côté serveur (source de vérité). */
   const ship = catalogue.shipping || DEFAULT_SHIPPING;
   const zoneKey = String((client.zone || "pf")).slice(0, 10);
   const zone = (ship.zones || []).find((z) => z.key === zoneKey) || (ship.zones || [])[0];
   let livraisonEUR = 0;
-  if (client.mode !== "retrait" && zone) {
+  if (modeCmd === "livraison" && zone) {
     if (!(ship.freeAbove && totalEUR >= ship.freeAbove)) {
       for (const l of lines) {
         const art = (catalogue.artworks || []).find((a) => a.id === l.id);
@@ -586,10 +625,17 @@ app.post("/api/orders", formLimit, (req, res) => {
       country: String(client.country || "").slice(0, 120),
       message: String(client.message || "").slice(0, 2000)
     },
-    mode: client.mode === "retrait" ? "retrait" : "livraison",
-    payment: ["card", "virement", "paypal"].includes(client.payment) ? client.payment : "virement",
+    mode: modeCmd,
+    payment: modeCmd === "galerie" && client.payment === "surplace" ? "surplace"
+      : ["card", "virement", "paypal"].includes(client.payment) ? client.payment : "virement",
     statut: "nouvelle"
   };
+  if (evGalerie) {
+    order.event = evGalerie.id;
+    order.galerie = (evGalerie.hote || evGalerie.lieu || "").trim();
+    order.galerieDate = evGalerie.date;
+    order.galerieVille = evGalerie.hote_sur || evGalerie.ville || "";
+  }
   orders.unshift(order);
   writeJSON(ORDERS_FILE, orders);
 
@@ -608,7 +654,7 @@ Total œuvres : ${prix(totalEUR)}
 Réception : ${mode}
 Total à régler : ${prix(order.grandTotalEUR)}
 Paiement choisi : ${paiement}
-
+${consignesPaiement(order, catalogue) ? "\n" + consignesPaiement(order, catalogue) + "\n" : ""}
 Votre certificat d'authenticité (à conserver) :
 ${order.lines.filter((l) => l.key !== "affiche").map((l, i) =>
   `  ${l.titre} → https://pascal-sun.com/certificat.html?c=${order.id}-${i}`).join("\n")}
@@ -621,7 +667,25 @@ les originaux et tirages numérotés).
 Pascal Sun — Tahiti
 https://pascal-sun.com`);
 
-  sendPush("🛒 Nouvelle commande !", `${order.client.name} — ${enFrancs(order.grandTotalEUR)} (${order.id})`);
+  if (order.mode === "galerie" && evGalerie && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(evGalerie.contact_email || "").trim())) {
+    sendMail(String(evGalerie.contact_email).trim(), `Réservation d'une œuvre de Pascal Sun — ${order.lines.map((l) => "« " + l.titre + " »").join(", ")}`,
+`Bonjour,
+
+Un visiteur du site de Pascal Sun vient de réserver en ligne une œuvre exposée chez vous, à retirer et régler sur place :
+
+${lignes}
+
+Total : ${prix(order.grandTotalEUR)}
+Client : ${order.client.name} <${order.client.email}>${order.client.country ? " · " + order.client.country : ""}
+Référence : ${order.id}
+${order.client.message ? "\nMessage : « " + order.client.message + " »\n" : ""}
+L'œuvre est marquée réservée sur le site. Merci de la mettre de côté à son nom.
+
+Bien cordialement,
+Pascal Sun — Peintre, Tahiti
+${SITE_URL}`);
+  }
+  sendPush(order.mode === "galerie" ? "🥂 Réservation pour le vernissage !" : "🛒 Nouvelle commande !", `${order.client.name} — ${enFrancs(order.grandTotalEUR)} (${order.id})`);
   sendMail(ARTIST_NOTIFY, `🛒 Nouvelle commande ${order.id} — ${enFrancs(totalEUR)}`,
 `Nouvelle commande sur la galerie !
 
@@ -686,13 +750,7 @@ app.post("/api/rsvp", formLimit, (req, res) => {
 
   /* Les personnes qui confirment leur venue rejoignent les contacts de la
      lettre de l'atelier — c'est l'objet même de l'invitation. */
-  if (reponse === "oui") {
-    const contacts = readJSON(NEWSLETTER_FILE, []);
-    if (!contacts.some((c) => (c.email || "").toLowerCase() === email)) {
-      contacts.push({ email, name: nom, source: "vernissage", date: rsvp.date });
-      writeJSON(NEWSLETTER_FILE, contacts);
-    }
-  }
+  if (reponse === "oui") upsertContact({ email, name: nom, source: "vernissage" });
 
   res.json({ ok: true, ref: rsvp.id });
 
@@ -713,6 +771,20 @@ Toutes les réponses : https://pascal-sun.com/admin (onglet Vernissages)`);
 
 app.get("/api/rsvp", requireAuth, (_req, res) => res.json(readJSON(RSVP_FILE, [])));
 app.get("/api/invitation/stats", requireAuth, (_req, res) => res.json(readJSON(INVIT_STATS_FILE, {})));
+
+/* Consignes de paiement d'une commande, pour la page de remerciement. Aucune
+   donnée personnelle : la référence est déjà tirée au sort et connue du seul
+   acheteur. */
+app.get("/api/commande/:id/paiement", (req, res) => {
+  const order = readJSON(ORDERS_FILE, []).find((o) => o.id === String(req.params.id || ""));
+  if (!order) return res.status(404).json({ error: "commande-introuvable" });
+  const P = (readJSON(CATALOGUE_FILE, {}).paiement) || {};
+  res.json({
+    mode: order.mode, payment: order.payment, grandTotalEUR: order.grandTotalEUR,
+    galerie: order.galerie || "", eventDate: order.galerieDate ? dateLongueFR(order.galerieDate) : "",
+    paiement: { titulaire: P.titulaire || "", iban: P.iban || "", bic: P.bic || "", banque: P.banque || "", paypal: P.paypal || "" }
+  });
+});
 
 /* ------------------------------- invitation envoyée par email (admin) -- */
 /* Une invitation illustrée, à la charte du site : bandeau lagon dessiné en

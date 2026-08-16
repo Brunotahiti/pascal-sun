@@ -47,14 +47,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=52/?v=53/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=53/?v=54/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=53"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=54"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -334,7 +334,20 @@ depuis Tahiti — un certificat daté du 14 s'afficherait « 13 ».
 5. Charte **« vie douce de Tahiti »** : vagues du lagon, soleil en halo, corail
    / turquoise / sable. **Pas de motifs marquisiens**, pas d'esthétique japonaise.
 6. Paiement : **virement + PayPal uniquement** (pas de Stripe pour l'instant,
-   le code est prêt via `STRIPE_SECRET_KEY`).
+   le code est prêt via `STRIPE_SECRET_KEY`). Les coordonnées de l'artiste
+   (`catalogue.paiement` : titulaire, IBAN, BIC, banque, PayPal — lien
+   paypal.me ou email) se saisissent dans **admin → Livraison & paiement** ;
+   elles apparaissent sur la page de remerciement (`pageMerci()`, via
+   `GET /api/commande/:id/paiement`) et dans l'email de confirmation
+   (`consignesPaiement()`). PayPal n'est proposé dans le panier que si le champ
+   est rempli. Troisième voie : **réservation à la galerie du vernissage** —
+   mode `galerie` dans le panier (proposé seulement si un vernissage à venir a
+   `vente_sur_place`), paiement `surplace`, frais nuls, l'original passe
+   `reserve`, la galerie reçoit un email si `contact_email` est renseigné,
+   la commande porte `event`, `galerie`, `galerieDate`. Un bouton « Réserver en
+   ligne pour le vernissage » sur la fiche œuvre y mène directement
+   (`panier.html?mode=galerie`). Le serveur refuse désormais de commander un
+   original déjà `reserve`.
 7. Prix ronds, **en francs Pacifique partout par défaut** : le site (déjà),
    mais aussi les emails de commande, les notifications et l'admin, qui
    rappelle le montant en francs à côté de l'euro saisi. L'euro reste la
