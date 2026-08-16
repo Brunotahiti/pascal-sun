@@ -47,14 +47,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=51/?v=52/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=52/?v=53/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=52"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=53"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -270,6 +270,17 @@ lieu qui accueille le vernissage (`surPlaceHTML()` dans `js/app.js`).
 - Cocotiers de l'animation : palmes en aplat calculées (fonction `palme()` en
   Python dans l'historique du commit — feuille effilée arquée vers le haut puis
   retombante) ; ne pas revenir à des palmes en simples traits.
+
+### Statistiques des vernissages (admin → Statistiques)
+Sous les statistiques du site, une section **« Vernissages & invitations »**,
+un bloc par vernissage : ouvertures du lien (total et sur la période choisie),
+personnes distinctes, confirmations et invités attendus (avec le taux sur les
+visiteurs), excusés, invitations envoyées depuis l'admin, visiteurs à
+recontacter, courbe des ouvertures jour par jour, origines regroupées par
+domaine. Elle est **indépendante d'Umami** (`loadStatsVernissages()`), donc
+visible même si les stats du site sont en panne. Les origines viennent du
+paramètre `?s=` du lien (`email` dans les emails d'invitation, `direct` pour le
+lien copié depuis l'admin) ou, à défaut, du site d'où l'on vient.
 
 ### Invitation envoyée par email
 Depuis **admin → Vernissages**, sous chaque vernissage : un mot d'accompagnement

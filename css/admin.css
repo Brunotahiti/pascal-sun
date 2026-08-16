@@ -1020,3 +1020,15 @@ button { font-family: var(--sans); cursor: pointer; }
 .ev-vente { font-weight: 700; }
 .ev-envoi-tous { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); }
 .ev-compte { min-height: 16px; margin: 4px 0 0; }
+
+/* ---- statistiques des vernissages ---- */
+.ev-stat { margin-top: 16px; }
+.ev-stat-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+.ev-stat-head h3 { margin-bottom: 2px; }
+.ev-kpis { grid-template-columns: repeat(3, 1fr); margin-bottom: 18px; }
+@media (max-width: 900px) { .ev-kpis { grid-template-columns: repeat(2, 1fr); } }
+.ev-kpis .kpi-label small { display: block; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--ink-faint); margin-top: 3px; font-size: 11.5px; }
+.ev-stat-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 22px; }
+@media (max-width: 900px) { .ev-stat-grid { grid-template-columns: 1fr; } }
+.ev-stat-grid h4 { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 8px; }
+.ev-chart svg { width: 100%; height: auto; display: block; }

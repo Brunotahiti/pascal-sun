@@ -731,7 +731,7 @@ function dateLongueFR(iso) {
 }
 
 function gabaritInvitation(ev, motPerso, nom) {
-  const lien = `${SITE_URL}/invitation.html?e=${encodeURIComponent(ev.id)}`;
+  const lien = `${SITE_URL}/invitation.html?e=${encodeURIComponent(ev.id)}&s=email`;
   const affiche = ev.affiche ? (ev.affiche.startsWith("http") ? ev.affiche : SITE_URL + (ev.affiche.startsWith("/") ? "" : "/") + ev.affiche) : "";
   const hote = (ev.hote || ev.lieu || "").trim();
   const sur = (ev.hote_sur || ev.ville || "").trim();
@@ -806,7 +806,7 @@ function gabaritInvitation(ev, motPerso, nom) {
 }
 
 function texteInvitation(ev, motPerso, nom) {
-  const lien = `${SITE_URL}/invitation.html?e=${encodeURIComponent(ev.id)}`;
+  const lien = `${SITE_URL}/invitation.html?e=${encodeURIComponent(ev.id)}&s=email`;
   return `${nom ? "Ia ora na " + nom + "," : "Ia ora na,"}
 
 Vous êtes invité : ${ev.titre}

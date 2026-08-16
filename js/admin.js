@@ -1299,10 +1299,10 @@
     return PAGE_NAMES[path] || u;
   }
 
-  function drawChart(series, unit) {
-    const box = $("#stats-chart");
-    const pts = (series && series.sessions && series.sessions.length ? series.sessions : (series && series.pageviews) || []);
-    if (!pts.length) { box.innerHTML = `<p class="chart-empty">Le graphique apparaîtra dès les premières visites.</p>`; return; }
+  function drawChart(series, unit, box = $("#stats-chart"), libelle = "visites") {
+    const pts = Array.isArray(series) ? series
+      : (series && series.sessions && series.sessions.length ? series.sessions : (series && series.pageviews) || []);
+    if (!pts.length) { box.innerHTML = `<p class="chart-empty">Le graphique apparaîtra dès les premières ${libelle}.</p>`; return; }
 
     const W = 640, H = 170, PAD = 8, BOT = 24;
     const max = Math.max(1, ...pts.map((p) => p.y));
@@ -1323,15 +1323,15 @@
     }).join("");
 
     const dots = pts.map((p, i) =>
-      `<circle cx="${X(i).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="3" fill="#d4593a"><title>${fmtNum(p.y)} visites</title></circle>`).join("");
+      `<circle cx="${X(i).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="3" fill="#d4593a"><title>${fmtNum(p.y)} ${libelle}</title></circle>`).join("");
 
     box.innerHTML = `
       <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
-        <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">
+        <defs><linearGradient id="ag-${box.id || "c"}" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stop-color="#d4593a" stop-opacity=".28"/>
           <stop offset="1" stop-color="#d4593a" stop-opacity="0"/>
         </linearGradient></defs>
-        <path d="${area}" fill="url(#ag)"/>
+        <path d="${area}" fill="url(#ag-${box.id || "c"})"/>
         <path d="${line}" fill="none" stroke="#d4593a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
         ${dots}${labels}
       </svg>`;
@@ -1342,6 +1342,7 @@
     $("#stats-loading").hidden = false;
     $("#stats-error").hidden = true;
     $("#stats-board").hidden = true;
+    loadStatsVernissages(days);   // indépendantes d'Umami : toujours affichées
 
     let d;
     try {
@@ -1380,6 +1381,109 @@
 
     $("#stats-loading").hidden = true;
     $("#stats-board").hidden = false;
+  }
+
+  /* Statistiques des vernissages : audience du lien d'invitation, réponses,
+     invitations envoyées, visiteurs à recontacter — par vernissage, sur la
+     période choisie pour les ouvertures. */
+  async function loadStatsVernissages(days) {
+    const zone = $("#stats-vernissages");
+    if (!zone) return;
+    const [stats, rsvp, envois, rappels] = await Promise.all([
+      fetch("/api/invitation/stats").then((r) => r.json()).catch(() => ({})),
+      fetch("/api/rsvp").then((r) => r.json()).catch(() => []),
+      fetch("/api/invitation/envois").then((r) => r.json()).catch(() => []),
+      fetch("/api/rappels").then((r) => r.json()).catch(() => [])
+    ]);
+    const events = catalogue.events || [];
+    if (!events.length) { zone.innerHTML = `<p class="metric-empty">Aucun vernissage pour l'instant.</p>`; return; }
+
+    const depuis = new Date(); depuis.setDate(depuis.getDate() - days + 1);
+    const jourMin = depuis.toISOString().slice(0, 10);
+
+    zone.innerHTML = events.map((ev) => {
+      const st = stats[ev.id] || { vues: 0, visiteurs: [], jours: {}, sources: {} };
+      const rep = rsvp.filter((r) => r.event === ev.id);
+      const oui = rep.filter((r) => r.reponse === "oui");
+      const attendus = oui.reduce((n, r) => n + (r.personnes || 1), 0);
+      const env = envois.filter((e) => e.event === ev.id);
+      const nbEnvoyes = env.reduce((n, e) => n + (e.envoyes || 0), 0);
+      const dernierEnvoi = env[0] ? env[0].date : null;
+      const rp = rappels.filter((r) => r.event === ev.id);
+
+      /* ouvertures par jour sur la période, jours vides compris */
+      const serie = [];
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        const k = d.toISOString().slice(0, 10);
+        serie.push({ x: k + "T12:00:00", y: (st.jours || {})[k] || 0 });
+      }
+      const vuesPeriode = serie.reduce((n, p) => n + p.y, 0);
+      const sources = Object.entries(st.sources || {}).sort((a, b) => b[1] - a[1]).map(([x, y]) => ({ x, y }));
+      const taux = st.visiteurs && st.visiteurs.length ? Math.round((oui.length / st.visiteurs.length) * 100) : 0;
+
+      return `
+      <div class="chart-card ev-stat" data-ev="${esc(ev.id)}">
+        <div class="ev-stat-head">
+          <div>
+            <h3>${esc(ev.titre)}</h3>
+            <p class="stats-note">${dateVente(ev.date)}${ev.hote || ev.lieu ? " · " + esc(ev.hote || ev.lieu) : ""}</p>
+          </div>
+          <a class="ghost-btn" href="/invitation.html?e=${encodeURIComponent(ev.id)}" target="_blank">Ouvrir l'invitation ↗</a>
+        </div>
+        <div class="kpi-grid ev-kpis">
+          <div class="kpi"><div class="kpi-num">${fmtNum(st.vues)}</div><div class="kpi-label">Ouvertures du lien<small>${fmtNum(vuesPeriode)} sur la période</small></div></div>
+          <div class="kpi"><div class="kpi-num">${fmtNum((st.visiteurs || []).length)}</div><div class="kpi-label">Personnes distinctes</div></div>
+          <div class="kpi"><div class="kpi-num">${fmtNum(oui.length)}</div><div class="kpi-label">Confirmations<small>${fmtNum(attendus)} invité${attendus > 1 ? "s" : ""} attendu${attendus > 1 ? "s" : ""} · ${taux}% des visiteurs</small></div></div>
+          <div class="kpi"><div class="kpi-num">${fmtNum(rep.length - oui.length)}</div><div class="kpi-label">Excusés</div></div>
+          <div class="kpi"><div class="kpi-num">${fmtNum(nbEnvoyes)}</div><div class="kpi-label">Invitations envoyées<small>${env.length ? `${env.length} envoi${env.length > 1 ? "s" : ""} · dernier ${dateVente(dernierEnvoi)}` : "aucun envoi depuis l'admin"}</small></div></div>
+          <div class="kpi"><div class="kpi-num">${fmtNum(rp.length)}</div><div class="kpi-label">Visiteurs à recontacter<small>coordonnées laissées sur une toile</small></div></div>
+        </div>
+        <div class="ev-stat-grid">
+          <div>
+            <h4>Ouvertures du lien, jour par jour</h4>
+            <div class="ev-chart" id="ev-chart-${esc(ev.id)}"></div>
+          </div>
+          <div>
+            <h4>D'où viennent les ouvertures</h4>
+            <div class="ev-sources" id="ev-sources-${esc(ev.id)}"></div>
+          </div>
+        </div>
+      </div>`;
+    }).join("");
+
+    events.forEach((ev) => {
+      const st = stats[ev.id] || { jours: {}, sources: {} };
+      const serie = [];
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        const k = d.toISOString().slice(0, 10);
+        serie.push({ x: k + "T12:00:00", y: (st.jours || {})[k] || 0 });
+      }
+      const boxChart = document.getElementById(`ev-chart-${ev.id}`);
+      if (boxChart) drawChart(serie.some((p) => p.y) ? serie : [], "day", boxChart, "ouvertures");
+      /* origines regroupées par domaine : les adresses complètes n'apprennent rien */
+      const boxSrc = document.getElementById(`ev-sources-${ev.id}`);
+      if (boxSrc) {
+        const groupes = {};
+        Object.entries(st.sources || {}).forEach(([src, n]) => {
+          let k = src;
+          if (/^https?:\/\//i.test(src)) {
+            try {
+              const h = new URL(src).hostname.replace(/^www\./, "");
+              k = h === location.hostname ? "site" : h;
+            } catch { k = "autre"; }
+          }
+          groupes[k] = (groupes[k] || 0) + n;
+        });
+        const NOMS = { direct: "Lien direct (message, SMS, copié-collé)", email: "Email d'invitation", qr: "QR code",
+          site: "Depuis le site lui-même", "facebook.com": "Facebook", "m.facebook.com": "Facebook", "l.facebook.com": "Facebook",
+          "instagram.com": "Instagram", "l.instagram.com": "Instagram", "t.co": "X (Twitter)", "google.com": "Google", "autre": "Autre" };
+        metricList(boxSrc,
+          Object.entries(groupes).sort((a, b) => b[1] - a[1]).map(([x, y]) => ({ x, y })),
+          (x) => NOMS[x] || x);
+      }
+    });
   }
 
   /* ---------------------------------------------------------- events -- */
@@ -1662,7 +1766,7 @@
       }
 
       if (acte === "ev-copier") {
-        const lien = `${location.origin}/invitation.html?e=${encodeURIComponent(ev.id)}`;
+        const lien = `${location.origin}/invitation.html?e=${encodeURIComponent(ev.id)}&s=direct`;
         try { await navigator.clipboard.writeText(lien); toast("Lien d'invitation copié ✓"); }
         catch { prompt("Copiez le lien d'invitation :", lien); }
       }
