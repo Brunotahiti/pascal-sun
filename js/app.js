@@ -1189,9 +1189,24 @@
     let fini = false;
     const fermer = () => {
       if (fini) return; fini = true;
+      /* la houle qui emporte la scène : turquoise, lisière d'écume, remonte
+         l'écran en même temps que le masque découvre l'invitation */
+      const houle = document.createElement("div");
+      houle.className = "vague-houle";
+      houle.setAttribute("aria-hidden", "true");
+      houle.innerHTML = `<svg viewBox="0 0 1200 300" preserveAspectRatio="none">
+        <defs><linearGradient id="inv-houle-g" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#63b9b3" stop-opacity="0"/><stop offset=".22" stop-color="#63b9b3" stop-opacity=".92"/>
+          <stop offset=".5" stop-color="#2c8683" stop-opacity=".9"/><stop offset="1" stop-color="#2c8683" stop-opacity="0"/>
+        </linearGradient></defs>
+        <path fill="url(#inv-houle-g)" d="M0 70 Q75 30 150 70 T300 70 T450 70 T600 70 T750 70 T900 70 T1050 70 T1200 70 V300 H0 Z"/>
+        <path fill="#fff" opacity=".85" d="M0 74 Q75 34 150 74 T300 74 T450 74 T600 74 T750 74 T900 74 T1050 74 T1200 74 V88 Q1125 50 1050 88 T900 88 T750 88 T600 88 T450 88 T300 88 T150 88 T0 88 Z"/>
+        <path fill="#fff" opacity=".45" d="M0 118 Q75 90 150 118 T300 118 T450 118 T600 118 T750 118 T900 118 T1050 118 T1200 118 V126 Q1125 100 1050 126 T900 126 T750 126 T600 126 T450 126 T300 126 T150 126 T0 126 Z"/>
+      </svg>`;
+      document.body.appendChild(houle);
       v.classList.add("done");
       document.body.classList.remove("vague-lock");
-      setTimeout(() => v.remove(), 1300);
+      setTimeout(() => { v.remove(); houle.remove(); }, 1600);
     };
     v.addEventListener("click", fermer);
     setTimeout(fermer, 5600);

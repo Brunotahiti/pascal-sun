@@ -332,9 +332,36 @@ body.intro-lock { overflow: hidden; }
   overflow: hidden;
   background: #eef4f0;
   cursor: pointer;
-  transition: opacity 1s var(--ease), transform 1.3s cubic-bezier(.76, 0, .24, 1);
 }
-.vague-intro.done { opacity: 0; transform: scale(1.06); pointer-events: none; }
+/* Sortie en marée : la scène est emportée du bas vers le haut par une lisière
+   de vagues (masque SVG dont la position glisse), pendant qu'une houle
+   turquoise et son écume (.vague-houle) remontent l'écran juste devant. */
+.vague-intro.done {
+  pointer-events: none;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 200' preserveAspectRatio='none'%3E%3Cpath d='M0 0H100V94Q93.75 88 87.5 94T75 94T62.5 94T50 94T37.5 94T25 94T12.5 94T0 94Z'/%3E%3C/svg%3E");
+          mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 200' preserveAspectRatio='none'%3E%3Cpath d='M0 0H100V94Q93.75 88 87.5 94T75 94T62.5 94T50 94T37.5 94T25 94T12.5 94T0 94Z'/%3E%3C/svg%3E");
+  -webkit-mask-size: 100% 200%; mask-size: 100% 200%;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  animation: inv-maree 1.5s cubic-bezier(.6, 0, .3, 1) forwards;
+}
+@keyframes inv-maree {
+  from { -webkit-mask-position: 0 -14%; mask-position: 0 -14%; }
+  to   { -webkit-mask-position: 0 100%; mask-position: 0 100%; }
+}
+.vague-houle {
+  position: fixed;
+  left: -4%; right: -4%;
+  bottom: -2vh;
+  height: 17vh;
+  z-index: 301;
+  pointer-events: none;
+  /* la bande suit exactement la crête du masque (de 1,08 H à −0,06 H) :
+     même durée, même courbe, mêmes bornes une fois retranchée sa position */
+  transform: translateY(21vh);
+  animation: inv-houle 1.5s cubic-bezier(.6, 0, .3, 1) forwards;
+}
+.vague-houle svg { width: 100%; height: 100%; display: block; }
+@keyframes inv-houle { to { transform: translateY(-93vh); } }
 body.vague-lock { overflow: hidden; }
 
 .vague-intro .lagon { position: absolute; inset: 0; width: 100%; height: 100%; }
