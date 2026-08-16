@@ -904,6 +904,129 @@
     });
   }
 
+  /* ------------------------------------------------- invitation ------- */
+  /* Page d'un vernissage, destinée à être partagée largement : l'affiche
+     encadrée comme une toile, les informations, et la réponse de l'invité. */
+
+  /* Ouverture de l'invitation : le lagon monte, l'écume se retire, et les
+     deux maisons qui accueillent le vernissage apparaissent avant la page. */
+  function vagueInvitation(ev) {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const v = document.createElement("div");
+    v.className = "vague-intro";
+    v.innerHTML = `
+      <div class="vague-scene">
+        <p class="vague-hote">TEVAIROA</p>
+        <h2 class="vague-titre">${esc(ev.titre)}</h2>
+        <p class="vague-lieu">LE BORA BORA <span>by Pearl Resorts</span></p>
+      </div>
+      <svg class="vague-eau" viewBox="0 0 1200 300" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M0 120 Q 150 70 300 120 T 600 120 T 900 120 T 1200 120 V300 H0 Z"/>
+        <path d="M0 140 Q 150 95 300 140 T 600 140 T 900 140 T 1200 140 V300 H0 Z"/>
+        <path d="M0 165 Q 150 125 300 165 T 600 165 T 900 165 T 1200 165 V300 H0 Z"/>
+      </svg>`;
+    document.body.appendChild(v);
+    document.body.classList.add("vague-lock");
+    setTimeout(() => {
+      v.classList.add("done");
+      document.body.classList.remove("vague-lock");
+      setTimeout(() => v.remove(), 1400);
+    }, 3400);
+  }
+
+  function pageInvitation() {
+    const box = document.getElementById("invit");
+    if (!box) return;
+    const id = new URLSearchParams(location.search).get("e");
+    const ev = (EVENTS || []).find((e) => e.id === id) || (EVENTS || [])[0];
+    if (!ev) { box.innerHTML = `<p class="cert-loading">${t("inv_absente")}</p>`; return; }
+
+    const d = new Date(ev.date + "T00:00:00");
+    const dateLongue = d.toLocaleDateString(store.lang === "en" ? "en-GB" : "fr-FR",
+      { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    const desc = (store.lang === "en" ? ev.desc_en : ev.desc_fr) || ev.desc_fr || "";
+    document.title = `${ev.titre} — ${t("inv_titre")}`;
+
+    box.innerHTML = `
+      <p class="eyebrow">${t("inv_eyebrow")}</p>
+      <h1 class="section-title invit-titre">${esc(ev.titre)}</h1>
+
+      ${ev.affiche ? `
+        <article class="card invit-affiche">
+          <div class="frame">
+            <img src="${esc(ev.affiche)}" alt="${esc(ev.titre)}" fetchpriority="high" decoding="async">
+            <span class="glass" aria-hidden="true"></span>
+          </div>
+        </article>` : ""}
+
+      <div class="invit-infos">
+        <div><span>${t("inv_quand")}</span><strong>${dateLongue}${ev.heure ? " · " + esc(ev.heure) : ""}</strong></div>
+        <div><span>${t("inv_ou")}</span><strong>${esc(ev.lieu)}${ev.ville ? " · " + esc(ev.ville) : ""}</strong></div>
+      </div>
+
+      ${desc ? `<p class="lede invit-desc">${esc(desc)}</p>` : ""}
+
+      <form class="invit-reponse" id="rsvp-form">
+        <h2>${t("inv_repondre")}</h2>
+        <div class="field"><label for="rsvp-nom">${t("f_name")}</label>
+          <input id="rsvp-nom" name="nom" required autocomplete="name"></div>
+        <div class="field"><label for="rsvp-email">${t("f_email")}</label>
+          <input id="rsvp-email" name="email" type="email" required autocomplete="email"></div>
+        <div class="field"><label for="rsvp-nb">${t("inv_personnes")}</label>
+          <input id="rsvp-nb" name="personnes" type="number" min="1" max="20" value="1"></div>
+        <div class="invit-btns">
+          <button class="btn" type="submit" data-reponse="oui">${t("inv_oui")}</button>
+          <button class="btn ghost" type="submit" data-reponse="non">${t("inv_non")}</button>
+        </div>
+        <p class="news-msg" id="rsvp-msg"></p>
+      </form>
+
+      <div class="invit-galerie">
+        <p class="lede">${t("inv_decouvrir")}</p>
+        <a class="btn" href="galerie.html">${t("hero_cta")}</a>
+      </div>`;
+
+    /* Comptage des ouvertures du lien : c'est la mesure de sa diffusion.
+       Un identifiant tiré au sort et gardé localement distingue les visiteurs
+       sans jamais les identifier. */
+    try {
+      let vid = localStorage.getItem("ps_vid");
+      if (!vid) { vid = Math.random().toString(36).slice(2, 12); localStorage.setItem("ps_vid", vid); }
+      const src = new URLSearchParams(location.search).get("s") || document.referrer || "direct";
+      fetch("/api/invitation/vue", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event: ev.id, vid, source: String(src).slice(0, 60) })
+      }).catch(() => {});
+    } catch { /* stockage bloqué : la vue est comptée sans visiteur distinct */ }
+
+    vagueInvitation(ev);
+
+    let reponse = "oui";
+    box.querySelectorAll("[data-reponse]").forEach((b) =>
+      b.addEventListener("click", () => { reponse = b.dataset.reponse; }));
+
+    box.querySelector("#rsvp-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById("rsvp-msg");
+      const f = new FormData(e.target);
+      msg.textContent = t("inv_envoi");
+      try {
+        const r = await fetch("/api/rsvp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            event: ev.id, titre: ev.titre, reponse,
+            nom: f.get("nom"), email: f.get("email"),
+            personnes: Number(f.get("personnes")) || 1
+          })
+        });
+        if (!r.ok) throw new Error();
+        e.target.querySelectorAll("input, button").forEach((x) => { x.disabled = true; });
+        msg.textContent = reponse === "oui" ? t("inv_merci_oui") : t("inv_merci_non");
+      } catch { msg.textContent = t("inv_echec"); }
+    });
+  }
+
   function pageContact() {
     // téléphone et adresses cliquables : appel direct depuis un téléphone
     const coord = document.getElementById("contact-coord");
@@ -971,6 +1094,7 @@
       case "home":    pageHome(); homeExtras(); break;
       case "artist":  pageArtist(); break;
       case "journal": pageJournal(); break;
+      case "invitation": pageInvitation(); break;
       case "portrait": pagePortrait(); break;
       case "idees":   pageIdees(); break;
       case "gallery": pageGallery(); break;

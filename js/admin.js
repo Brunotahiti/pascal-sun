@@ -119,11 +119,17 @@
   /* Le site affiche les prix en francs Pacifique : l'admin les rappelle à
      côté de l'euro, qui reste la valeur saisie et stockée. */
   const TAUX_XPF = 119.33;
-  function enFrancs(eur) {
+  /* Les prix se saisissent en francs Pacifique, la monnaie du site. L'euro
+     reste la valeur enregistrée : c'est lui qui sert aux virements
+     internationaux et aux frais de port. La conversion fait l'aller-retour
+     sans dérive, les paliers d'arrondi étant ceux du site. */
+  function francs(eur) {
     const v = (Number(eur) || 0) * TAUX_XPF;
     const pas = v >= 100000 ? 5000 : v >= 20000 ? 1000 : 500;
-    return (Math.round(v / pas) * pas).toLocaleString("fr-FR") + " F";
+    return Math.round(v / pas) * pas;
   }
+  const enFrancs = (eur) => francs(eur).toLocaleString("fr-FR") + " F";
+  const versEuros = (f) => Math.round((Number(f) || 0) / TAUX_XPF);
 
   /* ----------------------------------------------------------- œuvres -- */
 
@@ -146,7 +152,7 @@
         <div class="f"><label>Collection</label><select data-k="collection">${cols}</select></div>
         <div class="f"><label>Année</label><input data-k="annee" type="number" value="${esc(a.annee)}"></div>
         <div class="f"><label>Dimensions</label><input data-k="dimensions" value="${esc(a.dimensions)}" placeholder="80 × 60 cm"></div>
-        <div class="f"><label>Prix (EUR) <span class="en-francs">${enFrancs(a.prixEUR)}</span></label><input data-k="prixEUR" type="number" value="${esc(a.prixEUR)}"></div>
+        <div class="f"><label>Prix (francs Pacifique) <span class="en-francs">≈ ${esc(a.prixEUR)} €</span></label><input data-k="prixXPF" type="number" step="1000" value="${francs(a.prixEUR)}"></div>
         <div class="f span2"><label>Technique (FR)</label><input data-k="technique_fr" value="${esc(a.technique_fr)}"></div>
         <div class="f span4"><label>Description (FR)</label><textarea data-k="desc_fr">${esc(a.desc_fr)}</textarea></div>
         <div class="f span4"><label>Description (EN)</label><textarea data-k="desc_en">${esc(a.desc_en)}</textarea></div>
@@ -173,7 +179,7 @@
           <div class="prod-row" data-pi="${pi}">
             <label class="flag"><input type="checkbox" data-pk="actif" ${p.actif !== false ? "checked" : ""}>
               ${({ original: "Original", tirage: "Tirage limité", affiche: "Affiche" })[p.key] || p.key}</label>
-            <span class="prod-field">Prix € <input type="number" data-pk="prixEUR" value="${p.prixEUR}"><em class="en-francs">${enFrancs(p.prixEUR)}</em></span>
+            <span class="prod-field">Prix F <input type="number" step="500" data-pk="prixXPF" value="${francs(p.prixEUR)}"><em class="en-francs">≈ ${p.prixEUR} €</em></span>
             ${p.key === "original" ? "" : `<span class="prod-field">Stock <input type="number" data-pk="stock" value="${p.stock ?? ""}"></span>`}
             ${p.key === "tirage" ? `<span class="prod-field">Édition de <input type="number" data-pk="edition" value="${p.edition ?? ""}"></span>` : ""}
           </div>`).join("")}
@@ -375,6 +381,31 @@
         <div class="f span2"><label>Ville / Île</label><input data-k="ville" value="${esc(ev.ville)}" placeholder="Papeete, Tahiti"></div>
         <div class="f span4"><label>Description (FR)</label><textarea data-k="desc_fr">${esc(ev.desc_fr)}</textarea></div>
         <div class="f span4"><label>Description (EN)</label><textarea data-k="desc_en">${esc(ev.desc_en)}</textarea></div>
+        <div class="f span4">
+          <label>Affiche du vernissage (celle de la galerie ou de l'hôtel)</label>
+          <div class="cert-photo" data-affiche>
+            <img class="ev-apercu" src="${esc(ev.affiche || "")}" alt="" ${ev.affiche ? "" : "hidden"}>
+            <p class="cert-photo-vide" ${ev.affiche ? "hidden" : ""}>Aucune affiche — elle s'affichera encadrée sur l'invitation.</p>
+            <div class="cert-photo-btns">
+              <button type="button" class="replace-btn" data-act="ev-photo">📷 ${ev.affiche ? "Remplacer" : "Importer l'affiche"}</button>
+              <button type="button" class="replace-btn" data-act="ev-photo-retirer" ${ev.affiche ? "" : "hidden"}>Retirer</button>
+            </div>
+            <input type="file" accept="image/*" hidden>
+          </div>
+        </div>
+
+        <div class="f span4 ev-lien">
+          <label>Lien d'invitation à diffuser</label>
+          <div class="ev-lien-ligne">
+            <code>${location.origin}/invitation.html?e=${encodeURIComponent(ev.id)}</code>
+            <button type="button" class="ghost-btn" data-act="ev-copier">Copier le lien</button>
+            <a class="ghost-btn" href="/invitation.html?e=${encodeURIComponent(ev.id)}" target="_blank">Ouvrir</a>
+          </div>
+          <p class="compose-note">Ce lien montre l'affiche encadrée, la date, le lieu, et permet à l'invité de confirmer sa venue. Ceux qui confirment rejoignent les contacts de la lettre de l'atelier.</p>
+        </div>
+
+        <div class="f span4 ev-reponses" data-reponses="${esc(ev.id)}"></div>
+
         <div class="aw-flags">
           <button type="button" class="aw-delete" data-act="delete-event">Supprimer cet événement</button>
         </div>
@@ -382,8 +413,45 @@
     </article>`;
   }
 
+  /* Réponses reçues et audience du lien, par vernissage. */
+  async function renderReponses() {
+    const zones = document.querySelectorAll("[data-reponses]");
+    if (!zones.length) return;
+    const [rsvp, stats] = await Promise.all([
+      fetch("/api/rsvp").then((r) => r.json()).catch(() => []),
+      fetch("/api/invitation/stats").then((r) => r.json()).catch(() => ({}))
+    ]);
+    zones.forEach((z) => {
+      const id = z.dataset.reponses;
+      const rep = rsvp.filter((r) => r.event === id);
+      const oui = rep.filter((r) => r.reponse === "oui");
+      const non = rep.filter((r) => r.reponse === "non");
+      const total = oui.reduce((n, r) => n + (r.personnes || 1), 0);
+      const st = stats[id] || { vues: 0, visiteurs: [], sources: {} };
+      const sources = Object.entries(st.sources || {}).sort((a, b) => b[1] - a[1]).slice(0, 4);
+      z.innerHTML = `
+        <label>Audience du lien et réponses</label>
+        <div class="ev-stats">
+          <span><strong>${st.vues}</strong> ouverture${st.vues > 1 ? "s" : ""}</span>
+          <span><strong>${(st.visiteurs || []).length}</strong> personne${(st.visiteurs || []).length > 1 ? "s" : ""} distincte${(st.visiteurs || []).length > 1 ? "s" : ""}</span>
+          <span><strong>${oui.length}</strong> confirmation${oui.length > 1 ? "s" : ""} · <strong>${total}</strong> invité${total > 1 ? "s" : ""} attendu${total > 1 ? "s" : ""}</span>
+          <span><strong>${non.length}</strong> excusé${non.length > 1 ? "s" : ""}</span>
+        </div>
+        ${sources.length ? `<p class="compose-note">Origine des ouvertures : ${sources.map(([k, n]) => `${esc(k)} (${n})`).join(" · ")}</p>` : ""}
+        ${rep.length ? `<div class="contacts-table">${rep.map((r) => `
+          <div class="ct-row" style="grid-template-columns: 1fr 1fr auto;">
+            <span>${r.reponse === "oui" ? "✅" : "❌"} ${esc(r.nom)}${r.personnes > 1 ? ` (${r.personnes})` : ""}</span>
+            <span><a href="mailto:${esc(r.email)}">${esc(r.email)}</a></span>
+            <span>${dateVente(r.date)}</span>
+          </div>`).join("")}</div>`
+          : `<p class="metric-empty">Aucune réponse pour l'instant.</p>`}`;
+    });
+  }
+
   function renderEvents() {
+    // (les réponses sont chargées juste après le rendu des fiches)
     $("#event-list").innerHTML = catalogue.events.map(eventCard).join("");
+    renderReponses();
   }
 
   /* ---------------------------------------------------- journal & avis -- */
@@ -1351,21 +1419,27 @@
         const row = e.target.closest(".prod-row");
         const p = (a.produits || [])[+row.dataset.pi];
         if (!p) return;
+        if (pk === "prixXPF") {
+          p.prixEUR = versEuros(e.target.value);
+          const rappel = e.target.parentElement.querySelector(".en-francs");
+          if (rappel) rappel.textContent = `≈ ${p.prixEUR} €`;
+          markDirty();
+          return;
+        }
         if (e.target.type === "checkbox") p[pk] = e.target.checked;
         else p[pk] = e.target.value === "" ? null : Number(e.target.value);
-        if (pk === "prixEUR") {
-          const rappel = e.target.parentElement.querySelector(".en-francs");
-          if (rappel) rappel.textContent = enFrancs(e.target.value);
-        }
         markDirty();
         return;
       }
 
       const k = e.target.dataset.k;
       if (!k) return;
-      if (k === "prixEUR") {
+      if (k === "prixXPF") {
+        a.prixEUR = versEuros(e.target.value);
         const rappel = e.target.closest(".f").querySelector(".en-francs");
-        if (rappel) rappel.textContent = enFrancs(e.target.value);
+        if (rappel) rappel.textContent = `≈ ${a.prixEUR} €`;
+        markDirty();
+        return;
       }
       if (e.target.type === "checkbox") a[k] = e.target.checked;
       else if (e.target.type === "number") a[k] = Number(e.target.value) || 0;
@@ -1390,6 +1464,49 @@
       if (e.target.type === "file" && e.target.files[0]) {
         uploadPhoto(e.target.closest(".aw-card"), e.target.files[0]);
       }
+    });
+
+    const listeEv = $("#event-list");
+    listeEv.addEventListener("click", async (e) => {
+      const carte = e.target.closest("[data-ei]");
+      if (!carte) return;
+      const ev = catalogue.events[+carte.dataset.ei];
+      const acte = e.target.dataset.act;
+
+      if (acte === "ev-photo") $("input[type=file]", carte).click();
+
+      if (acte === "ev-photo-retirer") {
+        delete ev.affiche;
+        renderEvents(); markDirty();
+      }
+
+      if (acte === "ev-copier") {
+        const lien = `${location.origin}/invitation.html?e=${encodeURIComponent(ev.id)}`;
+        try { await navigator.clipboard.writeText(lien); toast("Lien d'invitation copié ✓"); }
+        catch { prompt("Copiez le lien d'invitation :", lien); }
+      }
+    });
+
+    listeEv.addEventListener("change", async (e) => {
+      if (e.target.type !== "file" || !e.target.files[0]) return;
+      const carte = e.target.closest("[data-ei]");
+      const ev = catalogue.events[+carte.dataset.ei];
+      const boite = e.target.closest(".cert-photo");
+      const voile = document.createElement("div");
+      voile.className = "uploading"; voile.textContent = "Envoi…";
+      boite.appendChild(voile);
+      try {
+        const url = URL.createObjectURL(e.target.files[0]);
+        const blob = await openCropper(url);
+        URL.revokeObjectURL(url);
+        if (blob) {
+          const res = await uploadBlob(null, blob, `affiche.${extensionDe(blob)}`);
+          ev.affiche = (res.images && res.images.large) || res.path;
+          renderEvents(); markDirty();
+          toast("Affiche du vernissage mise à jour ✓");
+        }
+      } catch { toast("Échec de l'envoi de l'affiche."); }
+      finally { voile.remove(); e.target.value = ""; }
     });
 
     $("#add-event").addEventListener("click", () => {

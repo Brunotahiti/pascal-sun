@@ -954,3 +954,20 @@ button { font-family: var(--sans); cursor: pointer; }
   margin-left: 6px;
   white-space: nowrap;
 }
+
+/* ------------------------------------------------ lien d'invitation -- */
+
+.ev-lien-ligne { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ev-lien-ligne code {
+  flex: 1 1 300px;
+  min-width: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  background: var(--paper-deep);
+  border-radius: 5px;
+  padding: 9px 12px;
+  font-size: 13px;
+}
+.ev-stats { display: flex; gap: 10px 22px; flex-wrap: wrap; margin: 6px 0 10px; font-size: 14px; }
+.ev-stats strong { color: var(--accent); font-size: 17px; }
+.ev-apercu { max-height: 220px; border: 1px solid var(--line); }

@@ -1626,3 +1626,57 @@ html[lang="fr"] .only-en { display: none !important; }
   transition: .2s;
 }
 .contact-coord a:hover { color: var(--accent); border-color: var(--accent); }
+
+/* ---------------------------------------------------------- invitation -- */
+/* Page d'un vernissage, faite pour être partagée : l'affiche y est encadrée
+   exactement comme une toile de la galerie (cadre, passe-partout, vitre et
+   agrandissement au survol viennent de .card .frame). */
+
+.invit { max-width: 760px; margin: 0 auto; padding: clamp(40px, 6vw, 80px) 0; text-align: center; }
+.invit .eyebrow::before { display: none; }
+.invit-titre { margin: 10px 0 clamp(26px, 4vw, 40px); }
+.invit-affiche { max-width: 460px; margin: 0 auto clamp(28px, 4vw, 44px); }
+
+.invit-infos {
+  display: grid;
+  gap: 16px;
+  justify-items: center;
+  margin-bottom: 26px;
+}
+.invit-infos span {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 3px;
+}
+.invit-infos strong { font-family: var(--serif); font-size: clamp(19px, 2.4vw, 24px); font-weight: 600; }
+.invit-desc { margin: 0 auto 34px; }
+
+.invit-reponse {
+  text-align: left;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: clamp(22px, 3vw, 34px);
+  max-width: 520px;
+  margin: 0 auto;
+  box-shadow: 0 18px 40px -28px rgba(22, 19, 15, .5);
+}
+.invit-reponse h2 {
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 18px;
+  text-align: center;
+}
+.invit-btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+.invit-btns .btn { flex: 1 1 180px; justify-content: center; }
+.invit-galerie { margin-top: clamp(40px, 6vw, 64px); }
+.invit-galerie .lede { margin: 0 auto 18px; }
+
+/* L'affiche du vernissage est un tirage sur papier blanc : le passe-partout
+   qui se resserre au survol doit rester blanc, pas crème comme le site. */
+.invit-affiche .frame { background: #fff; }

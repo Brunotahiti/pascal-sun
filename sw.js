@@ -6,10 +6,10 @@
    Les vidéos et l'admin ne sont jamais mis en cache.
    ========================================================================= */
 
-const VERSION = "ps-v22";
+const VERSION = "ps-v23";
 const CORE = [
   "/", "/galerie.html", "/expositions.html", "/artiste.html",
-  "/panier.html", "/contact.html", "/oeuvre.html", "/merci.html",
+  "/panier.html", "/contact.html", "/oeuvre.html", "/merci.html", "/invitation.html",
   "/css/style.css", "/css/effects.css", "/css/viewer.css",
   "/js/data.js", "/js/app.js", "/js/effects.js", "/js/viewer.js",
   "/manifest.webmanifest"

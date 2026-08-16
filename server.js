@@ -29,6 +29,8 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin";
 const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
 const CERTIFICATS_FILE = path.join(DATA_DIR, "certificats.json");
 const NEWSLETTER_FILE = path.join(DATA_DIR, "newsletter.json");
+const RSVP_FILE = path.join(DATA_DIR, "rsvp.json");
+const INVIT_STATS_FILE = path.join(DATA_DIR, "invitations.json");
 
 fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
@@ -324,6 +326,8 @@ function collectData() {
     catalogue: readJSON(CATALOGUE_FILE, null),
     orders: readJSON(ORDERS_FILE, []),
     certificats: readJSON(CERTIFICATS_FILE, []),
+    rsvp: readJSON(RSVP_FILE, []),
+    invitations: readJSON(INVIT_STATS_FILE, {}),
     contacts: readJSON(NEWSLETTER_FILE, []),
     commissions: readJSON(COMMISSIONS_FILE, []),
     idees: readJSON(IDEAS_FILE, [])
@@ -632,6 +636,81 @@ ${order.client.message ? "\nMessage : « " + order.client.message + " »\n" : ""
 });
 
 app.get("/api/orders", requireAuth, (_req, res) => res.json(readJSON(ORDERS_FILE, [])));
+
+/* -------------------------------------------- invitations & réponses -- */
+/* Le lien d'un vernissage est diffusé largement : on compte ses ouvertures,
+   on enregistre les réponses, et les personnes qui confirment entrent dans
+   les contacts de la lettre de l'atelier. */
+
+app.post("/api/invitation/vue", formLimit, (req, res) => {
+  const id = String((req.body || {}).event || "").slice(0, 80);
+  if (!id) return res.status(400).json({ error: "event-requis" });
+  const stats = readJSON(INVIT_STATS_FILE, {});
+  const e = stats[id] || (stats[id] = { vues: 0, visiteurs: [], jours: {}, sources: {} });
+  e.vues++;
+  const jour = new Date().toISOString().slice(0, 10);
+  e.jours[jour] = (e.jours[jour] || 0) + 1;
+  const src = String((req.body || {}).source || "direct").slice(0, 60);
+  e.sources[src] = (e.sources[src] || 0) + 1;
+  // visiteurs distincts, sans cookie ni identification : simple empreinte courte
+  const vid = String((req.body || {}).vid || "").slice(0, 40);
+  if (vid && !e.visiteurs.includes(vid)) e.visiteurs.push(vid);
+  writeJSON(INVIT_STATS_FILE, stats);
+  res.json({ ok: true });
+});
+
+app.post("/api/rsvp", formLimit, (req, res) => {
+  const b = req.body || {};
+  const email = String(b.email || "").trim().toLowerCase();
+  const nom = String(b.nom || "").trim();
+  if (!nom || !/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(email)) {
+    return res.status(400).json({ error: "nom-et-email-requis" });
+  }
+  const reponse = b.reponse === "non" ? "non" : "oui";
+  const rsvp = {
+    id: "R-" + Date.now().toString(36).toUpperCase(),
+    event: String(b.event || "").slice(0, 80),
+    titre: String(b.titre || "").slice(0, 200),
+    nom, email, reponse,
+    personnes: Math.min(20, Math.max(1, Number(b.personnes) || 1)),
+    date: new Date().toISOString()
+  };
+
+  const liste = readJSON(RSVP_FILE, []);
+  // une seule réponse par personne et par vernissage : la dernière fait foi
+  const i = liste.findIndex((x) => x.event === rsvp.event && x.email === email);
+  if (i >= 0) liste[i] = rsvp; else liste.unshift(rsvp);
+  writeJSON(RSVP_FILE, liste);
+
+  /* Les personnes qui confirment leur venue rejoignent les contacts de la
+     lettre de l'atelier — c'est l'objet même de l'invitation. */
+  if (reponse === "oui") {
+    const contacts = readJSON(NEWSLETTER_FILE, []);
+    if (!contacts.some((c) => (c.email || "").toLowerCase() === email)) {
+      contacts.push({ email, name: nom, source: "vernissage", date: rsvp.date });
+      writeJSON(NEWSLETTER_FILE, contacts);
+    }
+  }
+
+  res.json({ ok: true, ref: rsvp.id });
+
+  const quoi = reponse === "oui"
+    ? `✅ ${nom} vient (${rsvp.personnes} personne${rsvp.personnes > 1 ? "s" : ""})`
+    : `❌ ${nom} ne pourra pas venir`;
+  sendPush("🥂 Réponse à une invitation", `${quoi} — ${rsvp.titre}`);
+  sendMail(ARTIST_NOTIFY, `🥂 ${quoi} — ${rsvp.titre}`,
+`Réponse à l'invitation « ${rsvp.titre} »
+
+${quoi}
+Email : ${email}
+
+${reponse === "oui" ? "Cette personne a été ajoutée aux contacts de la lettre de l'atelier." : ""}
+
+Toutes les réponses : https://pascal-sun.com/admin (onglet Vernissages)`);
+});
+
+app.get("/api/rsvp", requireAuth, (_req, res) => res.json(readJSON(RSVP_FILE, [])));
+app.get("/api/invitation/stats", requireAuth, (_req, res) => res.json(readJSON(INVIT_STATS_FILE, {})));
 
 /* ---------------------------------------- certificat d'authenticité -- */
 /* Référence publique : <idCommande>-<n° de ligne>. La page certificat.html
