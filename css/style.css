@@ -1740,3 +1740,34 @@ html[lang="fr"] .only-en { display: none !important; }
 .sp-liens { display: flex; flex-wrap: wrap; gap: 10px; }
 .sp-liens .btn { padding: 11px 18px; font-size: 12px; }
 body.lights-on .sur-place { background: rgba(255, 255, 255, .05); border-color: #3a332b; }
+
+/* le visiteur laisse ses coordonnées pour être rappelé */
+.sp-rappel { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 14px; }
+.sp-rappel summary {
+  cursor: pointer;
+  list-style: none;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.sp-rappel summary::-webkit-details-marker { display: none; }
+.sp-rappel summary::before { content: "+ "; }
+.sp-rappel[open] summary::before { content: "– "; }
+.rappel-form { margin-top: 14px; }
+.rappel-grille { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }
+.rappel-grille .span2 { grid-column: 1 / -1; }
+@media (max-width: 620px) { .rappel-grille { grid-template-columns: 1fr; } }
+.rappel-form .field label { display: block; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 5px; }
+.rappel-form .field input, .rappel-form .field textarea {
+  width: 100%; border: 1px solid var(--line); border-radius: 4px; background: #fff;
+  padding: 10px 12px; font-family: var(--sans); font-size: 14px; color: var(--ink);
+}
+.rappel-form .field input:focus, .rappel-form .field textarea:focus { outline: none; border-color: var(--accent); }
+.rappel-consent { display: flex; gap: 10px; align-items: flex-start; margin: 14px 0 12px; font-size: 13px; line-height: 1.5; color: var(--ink-soft); cursor: pointer; }
+.rappel-consent input { margin-top: 3px; accent-color: var(--accent); flex: none; }
+.rappel-form .btn-row { margin: 0; }
+body.lights-on .sp-rappel { border-color: #3a332b; }
+body.lights-on .rappel-form .field input, body.lights-on .rappel-form .field textarea { background: rgba(255,255,255,.08); border-color: #4a4238; color: #e8e1d5; }

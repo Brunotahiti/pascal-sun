@@ -72,7 +72,54 @@
           ${mail ? `<a class="btn ghost" href="mailto:${esc(mail)}?subject=${sujet}">✉ ${t("sur_place_ecrire")}</a>` : ""}
           <a class="btn ghost" href="invitation.html?e=${encodeURIComponent(ev.id)}">${t("sur_place_vernissage")}</a>
         </div>
+
+        <details class="sp-rappel">
+          <summary>${t("rappel_ouvrir")}</summary>
+          <form id="rappel-form" class="rappel-form">
+            <p class="sp-texte">${t("rappel_texte")}</p>
+            <div class="rappel-grille">
+              <div class="field"><label for="rp-nom">${t("f_name")}</label><input id="rp-nom" name="nom" required autocomplete="name"></div>
+              <div class="field"><label for="rp-tel">${t("rappel_tel")}</label><input id="rp-tel" name="tel" type="tel" autocomplete="tel"></div>
+              <div class="field"><label for="rp-email">${t("f_email")}</label><input id="rp-email" name="email" type="email" autocomplete="email"></div>
+              <div class="field span2"><label for="rp-msg">${t("rappel_msg")}</label><textarea id="rp-msg" name="message" rows="2"></textarea></div>
+            </div>
+            <label class="rappel-consent"><input type="checkbox" name="consent" required> ${t("rappel_consent")}</label>
+            <div class="btn-row"><button class="btn" type="submit">${t("rappel_envoyer")}</button></div>
+            <p class="news-msg" id="rappel-msg"></p>
+          </form>
+        </details>
       </div>`;
+  }
+
+  /* Envoi de la demande de rappel : nom + au moins un moyen de contact. */
+  function brancheRappel(a) {
+    const form = document.getElementById("rappel-form");
+    if (!form) return;
+    const ev = vernissageEnCours();
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const d = new FormData(form);
+      const msg = document.getElementById("rappel-msg");
+      if (!String(d.get("tel") || "").trim() && !String(d.get("email") || "").trim()) {
+        msg.textContent = t("rappel_contact_requis"); return;
+      }
+      const btn = form.querySelector("button[type=submit]");
+      btn.disabled = true;
+      try {
+        const r = await fetch("/api/rappel", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            nom: d.get("nom"), tel: d.get("tel"), email: d.get("email"), message: d.get("message"),
+            artworkId: a.id, titre: a.titre, event: ev ? ev.id : ""
+          })
+        });
+        if (!r.ok) throw new Error();
+        form.reset();
+        msg.textContent = t("rappel_ok");
+        toast(t("rappel_ok"));
+      } catch { msg.textContent = t("news_err"); }
+      finally { btn.disabled = false; }
+    });
   }
 
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -571,6 +618,8 @@
         <li><span class="dot">●</span>${t("assur3")}</li>
       </ul>`;
 
+    brancheRappel(a);
+
     const nform = document.getElementById("notify-form");
     if (nform) nform.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -1007,12 +1056,17 @@
           <path class="r3" d="M310 636 h180 M540 636 h90 M690 636 h200 M930 636 h140"/>
         </g>
 
-        <!-- le motu et ses cocotiers, à gauche -->
+        <!-- le motu et ses cocotiers, à gauche : troncs élancés qui se
+             penchent vers le lagon, couronnes de palmes en aplat, longues,
+             arquées, retombant en pointe (formes calculées, voir PROJET.md) -->
         <g class="motu">
           <path d="M-160 466 Q -20 446 190 462 V 476 H -160 Z" fill="#e6d8bd"/>
-          <g class="palme" fill="none" stroke="#243130" stroke-width="3" stroke-linecap="round">
-            <path d="M40 466 q6 -40 22 -70"/><path d="M62 396 q-30 -12 -50 4 M62 396 q-2 -30 20 -42 M62 396 q26 -18 46 -6 M62 396 q26 6 34 30 M62 396 q-6 22 -28 34"/>
-            <path d="M136 468 q-2 -34 12 -58"/><path d="M148 410 q-26 -8 -40 6 M148 410 q4 -24 22 -30 M148 410 q22 -10 36 4 M148 410 q16 12 18 30"/>
+          <g class="palme" fill="#243130" stroke="#243130" stroke-linecap="round" stroke-linejoin="round">
+            <path fill="none" stroke-width="5.5" d="M28 468 C 34 430, 44 386, 66 350"/>
+            <path fill="none" stroke-width="4.2" d="M116 470 C 118 440, 124 406, 140 380"/>
+            <g opacity=".72"><path fill="none" stroke-width="3" d="M-30 470 C -26 448, -18 424, -4 404"/><path d="M-4 404 Q-17 382 -42 390 Q-20 390 -4 404Z"/><path d="M-4 404 Q-5 378 -30 373 Q-11 384 -4 404Z"/><path d="M-4 404 Q8 382 -11 365 Q0 383 -4 404Z"/><path d="M-4 404 Q-5 382 10 366 Q-12 380 -4 404Z"/><path d="M-4 404 Q6 385 27 378 Q1 379 -4 404Z"/><path d="M-4 404 Q14 392 35 396 Q12 384 -4 404Z"/><path d="M-4 404 Q17 402 34 415 Q20 394 -4 404Z"/></g>
+            <g stroke-width="1.2"><path d="M66 350 Q41 306 -7 323 Q36 319 66 350Z"/><path d="M66 350 Q62 299 11 295 Q52 309 66 350Z"/><path d="M66 350 Q84 302 39 277 Q71 307 66 350Z"/><path d="M66 350 Q50 309 73 272 Q37 308 66 350Z"/><path d="M66 350 Q69 307 105 282 Q57 300 66 350Z"/><path d="M66 350 Q87 312 130 305 Q79 301 66 350Z"/><path d="M66 350 Q101 325 143 336 Q99 311 66 350Z"/><path d="M66 350 Q109 342 141 370 Q112 328 66 350Z"/><path d="M66 350 Q108 361 126 400 Q117 350 66 350Z"/></g>
+            <g stroke-width="1"><path d="M140 380 Q119 350 86 366 Q116 361 140 380Z"/><path d="M140 380 Q134 344 97 344 Q127 352 140 380Z"/><path d="M140 380 Q151 345 119 328 Q141 349 140 380Z"/><path d="M140 380 Q130 351 146 324 Q120 350 140 380Z"/><path d="M140 380 Q145 350 171 334 Q136 344 140 380Z"/><path d="M140 380 Q158 355 188 352 Q152 346 140 380Z"/><path d="M140 380 Q167 366 196 376 Q166 355 140 380Z"/><path d="M140 380 Q171 379 192 401 Q175 369 140 380Z"/></g>
           </g>
         </g>
 

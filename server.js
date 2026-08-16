@@ -1119,6 +1119,75 @@ Retrouvez ce contact dans l'admin, onglet Clients.`);
   res.json({ ok: true });
 });
 
+/* ------------------------- être rappelé par la galerie du vernissage -- */
+/* Le visiteur laisse ses coordonnées pour qu'on le contacte au sujet d'une
+   toile exposée. Le message part à Pascal et à la galerie (si son email est
+   renseigné sur le vernissage), et reste archivé dans data/rappels.json. */
+
+const RAPPELS_FILE = path.join(DATA_DIR, "rappels.json");
+
+app.post("/api/rappel", formLimit, (req, res) => {
+  const b = req.body || {};
+  const nom = String(b.nom || "").trim().slice(0, 120);
+  const email = String(b.email || "").trim().toLowerCase().slice(0, 200);
+  const tel = String(b.tel || "").trim().slice(0, 40);
+  const message = String(b.message || "").trim().slice(0, 2000);
+  const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
+  if (!nom || (!emailOk && !tel)) return res.status(400).json({ error: "nom-et-contact-requis" });
+
+  const cat = readJSON(CATALOGUE_FILE, { events: [], artworks: [] });
+  const ev = (cat.events || []).find((e) => e.id === String(b.event || "")) || null;
+  const art = (cat.artworks || []).find((a) => a.id === String(b.artworkId || "")) || null;
+  const titre = art ? art.titre : String(b.titre || "").slice(0, 200);
+  const galerie = ev ? (ev.hote || ev.lieu || "") : "";
+
+  const rappel = {
+    id: "C-" + Date.now().toString(36).toUpperCase(),
+    date: new Date().toISOString(),
+    event: ev ? ev.id : "", galerie,
+    artworkId: art ? art.id : "", titre,
+    nom, email: emailOk ? email : "", tel, message,
+    consentement: true
+  };
+  const liste = readJSON(RAPPELS_FILE, []);
+  liste.unshift(rappel);
+  writeJSON(RAPPELS_FILE, liste.slice(0, 2000));
+
+  /* qui laisse ses coordonnées entre dans le carnet de contacts */
+  if (emailOk) upsertContact({ email, name: nom, source: "galerie" });
+
+  res.json({ ok: true, ref: rappel.id });
+
+  const corps = `${nom} souhaite être contacté(e) au sujet de la toile « ${titre} »${galerie ? `, exposée à ${galerie}` : ""}.
+
+Téléphone : ${tel || "—"}
+Email : ${emailOk ? email : "—"}
+${message ? "\nMessage :\n" + message + "\n" : ""}
+Cette personne a donné son accord pour être recontactée par la galerie et par l'artiste.
+${art ? `\nL'œuvre : ${SITE_URL}/oeuvre.html?id=${art.id}` : ""}`;
+
+  sendPush("📞 Demande de rappel", `${nom} — « ${titre} »${galerie ? " · " + galerie : ""}`);
+  sendMail(ARTIST_NOTIFY, `📞 ${nom} souhaite être contacté(e) — « ${titre} »`, corps + `
+
+Toutes les demandes : ${SITE_URL}/admin (onglet Vernissages)`);
+  const galerieMail = ev && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(ev.contact_email || "").trim())
+    ? String(ev.contact_email).trim() : "";
+  if (galerieMail) {
+    sendMail(galerieMail, `Un visiteur souhaite être contacté au sujet d'une œuvre de Pascal Sun — « ${titre} »`,
+`Bonjour,
+
+Un visiteur du site de Pascal Sun souhaite être contacté au sujet de la toile « ${titre} », exposée chez vous.
+
+${corps}
+
+Bien cordialement,
+Pascal Sun — Peintre, Tahiti
+${SITE_URL}`);
+  }
+});
+
+app.get("/api/rappels", requireAuth, (_req, res) => res.json(readJSON(RAPPELS_FILE, [])));
+
 /* -------------------------------------------- portrait sur commande -- */
 
 const commissionUpload = multer({

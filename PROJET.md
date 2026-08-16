@@ -47,14 +47,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=47/?v=48/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=48/?v=49/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=48"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=49"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -253,6 +253,15 @@ lieu qui accueille le vernissage (`surPlaceHTML()` dans `js/app.js`).
 - Le nom affiché est `hote` (sinon `lieu`), la mention `hote_sur` (sinon `ville`).
 - `contact_tel` et `contact_email` donnent le bouton d'appel et le lien d'écriture
   (objet du message pré-rempli avec le titre de l'œuvre).
+- **« Je préfère être contacté(e) »** : un formulaire replié (nom, téléphone
+  ou email, un mot, case de consentement explicite). `POST /api/rappel` archive
+  la demande dans `data/rappels.json`, ajoute la personne au carnet (source
+  `galerie`), prévient Pascal (email + push) **et envoie le même message à la
+  galerie** si `contact_email` est renseigné. Les demandes s'affichent sous le
+  vernissage dans l'admin (« Visiteurs à recontacter »), `GET /api/rappels`.
+- Cocotiers de l'animation : palmes en aplat calculées (fonction `palme()` en
+  Python dans l'historique du commit — feuille effilée arquée vers le haut puis
+  retombante) ; ne pas revenir à des palmes en simples traits.
 
 ### Invitation envoyée par email
 Depuis **admin → Vernissages**, sous chaque vernissage : un mot d'accompagnement

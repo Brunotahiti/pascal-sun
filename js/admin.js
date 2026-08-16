@@ -470,9 +470,10 @@
   async function renderReponses() {
     const zones = document.querySelectorAll("[data-reponses]");
     if (!zones.length) return;
-    const [rsvp, stats] = await Promise.all([
+    const [rsvp, stats, rappels] = await Promise.all([
       fetch("/api/rsvp").then((r) => r.json()).catch(() => []),
-      fetch("/api/invitation/stats").then((r) => r.json()).catch(() => ({}))
+      fetch("/api/invitation/stats").then((r) => r.json()).catch(() => ({})),
+      fetch("/api/rappels").then((r) => r.json()).catch(() => [])
     ]);
     zones.forEach((z) => {
       const id = z.dataset.reponses;
@@ -497,7 +498,22 @@
             <span><a href="mailto:${esc(r.email)}">${esc(r.email)}</a></span>
             <span>${dateVente(r.date)}</span>
           </div>`).join("")}</div>`
-          : `<p class="metric-empty">Aucune réponse pour l'instant.</p>`}`;
+          : `<p class="metric-empty">Aucune réponse pour l'instant.</p>`}
+        ${(() => {
+          const rp = rappels.filter((r) => r.event === id);
+          if (!rp.length) return "";
+          return `
+          <label style="margin-top:18px;">📞 Visiteurs à recontacter au sujet d'une toile (${rp.length})</label>
+          <p class="compose-note">Ils ont laissé leurs coordonnées depuis la fiche de l'œuvre et accepté d'être recontactés par la galerie et par vous. La galerie a reçu le même message par email si son adresse est renseignée ci-dessus.</p>
+          <div class="contacts-table">${rp.map((r) => `
+            <div class="ct-row" style="grid-template-columns: 1.2fr 1fr 1fr auto;">
+              <span><strong>${esc(r.nom)}</strong><br><small>« ${esc(r.titre)} »</small></span>
+              <span>${r.tel ? `<a href="tel:${esc(r.tel.replace(/[^0-9+]/g, ""))}">${esc(r.tel)}</a>` : "—"}</span>
+              <span>${r.email ? `<a href="mailto:${esc(r.email)}">${esc(r.email)}</a>` : "—"}</span>
+              <span>${dateVente(r.date)}</span>
+              ${r.message ? `<span style="grid-column:1/-1;font-size:12.5px;color:var(--ink-soft);">${esc(r.message)}</span>` : ""}
+            </div>`).join("")}</div>`;
+        })()}`;
     });
   }
 
