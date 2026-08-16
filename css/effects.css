@@ -318,8 +318,10 @@ body.intro-lock { overflow: hidden; }
 }
 
 /* ------------------------------------------- ouverture de l'invitation -- */
-/* Le lagon monte sur l'écran, les deux maisons qui reçoivent le vernissage
-   apparaissent, puis l'eau se retire et découvre l'invitation. */
+/* Le lagon de Bora Bora se lève avec le jour : le soleil monte, l'Otemanu
+   sort de la brume, les bungalows sur pilotis s'allument un à un, l'écume
+   vient mourir au premier plan, puis le nom de la maison qui reçoit le
+   vernissage s'inscrit en grand. Tout est composé (transform / opacity). */
 
 .vague-intro {
   position: fixed;
@@ -328,78 +330,152 @@ body.intro-lock { overflow: hidden; }
   display: grid;
   place-items: center;
   overflow: hidden;
-  background: linear-gradient(180deg, #f7f3ec 0%, #eef4f2 46%, #dcecea 100%);
-  transition: opacity .9s var(--ease), transform 1.1s cubic-bezier(.76, 0, .24, 1);
+  background: #eef4f0;
+  cursor: pointer;
+  transition: opacity 1s var(--ease), transform 1.3s cubic-bezier(.76, 0, .24, 1);
 }
-.vague-intro.done { opacity: 0; transform: translateY(-8%); }
+.vague-intro.done { opacity: 0; transform: scale(1.06); pointer-events: none; }
 body.vague-lock { overflow: hidden; }
 
-.vague-scene { position: relative; z-index: 2; text-align: center; padding: 0 24px; }
+.vague-intro .lagon { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* le jour se lève */
+.vague-intro .soleil { transform-origin: 712px 404px; transform: translateY(70px) scale(.9); opacity: 0; animation: inv-soleil 2.4s var(--ease) .1s forwards; }
+@keyframes inv-soleil { to { transform: none; opacity: 1; } }
+
+/* l'Otemanu sort de la brume — de bas en haut, comme le jour qui l'atteint */
+.vague-intro .mont { opacity: 0; transform: translateY(24px); animation: inv-mont 1.9s var(--ease) .45s forwards; }
+.vague-intro .mont-loin { animation-delay: .8s; animation-duration: 2.2s; }
+@keyframes inv-mont { to { opacity: 1; transform: none; } }
+
+/* le lagon prend sa couleur */
+.vague-intro .eau { opacity: 0; animation: inv-fondu 1.6s ease-out .3s forwards; }
+.vague-intro .motu { opacity: 0; transform: translateY(6px); animation: inv-mont 1.4s var(--ease) 1.2s forwards; }
+@keyframes inv-fondu { to { opacity: 1; } }
+
+/* reflets : traits de lumière qui glissent, chacun à sa vitesse */
+.vague-intro .reflets path { opacity: 0; stroke-width: 2; }
+.vague-intro .r1 { animation: inv-reflet 5.5s ease-in-out .9s infinite; }
+.vague-intro .r2 { stroke-width: 2.5; animation: inv-reflet 6.5s ease-in-out 1.3s infinite reverse; }
+.vague-intro .r3 { stroke-width: 3; animation: inv-reflet 7.5s ease-in-out 1.1s infinite; }
+@keyframes inv-reflet {
+  0%   { opacity: 0;   transform: translateX(-40px); }
+  35%  { opacity: .55; }
+  65%  { opacity: .35; }
+  100% { opacity: 0;   transform: translateX(40px); }
+}
+
+/* les bungalows s'allument un à un */
+.vague-intro .bung { opacity: 0; transform: translateY(6px); animation: inv-mont .8s var(--ease) forwards; }
+
+/* l'écume vient mourir au premier plan */
+.vague-intro .ecume path { transform: translateY(80px); }
+.vague-intro .ecume path:nth-child(1) { opacity: .42; animation: inv-ecume 6s ease-in-out .6s infinite; }
+.vague-intro .ecume path:nth-child(2) { opacity: .6;  animation: inv-ecume 7.4s ease-in-out .2s infinite reverse; }
+@keyframes inv-ecume {
+  0%, 100% { transform: translate(0, 34px); }
+  50%      { transform: translate(-40px, 6px); }
+}
+
+/* les mots */
+.vague-scene { position: relative; z-index: 2; text-align: center; padding: 0 24px 26vh; }
+/* une brume claire posée derrière les mots : ils restent lisibles quand
+   l'Otemanu passe dessous */
+.vague-scene::before {
+  content: "";
+  position: absolute;
+  left: 50%; top: 50%;
+  width: min(1100px, 150vw); height: min(620px, 92vh);
+  transform: translate(-50%, -58%);
+  background: radial-gradient(60% 52% at 50% 46%, rgba(247, 243, 236, .92), rgba(247, 243, 236, .74) 45%, rgba(247, 243, 236, 0) 72%);
+  z-index: -1;
+  opacity: 0;
+  animation: inv-fondu 1.4s ease-out .7s forwards;
+}
 .vague-hote, .vague-titre, .vague-lieu {
   opacity: 0;
   transform: translateY(18px);
-  animation: vague-monte .95s var(--ease) forwards;
+  animation: vague-monte 1s var(--ease) forwards;
 }
 .vague-hote {
   font-family: var(--sans);
-  font-size: clamp(13px, 1.7vw, 17px);
+  font-size: clamp(12px, 1.5vw, 15px);
   font-weight: 800;
   letter-spacing: .5em;
   text-indent: .5em;
-  color: var(--lagoon);
-  animation-delay: .35s;
+  text-transform: uppercase;
+  color: #2f8a86;
+  animation-delay: 1s;
 }
 .vague-titre {
   font-family: var(--serif);
   font-weight: 500;
   font-style: italic;
-  font-size: clamp(30px, 5.6vw, 62px);
+  font-size: clamp(26px, 4.6vw, 52px);
   line-height: 1.1;
-  margin: 16px 0 20px;
-  animation-delay: .85s;
-}
-.vague-lieu {
-  font-family: var(--sans);
-  font-size: clamp(15px, 2.1vw, 21px);
-  font-weight: 800;
-  letter-spacing: .24em;
+  margin: 14px 0 26px;
   color: var(--ink);
-  animation-delay: 1.45s;
+  animation-delay: 1.5s;
 }
-.vague-lieu span {
+/* le nom de la maison : grand, il s'écarte en s'inscrivant, un trait corail
+   se tire dessous, la marque suit en petit */
+.vague-lieu { animation-delay: 2.3s; margin: 0; }
+.vague-lieu .nom {
   display: block;
-  margin-top: 6px;
-  font-size: 11px;
+  font-family: var(--serif);
   font-weight: 600;
-  letter-spacing: .3em;
-  color: var(--ink-faint);
+  font-size: clamp(30px, 5.8vw, 68px);
+  line-height: 1;
+  letter-spacing: .02em;
   text-transform: uppercase;
+  color: var(--ink);
+  animation: inv-ecarte 2.2s var(--ease) 2.3s both;
+}
+@keyframes inv-ecarte { from { letter-spacing: -.02em; } to { letter-spacing: .12em; text-indent: .12em; } }
+/* un nom long tient tout de même sur deux lignes lisibles */
+.vague-lieu.long .nom { font-size: clamp(22px, 4vw, 46px); line-height: 1.08; }
+.vague-lieu .trait {
+  display: block;
+  width: min(220px, 40vw);
+  height: 2px;
+  margin: 18px auto 12px;
+  background: var(--accent);
+  transform: scaleX(0);
+  animation: inv-trait 1.1s var(--ease) 2.9s forwards;
+}
+@keyframes inv-trait { to { transform: scaleX(1); } }
+.vague-lieu .marque {
+  display: block;
+  font-family: var(--sans);
+  font-size: clamp(11px, 1.4vw, 14px);
+  font-weight: 700;
+  letter-spacing: .34em;
+  text-indent: .34em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  opacity: 0;
+  animation: vague-monte .9s var(--ease) 3.3s forwards;
 }
 @keyframes vague-monte { to { opacity: 1; transform: none; } }
 
-/* trois houles décalées : le lagon qui monte puis se retire */
-.vague-eau {
+.vague-passer {
   position: absolute;
-  left: -6%;
-  bottom: 0;
-  width: 112%;
-  height: min(46vh, 340px);
-  z-index: 1;
+  right: 22px; bottom: 18px;
+  z-index: 3;
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .8);
+  opacity: 0;
+  animation: inv-fondu .8s ease 1.6s forwards;
 }
-.vague-eau path { fill: var(--lagoon); transform: translateY(105%); }
-.vague-eau path:nth-child(1) { opacity: .22; animation: vague-maree 4.4s cubic-bezier(.4,.05,.3,1) .1s forwards, vague-roule 5s ease-in-out .9s infinite; }
-.vague-eau path:nth-child(2) { opacity: .3;  animation: vague-maree 4.4s cubic-bezier(.4,.05,.3,1) .3s forwards, vague-roule 6.2s ease-in-out 1.1s infinite reverse; }
-.vague-eau path:nth-child(3) { opacity: .42; animation: vague-maree 4.4s cubic-bezier(.4,.05,.3,1) .5s forwards, vague-roule 7s ease-in-out 1.3s infinite; }
 
-@keyframes vague-maree {
-  0%   { transform: translateY(105%); }
-  38%  { transform: translateY(4%); }
-  72%  { transform: translateY(10%); }
-  100% { transform: translateY(58%); }
-}
-@keyframes vague-roule {
-  0%, 100% { transform: translateY(20%) translateX(0); }
-  50%      { transform: translateY(14%) translateX(-3%); }
+@media (max-width: 640px) {
+  .vague-scene { padding-bottom: 22vh; }
+  .vague-lieu .nom { font-size: clamp(26px, 9vw, 40px); }
 }
 
 @media (prefers-reduced-motion: reduce) { .vague-intro { display: none !important; } }

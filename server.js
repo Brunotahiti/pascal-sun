@@ -253,9 +253,11 @@ initMailer();
 
 const mailEnabled = () => Boolean(mailer);
 
-function sendMail(to, subject, text) {
+function sendMail(to, subject, text, html) {
   if (!mailer || !to) return Promise.resolve(false);
-  return mailer.sendMail({ from: mailer.__from, to, subject, text })
+  const msg = { from: mailer.__from, to, subject, text };
+  if (html) msg.html = html;               // invitations : version illustrée
+  return mailer.sendMail(msg)
     .then(() => true)
     .catch((e) => { console.error("mail:", e.message); return false; });
 }
@@ -711,6 +713,160 @@ Toutes les réponses : https://pascal-sun.com/admin (onglet Vernissages)`);
 
 app.get("/api/rsvp", requireAuth, (_req, res) => res.json(readJSON(RSVP_FILE, [])));
 app.get("/api/invitation/stats", requireAuth, (_req, res) => res.json(readJSON(INVIT_STATS_FILE, {})));
+
+/* ------------------------------- invitation envoyée par email (admin) -- */
+/* Une invitation illustrée, à la charte du site : bandeau lagon dessiné en
+   CSS (aucune image à charger), affiche du vernissage si elle existe, les
+   informations, et le bouton qui mène à la page d'invitation où l'on répond.
+   Les envois sont journalisés dans data/envois-invitations.json. */
+
+const ENVOIS_FILE = path.join(DATA_DIR, "envois-invitations.json");
+const SITE_URL = process.env.SITE_URL || "https://pascal-sun.com";
+
+function dateLongueFR(iso) {
+  const [y, m, d] = String(iso || "").split("-").map(Number);
+  if (!y) return "";
+  return new Date(y, m - 1, d).toLocaleDateString("fr-FR",
+    { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+}
+
+function gabaritInvitation(ev, motPerso, nom) {
+  const lien = `${SITE_URL}/invitation.html?e=${encodeURIComponent(ev.id)}`;
+  const affiche = ev.affiche ? (ev.affiche.startsWith("http") ? ev.affiche : SITE_URL + (ev.affiche.startsWith("/") ? "" : "/") + ev.affiche) : "";
+  const hote = (ev.hote || ev.lieu || "").trim();
+  const sur = (ev.hote_sur || ev.ville || "").trim();
+  const esc = (x) => String(x || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const bonjour = nom ? `Ia ora na ${esc(nom)},` : "Ia ora na,";
+
+  return `<!doctype html><html lang="fr"><body style="margin:0;padding:0;background:#f7f3ec;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f3ec;padding:26px 12px;">
+<tr><td align="center">
+  <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:100%;background:#fffdf9;border:1px solid #ddd5c8;border-radius:6px;overflow:hidden;font-family:Helvetica,Arial,sans-serif;color:#16130f;">
+
+    <!-- bandeau : le lagon, en dégradés seulement (aucune image à charger) -->
+    <tr><td style="background:#eef4f0;padding:0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr><td height="26" style="background:#f5e0ca;line-height:26px;font-size:0;">&nbsp;</td></tr>
+        <tr><td height="14" style="background:#bbe2dc;line-height:14px;font-size:0;">&nbsp;</td></tr>
+        <tr><td height="10" style="background:#63b9b3;line-height:10px;font-size:0;">&nbsp;</td></tr>
+        <tr><td height="8"  style="background:#2c8683;line-height:8px;font-size:0;">&nbsp;</td></tr>
+      </table>
+    </td></tr>
+
+    <tr><td style="padding:34px 34px 6px;text-align:center;">
+      <p style="margin:0 0 6px;font-size:11px;font-weight:bold;letter-spacing:4px;color:#2f8a86;text-transform:uppercase;">Vous êtes invité</p>
+      <h1 style="margin:10px 0 4px;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:normal;font-size:30px;line-height:1.2;color:#16130f;">${esc(ev.titre)}</h1>
+      ${sur ? `<p style="margin:14px 0 2px;font-size:10px;font-weight:bold;letter-spacing:3px;color:#8c8478;text-transform:uppercase;">${esc(sur)}</p>` : ""}
+      ${hote ? `<p style="margin:4px 0 0;font-family:Georgia,serif;font-size:22px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;color:#16130f;">${esc(hote)}</p>` : ""}
+      <div style="width:120px;height:2px;background:#d4593a;margin:18px auto 0;font-size:0;">&nbsp;</div>
+    </td></tr>
+
+    ${affiche ? `<tr><td style="padding:26px 34px 0;text-align:center;">
+      <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="background:#16130f;border-radius:2px;">
+        <tr><td style="padding:9px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="background:#f4efe4;padding:14px;">
+          <img src="${esc(affiche)}" alt="${esc(ev.titre)}" width="440" style="display:block;width:100%;max-width:440px;height:auto;">
+        </td></tr></table></td></tr>
+      </table>
+    </td></tr>` : ""}
+
+    <tr><td style="padding:28px 34px 0;">
+      <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#4a443c;">${bonjour}</p>
+      ${motPerso ? `<p style="margin:0 0 18px;font-size:15px;line-height:1.7;color:#4a443c;white-space:pre-line;">${esc(motPerso)}</p>` : ""}
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #e7e0d3;border-bottom:1px solid #e7e0d3;margin:6px 0 0;">
+        <tr><td style="padding:16px 0;">
+          <p style="margin:0 0 4px;font-size:10px;font-weight:bold;letter-spacing:3px;color:#d4593a;text-transform:uppercase;">Quand</p>
+          <p style="margin:0 0 16px;font-size:16px;color:#16130f;">${dateLongueFR(ev.date)}${ev.heure ? " · " + esc(ev.heure) : ""}</p>
+          <p style="margin:0 0 4px;font-size:10px;font-weight:bold;letter-spacing:3px;color:#d4593a;text-transform:uppercase;">Où</p>
+          <p style="margin:0;font-size:16px;color:#16130f;">${esc(ev.lieu)}${ev.ville ? " · " + esc(ev.ville) : ""}</p>
+        </td></tr>
+      </table>
+      ${ev.desc_fr ? `<p style="margin:20px 0 0;font-size:15px;line-height:1.7;color:#4a443c;">${esc(ev.desc_fr)}</p>` : ""}
+    </td></tr>
+
+    <tr><td align="center" style="padding:30px 34px 8px;">
+      <a href="${lien}" style="display:inline-block;background:#16130f;color:#f7f3ec;text-decoration:none;font-size:13px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;padding:15px 30px;border-radius:999px;">Voir l'invitation et répondre</a>
+      <p style="margin:14px 0 0;font-size:12px;color:#8c8478;">Un mot suffit : dites-nous si vous serez là.</p>
+    </td></tr>
+
+    <tr><td style="padding:26px 34px 30px;text-align:center;border-top:1px solid #e7e0d3;margin-top:20px;">
+      <p style="margin:22px 0 4px;font-family:Georgia,serif;font-size:19px;color:#16130f;">Pascal <span style="color:#d4593a;">Sun</span></p>
+      <p style="margin:0 0 10px;font-size:11px;letter-spacing:3px;color:#8c8478;text-transform:uppercase;">Peintre · Tahiti</p>
+      <p style="margin:0;font-size:12px;color:#8c8478;"><a href="${SITE_URL}" style="color:#2f8a86;text-decoration:none;">pascal-sun.com</a></p>
+    </td></tr>
+  </table>
+</td></tr></table></body></html>`;
+}
+
+function texteInvitation(ev, motPerso, nom) {
+  const lien = `${SITE_URL}/invitation.html?e=${encodeURIComponent(ev.id)}`;
+  return `${nom ? "Ia ora na " + nom + "," : "Ia ora na,"}
+
+Vous êtes invité : ${ev.titre}
+${(ev.hote || ev.lieu || "")}${ev.hote_sur || ev.ville ? " — " + (ev.hote_sur || ev.ville) : ""}
+
+Quand : ${dateLongueFR(ev.date)}${ev.heure ? " · " + ev.heure : ""}
+Où : ${ev.lieu}${ev.ville ? " · " + ev.ville : ""}
+${motPerso ? "\n" + motPerso + "\n" : ""}${ev.desc_fr ? "\n" + ev.desc_fr + "\n" : ""}
+Voir l'invitation et répondre :
+${lien}
+
+Pascal Sun — Peintre, Tahiti
+${SITE_URL}`;
+}
+
+/* Aperçu du message tel qu'il partira (affiché dans l'admin). */
+app.post("/api/invitation/apercu", requireAuth, (req, res) => {
+  const { eventId, message } = req.body || {};
+  const cat = readJSON(CATALOGUE_FILE, { events: [] });
+  const ev = (cat.events || []).find((e) => e.id === eventId);
+  if (!ev) return res.status(404).json({ error: "vernissage-introuvable" });
+  res.json({ ok: true, sujet: `Invitation — ${ev.titre}`, html: gabaritInvitation(ev, message, "") });
+});
+
+app.post("/api/invitation/envoyer", requireAuth, async (req, res) => {
+  if (!mailEnabled()) return res.status(503).json({ error: "smtp-non-configure" });
+  const { eventId, message, emails, tous } = req.body || {};
+  const cat = readJSON(CATALOGUE_FILE, { events: [] });
+  const ev = (cat.events || []).find((e) => e.id === eventId);
+  if (!ev) return res.status(404).json({ error: "vernissage-introuvable" });
+
+  /* Destinataires : tous les contacts du carnet, ou les adresses choisies. */
+  const contacts = readJSON(NEWSLETTER_FILE, []);
+  const valide = (e) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
+  let cibles;
+  if (tous) {
+    cibles = contacts.filter((c) => valide(c.email || "")).map((c) => ({ email: c.email, nom: c.name || "" }));
+  } else {
+    const voulus = [...new Set((emails || []).map((e) => String(e).trim().toLowerCase()).filter(valide))];
+    cibles = voulus.map((e) => {
+      const c = contacts.find((x) => (x.email || "").toLowerCase() === e);
+      return { email: e, nom: (c && c.name) || "" };
+    });
+  }
+  if (!cibles.length) return res.status(400).json({ error: "aucun-destinataire" });
+
+  const sujet = `Invitation — ${ev.titre}`;
+  const mot = String(message || "").slice(0, 4000);
+  let envoyes = 0;
+  for (const c of cibles) {
+    const ok = await sendMail(c.email, sujet, texteInvitation(ev, mot, c.nom), gabaritInvitation(ev, mot, c.nom));
+    if (ok) envoyes++;
+    await new Promise((r) => setTimeout(r, 200));   // douceur avec le serveur SMTP
+  }
+
+  const journal = readJSON(ENVOIS_FILE, []);
+  journal.unshift({
+    event: ev.id, titre: ev.titre, date: new Date().toISOString(),
+    destinataires: cibles.length, envoyes, adresses: cibles.map((c) => c.email)
+  });
+  writeJSON(ENVOIS_FILE, journal.slice(0, 500));
+
+  sendPush("💌 Invitations envoyées", `${envoyes}/${cibles.length} — ${ev.titre}`);
+  res.json({ ok: true, envoyes, total: cibles.length });
+});
+
+/* Historique des envois, par vernissage. */
+app.get("/api/invitation/envois", requireAuth, (_req, res) => res.json(readJSON(ENVOIS_FILE, [])));
 
 /* ---------------------------------------- certificat d'authenticité -- */
 /* Référence publique : <idCommande>-<n° de ligne>. La page certificat.html

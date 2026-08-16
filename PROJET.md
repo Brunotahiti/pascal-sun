@@ -47,14 +47,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=43/?v=44/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=45/?v=46/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=44"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=46"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -200,6 +200,21 @@ tout est déjà décliné) ; le bouton **admin → Sauvegardes → « ⚡ Optimi
 photos »** relance la même opération à la demande. `sharp` est chargé dans un
 `try/catch` : s'il manque, le site fonctionne comme avant, sans déclinaisons.
 
+### Collections (boutons de filtres)
+La liste `catalogue.collections` — `[{ key, fr, en }]`, **ordonnée** — remplace
+l'objet `COLLECTIONS` de `js/data.js` au chargement
+(`collectionsDepuisListe()`). Elle s'édite dans **admin → Textes & boutons** :
+renommer FR/EN, changer l'ordre (c'est celui des filtres), ajouter, supprimer
+(seulement si plus aucune toile n'y est rattachée). Un raccourci
+« + nouvelle » figure aussi à côté du sélecteur Collection de chaque œuvre.
+`galerie.html?col=<clé>` ouvre la galerie sur une collection.
+
+### Ordre d'affichage des œuvres
+L'ordre du tableau `artworks` **est** l'ordre de la galerie et de l'accueil.
+Chaque fiche d'œuvre porte en haut à gauche son rang et trois boutons —
+⇧ en tête, ↑ monter, ↓ descendre. C'est ainsi qu'on range les trois toiles
+d'un triptyque à la suite.
+
 ### Vernissages & invitations
 Chaque vernissage (onglet **Vernissages**) peut recevoir **son affiche** —
 celle de la galerie ou de l'hôtel — et fournit un **lien public à diffuser** :
@@ -217,8 +232,31 @@ le lieu, un lien vers la galerie, et un formulaire de réponse.
 - Pascal est prévenu par email + notification à chaque réponse, et voit sous
   chaque vernissage : ouvertures, personnes distinctes, confirmations, invités
   attendus, origines, et la liste nominative.
-- Ouverture du lien : animation `vagueInvitation()` (lagon qui monte, TEVAIROA
-  et LE BORA BORA by Pearl Resorts), 4,8 s au total.
+- Ouverture du lien : animation `vagueInvitation()` — le lagon de Bora Bora se
+  lève avec le jour (soleil qui monte, Otemanu qui sort de la brume, bungalows
+  sur pilotis qui s'allument un à un, écume au premier plan), puis le nom de la
+  maison s'inscrit en grand, lettres qui s'écartent, trait corail, marque en
+  petit dessous. 5,6 s, un clic passe. Deux cadrages du même dessin : `viewBox`
+  large en paysage, resserré sur l'Otemanu en portrait. Les mots sont posés sur
+  une brume claire (`.vague-scene::before`) pour rester lisibles quand la
+  montagne passe dessous.
+- Les deux lignes en grand viennent du vernissage : **`hote`** (le nom mis en
+  valeur — un « by … » passe automatiquement en petit dessous) et **`hote_sur`**
+  (la mention au-dessus). Vides, ce sont le lieu et la ville qui servent.
+
+### Invitation envoyée par email
+Depuis **admin → Vernissages**, sous chaque vernissage : un mot d'accompagnement
+facultatif, le choix des destinataires (tout le carnet de contacts, ou des
+adresses saisies), un **aperçu** du message tel qu'il partira, puis l'envoi.
+- `POST /api/invitation/apercu` → `{ sujet, html }` ;
+- `POST /api/invitation/envoyer` `{ eventId, message, tous, emails }` ;
+- historique dans `data/envois-invitations.json` (`GET /api/invitation/envois`).
+
+Le gabarit (`gabaritInvitation()` dans `server.js`) est un email **en tableaux
+HTML**, à la charte du site : bandeau lagon fait de bandes de couleur (aucune
+image à charger), affiche encadrée si elle existe, date et lieu, bouton vers la
+page d'invitation. `sendMail()` accepte désormais un 4ᵉ argument `html` ; sans
+lui, tous les autres emails restent en texte simple.
 
 ### Certificats d'authenticité
 Deux origines, une seule page publique `certificat.html?c=<réf>` :
@@ -357,20 +395,14 @@ depuis Tahiti — un certificat daté du 14 s'afficherait « 13 ».
 
 ## 8. Reste à faire — par ordre suggéré
 
-**Demandé et pas encore fait** (fin de session du 16/08/2026) :
+**Fait le 15/08/2026** : mise en valeur de l'interrupteur des projecteurs ·
+collections éditables et attribuées aux vernissages · nouvelle animation
+d'ouverture de l'invitation · envoi de l'invitation par email depuis l'admin ·
+ordre d'affichage des œuvres (triptyques).
 
-1. **Mettre en valeur le bouton « Allumer les projecteurs »** sur la page
-   Galerie : il se confond aujourd'hui avec les chips de filtres alors qu'il
-   ouvre la plus belle partie du site (entrée en salle d'exposition). Rapide.
-2. **Collections des vernissages** : pouvoir attribuer une ou plusieurs
-   collections à un vernissage, et **renommer les boutons de filtres** de la
-   galerie depuis l'admin (aujourd'hui `COLLECTIONS` est figé dans
-   `js/data.js`, il faut le rendre éditable comme `uiTexts`).
-3. **Refaire l'animation d'ouverture de l'invitation** : l'actuelle est une
-   esquisse honnête (trois houles + les deux noms). Il la faut vraiment
-   « wahou », représentant le lagon de Bora Bora, nom de l'hôtel bien mis en
-   valeur.
-4. **Chat client ↔ Pascal** : messagerie sur le site, stockage, notifications,
+**Reste à faire :**
+
+1. **Chat client ↔ Pascal** : messagerie sur le site, stockage, notifications,
    et une interface de réponse côté admin. C'est le plus gros morceau.
 
 **Deux pièges de vérification à ne pas refaire** (ils ont coûté deux

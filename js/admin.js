@@ -146,8 +146,15 @@
     const cols = (catalogue.collections || [])
       .map((c) => `<option value="${esc(c.key)}" ${a.collection === c.key ? "selected" : ""}>${esc(c.fr)}</option>`)
       .join("");
+    const dernier = catalogue.artworks.length - 1;
     return `
     <article class="aw-card" data-i="${i}">
+      <div class="aw-rang">
+        <span class="rang-num">${i + 1}<sup>${i === 0 ? "re" : "e"}</sup></span>
+        <button type="button" class="ghost-btn" data-act="aw-haut" title="Placer en tête" ${i === 0 ? "disabled" : ""}>⇧</button>
+        <button type="button" class="ghost-btn" data-act="aw-up" title="Monter d'un rang" ${i === 0 ? "disabled" : ""}>↑</button>
+        <button type="button" class="ghost-btn" data-act="aw-down" title="Descendre d'un rang" ${i === dernier ? "disabled" : ""}>↓</button>
+      </div>
       <div class="aw-photo">
         <img src="${esc(a.image)}" alt="">
         <div class="photo-btns">
@@ -158,7 +165,7 @@
       </div>
       <div class="aw-fields">
         <div class="f span2"><label>Titre</label><input data-k="titre" value="${esc(a.titre)}"></div>
-        <div class="f"><label>Collection</label><select data-k="collection">${cols}</select></div>
+        <div class="f"><label>Collection <button type="button" class="lien-btn" data-act="aw-new-col">+ nouvelle</button></label><select data-k="collection">${cols}</select></div>
         <div class="f"><label>Année</label><input data-k="annee" type="number" value="${esc(a.annee)}"></div>
         <div class="f"><label>Dimensions</label><input data-k="dimensions" value="${esc(a.dimensions)}" placeholder="80 × 60 cm"></div>
         <div class="f"><label>Prix (francs Pacifique) <span class="en-francs">≈ ${esc(a.prixEUR)} €</span></label><input data-k="prixXPF" type="number" step="1000" value="${francs(a.prixEUR)}"></div>
@@ -388,6 +395,9 @@
         <div class="f"><label>Heure</label><input data-k="heure" value="${esc(ev.heure)}" placeholder="18h00"></div>
         <div class="f span2"><label>Lieu</label><input data-k="lieu" value="${esc(ev.lieu)}" placeholder="Galerie, salle…"></div>
         <div class="f span2"><label>Ville / Île</label><input data-k="ville" value="${esc(ev.ville)}" placeholder="Papeete, Tahiti"></div>
+        <div class="f span2"><label>Nom mis en valeur à l'ouverture</label><input data-k="hote" value="${esc(ev.hote || "")}" placeholder="Le Bora Bora by Pearl Resorts"></div>
+        <div class="f span2"><label>Mention au-dessus</label><input data-k="hote_sur" value="${esc(ev.hote_sur || "")}" placeholder="Tevairoa, Bora Bora"></div>
+        <div class="f span4"><p class="compose-note" style="margin:-6px 0 0;">Ces deux lignes s'affichent en grand pendant l'animation d'ouverture de l'invitation (le lagon qui se lève). Laissées vides, ce sont le lieu et la ville qui s'affichent. Un « by … » passe automatiquement en petit sous le nom.</p></div>
         <div class="f span4"><label>Description (FR)</label><textarea data-k="desc_fr">${esc(ev.desc_fr)}</textarea></div>
         <div class="f span4"><label>Description (EN)</label><textarea data-k="desc_en">${esc(ev.desc_en)}</textarea></div>
         <div class="f span4">
@@ -419,6 +429,22 @@
             <a class="ghost-btn" href="/invitation.html?e=${encodeURIComponent(ev.id)}" target="_blank">Ouvrir</a>
           </div>
           <p class="compose-note">Ce lien montre l'affiche encadrée, la date, le lieu, et permet à l'invité de confirmer sa venue. Ceux qui confirment rejoignent les contacts de la lettre de l'atelier.</p>
+        </div>
+
+        <div class="f span4 ev-envoi" data-envoi="${esc(ev.id)}">
+          <label>Envoyer l'invitation par email</label>
+          <textarea class="ev-mot" rows="3" placeholder="Un mot d'accompagnement (facultatif) : « C'est avec joie que je vous convie… »"></textarea>
+          <div class="ev-envoi-cibles">
+            <label class="ev-col"><input type="radio" name="cible-${esc(ev.id)}" value="tous" checked> Tous les contacts du carnet</label>
+            <label class="ev-col"><input type="radio" name="cible-${esc(ev.id)}" value="choix"> Adresses choisies</label>
+          </div>
+          <textarea class="ev-adresses" rows="2" placeholder="Une adresse par ligne, ou séparées par des virgules" hidden></textarea>
+          <div class="ev-envoi-btns">
+            <button type="button" class="ghost-btn" data-act="ev-apercu">👁 Voir l'invitation telle qu'elle partira</button>
+            <button type="button" class="save-btn" data-act="ev-envoyer">💌 Envoyer l'invitation</button>
+          </div>
+          <p class="compose-note ev-envoi-note"></p>
+          <div class="ev-apercu-boite" hidden><iframe class="ev-apercu-cadre" title="Aperçu de l'invitation"></iframe></div>
         </div>
 
         <div class="f span4 ev-reponses" data-reponses="${esc(ev.id)}"></div>
@@ -926,6 +952,20 @@
   }
 
   /* ----------------------------------------------------------- textes -- */
+
+  /* Création d'une collection : le nom français suffit, l'anglais reprend le
+     même en attendant d'être traduit dans « Textes & boutons ». Renvoie la
+     clé créée, ou null si l'on renonce. */
+  function nouvelleCollection() {
+    const fr = prompt("Nom de la nouvelle collection (en français) :");
+    if (!fr || !fr.trim()) return null;
+    let key = slugify(fr.trim()).replace(/-/g, "_") || "collection";
+    const base = key; let n = 2;
+    while (COLLECTIONS[key]) key = `${base}_${n++}`;
+    catalogue.collections.push({ key, fr: fr.trim(), en: fr.trim() });
+    syncCollections();
+    return key;
+  }
 
   /* Boutons de filtres de la galerie = collections. Renommables, ordonnables,
      on peut en ajouter ; on ne supprime que celles qu'aucune toile n'utilise. */
@@ -1494,6 +1534,30 @@
       const act = e.target.dataset.act;
       if (act === "photo") $("input[type=file]", card).click();
       if (act === "recrop") recropPhoto(card);
+      /* Créer une collection sans quitter la fiche : elle est aussitôt
+         choisie pour cette œuvre, et rejoint les filtres de la galerie. */
+      if (act === "aw-new-col") {
+        const cle = nouvelleCollection();
+        if (!cle) return;
+        catalogue.artworks[+card.dataset.i].collection = cle;
+        renderArtworks(); renderEvents(); renderCollections();
+        markDirty();
+        toast("Collection créée ✓ — son nom anglais se règle dans « Textes & boutons »");
+        return;
+      }
+      /* Ordre d'affichage : c'est celui de la galerie et de l'accueil. Un
+         triptyque se range ainsi, ses trois toiles à la suite. */
+      if (act === "aw-up" || act === "aw-down" || act === "aw-haut") {
+        const i = +card.dataset.i, L = catalogue.artworks;
+        if (act === "aw-haut" && i > 0) L.unshift(L.splice(i, 1)[0]);
+        if (act === "aw-up" && i > 0) [L[i - 1], L[i]] = [L[i], L[i - 1]];
+        if (act === "aw-down" && i < L.length - 1) [L[i + 1], L[i]] = [L[i], L[i + 1]];
+        renderArtworks();
+        markDirty();
+        const cible = $(`#artwork-list [data-i="${act === "aw-haut" ? 0 : act === "aw-up" ? i - 1 : i + 1}"]`);
+        if (cible) cible.scrollIntoView({ block: "center", behavior: "smooth" });
+        return;
+      }
       if (act === "delete" && confirm("Supprimer définitivement cette œuvre du site ?")) {
         catalogue.artworks.splice(+card.dataset.i, 1);
         renderArtworks();
@@ -1520,6 +1584,56 @@
         renderEvents(); markDirty();
       }
 
+      /* choix des destinataires : la zone d'adresses n'apparaît qu'au besoin */
+      if (e.target.type === "radio") return;
+
+      if (acte === "ev-apercu" || acte === "ev-envoyer") {
+        const zone = carte.querySelector("[data-envoi]");
+        const note = zone.querySelector(".ev-envoi-note");
+        const message = zone.querySelector(".ev-mot").value.trim();
+        const tous = zone.querySelector("input[value=tous]").checked;
+        const emails = zone.querySelector(".ev-adresses").value
+          .split(/[\n,;]+/).map((x) => x.trim()).filter(Boolean);
+
+        if (acte === "ev-apercu") {
+          note.textContent = "Préparation de l'aperçu…";
+          try {
+            const d = await fetch("/api/invitation/apercu", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ eventId: ev.id, message })
+            }).then((r) => r.json());
+            if (!d.ok) throw new Error();
+            const boite = zone.querySelector(".ev-apercu-boite");
+            boite.hidden = false;
+            boite.querySelector("iframe").srcdoc = d.html;
+            note.textContent = `Objet : « ${d.sujet} »`;
+          } catch { note.textContent = "Aperçu indisponible."; }
+          return;
+        }
+
+        if (!tous && !emails.length) { note.textContent = "Indiquez au moins une adresse."; return; }
+        const combien = tous ? "tous les contacts du carnet" : `${emails.length} adresse(s)`;
+        if (!confirm(`Envoyer l'invitation « ${ev.titre} » à ${combien} ?`)) return;
+        const btn = e.target;
+        btn.disabled = true;
+        note.textContent = "Envoi en cours… (quelques secondes par destinataire)";
+        try {
+          const r = await fetch("/api/invitation/envoyer", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ eventId: ev.id, message, tous, emails })
+          });
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error || "");
+          note.textContent = `Invitation envoyée à ${d.envoyes}/${d.total} destinataire(s) ✓`;
+          toast(`Invitation envoyée à ${d.envoyes} destinataire(s) ✓`);
+        } catch (err) {
+          note.textContent = String(err.message).includes("smtp")
+            ? "Emails inactifs : saisissez le mot de passe de la boîte contact@pascal-sun.com dans l'onglet Sauvegardes."
+            : "Échec de l'envoi.";
+        } finally { btn.disabled = false; }
+        return;
+      }
+
       if (acte === "ev-copier") {
         const lien = `${location.origin}/invitation.html?e=${encodeURIComponent(ev.id)}`;
         try { await navigator.clipboard.writeText(lien); toast("Lien d'invitation copié ✓"); }
@@ -1528,6 +1642,11 @@
     });
 
     listeEv.addEventListener("change", async (e) => {
+      if (e.target.type === "radio") {
+        const zone = e.target.closest("[data-envoi]");
+        zone.querySelector(".ev-adresses").hidden = e.target.value !== "choix";
+        return;
+      }
       if (e.target.type !== "file" || !e.target.files[0]) return;
       const carte = e.target.closest("[data-ei]");
       const ev = catalogue.events[+carte.dataset.ei];
@@ -1765,13 +1884,7 @@
       markDirty();
     });
     $("#add-col").addEventListener("click", () => {
-      const fr = prompt("Nom de la nouvelle collection (en français) :");
-      if (!fr || !fr.trim()) return;
-      let key = slugify(fr.trim()).replace(/-/g, "_") || "collection";
-      let base = key, n = 2;
-      while (COLLECTIONS[key]) key = `${base}_${n++}`;
-      catalogue.collections.push({ key, fr: fr.trim(), en: fr.trim() });
-      syncCollections();
+      if (!nouvelleCollection()) return;
       renderCollections(); renderArtworks(); renderEvents();
       markDirty();
       const rows = colsList.querySelectorAll("[data-ci]");

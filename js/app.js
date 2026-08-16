@@ -921,30 +921,93 @@
   /* Page d'un vernissage, destinée à être partagée largement : l'affiche
      encadrée comme une toile, les informations, et la réponse de l'invité. */
 
-  /* Ouverture de l'invitation : le lagon monte, l'écume se retire, et les
-     deux maisons qui accueillent le vernissage apparaissent avant la page. */
+  /* Ouverture de l'invitation : le lagon de Bora Bora se lève avec le jour —
+     le soleil monte, l'Otemanu sort de la brume, les bungalows sur pilotis
+     s'allument un à un, l'écume vient mourir au premier plan — puis le nom de
+     la maison qui reçoit le vernissage s'inscrit en grand. Un clic passe.
+     Les textes viennent du vernissage : `hote` (le nom mis en valeur, sinon
+     le lieu) et `hote_sur` (la mention au-dessus, sinon la ville). */
   function vagueInvitation(ev) {
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const hote = (ev.hote || ev.lieu || "").trim();
+    const sur = (ev.hote_sur || ev.ville || "").trim();
+    /* « Le Bora Bora by Pearl Resorts » : la marque passe en petit dessous */
+    const m = hote.match(/^(.*?)\s+(by\s+.+)$/i);
+    const hoteHaut = m ? m[1] : hote;
+    const hoteBas = m ? m[2] : "";
+
+    const bung = (x, y, k, d) => `<g class="bung" style="animation-delay:${d}s"><use href="#inv-bung" transform="translate(${x} ${y}) scale(${k})"/></g>`;
     const v = document.createElement("div");
     v.className = "vague-intro";
     v.innerHTML = `
+      <svg class="lagon" viewBox="${innerHeight > innerWidth * 1.1 ? "300 0 600 700" : "0 0 1200 700"}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <linearGradient id="inv-ciel" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#f7f3ec"/><stop offset=".5" stop-color="#f1efe6"/><stop offset=".86" stop-color="#f5e0ca"/><stop offset="1" stop-color="#ecd6bf"/>
+          </linearGradient>
+          <linearGradient id="inv-eau" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#bbe2dc"/><stop offset=".28" stop-color="#63b9b3"/><stop offset="1" stop-color="#2c8683"/>
+          </linearGradient>
+          <radialGradient id="inv-halo"><stop offset="0" stop-color="#ffe6bc" stop-opacity="1"/><stop offset=".4" stop-color="#ffd8a4" stop-opacity=".45"/><stop offset="1" stop-color="#ffd8a4" stop-opacity="0"/></radialGradient>
+          <linearGradient id="inv-mont" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#41514e"/><stop offset="1" stop-color="#1e2a29"/></linearGradient>
+          <symbol id="inv-bung" overflow="visible">
+            <path d="M-2 0 L14 -11 L30 0 Z"/><rect x="1" y="0" width="26" height="12"/>
+            <path d="M4 12 v9 M24 12 v9 M14 12 v9" stroke="#1e2a29" stroke-width="2"/>
+            <rect x="-10" y="21" width="48" height="2"/>
+          </symbol>
+        </defs>
+
+        <rect class="ciel" x="-200" y="0" width="1600" height="700" fill="url(#inv-ciel)"/>
+        <g class="soleil"><circle cx="712" cy="404" r="200" fill="url(#inv-halo)"/><circle cx="712" cy="404" r="46" fill="#ffd9a0"/></g>
+
+        <!-- l'Otemanu, centré : c'est lui qu'on doit voir même sur téléphone -->
+        <path class="mont mont-loin" d="M296 462 L346 428 L400 406 L452 424 L500 462 Z" fill="#8a9c98"/>
+        <path class="mont" fill="url(#inv-mont)" d="M330 462 L392 424 L436 398 L470 368 L494 330 L510 296 L524 268 L536 246 L546 258 L556 232 L568 216 L580 240 L594 226 L606 258 L620 292 L638 330 L664 372 L700 414 L740 444 L768 462 Z"/>
+
+        <rect class="eau" x="-200" y="462" width="1600" height="238" fill="url(#inv-eau)"/>
+        <g class="reflets" stroke="#fff" stroke-linecap="round" fill="none">
+          <path class="r1" d="M320 522 h120 M480 522 h60 M610 522 h180 M840 522 h90"/>
+          <path class="r2" d="M330 572 h150 M560 572 h70 M680 572 h190 M900 572 h90"/>
+          <path class="r3" d="M310 636 h180 M540 636 h90 M690 636 h200 M930 636 h140"/>
+        </g>
+
+        <!-- le motu et ses cocotiers, à gauche -->
+        <g class="motu">
+          <path d="M-160 466 Q -20 446 190 462 V 476 H -160 Z" fill="#e6d8bd"/>
+          <g class="palme" fill="none" stroke="#243130" stroke-width="3" stroke-linecap="round">
+            <path d="M40 466 q6 -40 22 -70"/><path d="M62 396 q-30 -12 -50 4 M62 396 q-2 -30 20 -42 M62 396 q26 -18 46 -6 M62 396 q26 6 34 30 M62 396 q-6 22 -28 34"/>
+            <path d="M136 468 q-2 -34 12 -58"/><path d="M148 410 q-26 -8 -40 6 M148 410 q4 -24 22 -30 M148 410 q22 -10 36 4 M148 410 q16 12 18 30"/>
+          </g>
+        </g>
+
+        <!-- les bungalows sur pilotis, en enfilade vers le large -->
+        <g class="bungalows" fill="#243130">
+          ${bung(620, 456, .52, 1.5)}${bung(672, 459, .64, 1.75)}${bung(734, 462, .78, 1.6)}${bung(806, 466, .92, 1.95)}${bung(890, 471, 1.08, 1.85)}${bung(988, 477, 1.26, 2.15)}
+        </g>
+
+        <g class="ecume" fill="#fff">
+          <path d="M-300 640 Q -100 610 100 640 T 500 640 T 900 640 T 1300 640 T 1700 640 V700 H-300 Z"/>
+          <path d="M-300 665 Q -100 640 100 665 T 500 665 T 900 665 T 1300 665 T 1700 665 V700 H-300 Z"/>
+        </g>
+      </svg>
+
       <div class="vague-scene">
-        <p class="vague-hote">TEVAIROA</p>
+        ${sur ? `<p class="vague-hote">${esc(sur)}</p>` : ""}
         <h2 class="vague-titre">${esc(ev.titre)}</h2>
-        <p class="vague-lieu">LE BORA BORA <span>by Pearl Resorts</span></p>
+        ${hoteHaut ? `<p class="vague-lieu ${hoteHaut.length > 15 ? "long" : ""}"><span class="nom">${esc(hoteHaut)}</span><i class="trait"></i>${hoteBas ? `<span class="marque">${esc(hoteBas)}</span>` : ""}</p>` : ""}
       </div>
-      <svg class="vague-eau" viewBox="0 0 1200 300" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M0 120 Q 150 70 300 120 T 600 120 T 900 120 T 1200 120 V300 H0 Z"/>
-        <path d="M0 140 Q 150 95 300 140 T 600 140 T 900 140 T 1200 140 V300 H0 Z"/>
-        <path d="M0 165 Q 150 125 300 165 T 600 165 T 900 165 T 1200 165 V300 H0 Z"/>
-      </svg>`;
+      <p class="vague-passer">${t("inv_passer")}</p>`;
     document.body.appendChild(v);
     document.body.classList.add("vague-lock");
-    setTimeout(() => {
+    let fini = false;
+    const fermer = () => {
+      if (fini) return; fini = true;
       v.classList.add("done");
       document.body.classList.remove("vague-lock");
-      setTimeout(() => v.remove(), 1400);
-    }, 3400);
+      setTimeout(() => v.remove(), 1300);
+    };
+    v.addEventListener("click", fermer);
+    setTimeout(fermer, 5600);
   }
 
   function pageInvitation() {
