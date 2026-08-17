@@ -370,6 +370,7 @@ function makeBackup() {
     const olds = fs.readdirSync(BACKUP_DIR).filter((f) => f.endsWith(".json.gz")).sort();
     olds.slice(0, Math.max(0, olds.length - 30)).forEach((f) => fs.unlinkSync(path.join(BACKUP_DIR, f)));
     console.log("Sauvegarde écrite :", path.basename(file));
+    setTimeout(() => synchroniserDistantes().catch(() => {}), 2000);   // copie chez Scaleway
     return file;
   } catch (e) {
     console.error("backup:", e.message);
@@ -396,6 +397,227 @@ app.get("/api/backups", requireAuth, (_req, res) => {
   const list = fs.readdirSync(BACKUP_DIR).filter((f) => f.endsWith(".json.gz")).sort().reverse()
     .map((f) => ({ file: f, size: fs.statSync(path.join(BACKUP_DIR, f)).size }));
   res.json(list);
+});
+
+/* --------------------------- copie hors serveur : Scaleway Object Storage -- */
+/* Les sauvegardes du disque protègent d'une fausse manœuvre, pas d'une perte
+   du serveur. Chaque sauvegarde est aussi déposée dans un bucket Scaleway
+   (compatible S3, région Paris), et ce qui manque là-bas est rattrapé à la
+   passe suivante. Même mécanique que sur Polynet : signature AWS v4 écrite à
+   la main, trois requêtes (déposer, lister, supprimer), pas de SDK. Les clés
+   vivent dans data/scaleway.json, sur le volume — jamais dans le code. */
+
+const SCW_FILE = path.join(DATA_DIR, "scaleway.json");
+const SCW_PREFIXE = "pascal-sun/";
+const SCW_MAX_DISTANTES = 120;
+
+function lireConfigScaleway() {
+  const c = readJSON(SCW_FILE, {});
+  return {
+    accesId: process.env.SCW_ACCESS_KEY || c.accesId || "",
+    secret: process.env.SCW_SECRET_KEY || c.secret || "",
+    bucket: process.env.SCW_BUCKET || c.bucket || "",
+    region: process.env.SCW_REGION || c.region || "fr-par",
+    dernier: c.dernier || null
+  };
+}
+function ecrireConfigScaleway(n) {
+  const c = readJSON(SCW_FILE, {});
+  c.accesId = String(n.accesId || "").trim();
+  // secret vide = on garde l'ancien : le formulaire ne le réaffiche jamais
+  if (String(n.secret || "").trim()) c.secret = String(n.secret).trim();
+  c.bucket = String(n.bucket || "").trim();
+  c.region = String(n.region || "fr-par").trim() || "fr-par";
+  writeJSON(SCW_FILE, c);
+}
+const scalewayConfigure = (c = lireConfigScaleway()) => Boolean(c.accesId && c.secret && c.bucket && c.region);
+function noterScaleway(ok, envoyees, detail) {
+  const c = readJSON(SCW_FILE, {});
+  c.dernier = { quand: new Date().toISOString(), ok, envoyees, detail };
+  writeJSON(SCW_FILE, c);
+}
+
+const sha256 = (d) => crypto.createHash("sha256").update(d).digest("hex");
+const hmac = (k, d) => crypto.createHmac("sha256", k).update(d).digest();
+const encoderCle = (cle) => cle.split("/").map((p) => encodeURIComponent(p).replace(/[!'()*]/g, (ch) => `%${ch.charCodeAt(0).toString(16).toUpperCase()}`)).join("/");
+
+/* Requête signée (URL + en-têtes), signature S3 v4. */
+function signerRequete(c, methode, cle, options = {}) {
+  const hote = options.service ? `s3.${c.region}.scw.cloud` : `${c.bucket}.s3.${c.region}.scw.cloud`;
+  const corps = options.corps || Buffer.alloc(0);
+  const maintenant = options.maintenant || new Date();
+  const dateLongue = maintenant.toISOString().replace(/[:-]|\.\d{3}/g, "");
+  const dateCourte = dateLongue.slice(0, 8);
+  const empreinte = sha256(corps);
+  const chemin = "/" + encoderCle(cle);
+  const requete = Object.entries(options.requete || {}).sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join("&");
+  const entetes = { host: hote, "x-amz-content-sha256": empreinte, "x-amz-date": dateLongue };
+  if (methode === "PUT") entetes["content-type"] = "application/gzip";
+  const nomsSignes = Object.keys(entetes).sort().join(";");
+  const entetesCanoniques = Object.keys(entetes).sort().map((k) => `${k}:${entetes[k]}\n`).join("");
+  const canonique = [methode, chemin, requete, entetesCanoniques, nomsSignes, empreinte].join("\n");
+  const portee = `${dateCourte}/${c.region}/s3/aws4_request`;
+  const aSigner = ["AWS4-HMAC-SHA256", dateLongue, portee, sha256(canonique)].join("\n");
+  const cleSignature = hmac(hmac(hmac(hmac(`AWS4${c.secret}`, dateCourte), c.region), "s3"), "aws4_request");
+  const signature = crypto.createHmac("sha256", cleSignature).update(aSigner).digest("hex");
+  return {
+    url: `https://${hote}${chemin}${requete ? `?${requete}` : ""}`,
+    entetes: { ...entetes, authorization: `AWS4-HMAC-SHA256 Credential=${c.accesId}/${portee}, SignedHeaders=${nomsSignes}, Signature=${signature}` }
+  };
+}
+async function requeteS3(c, methode, cle, options = {}) {
+  const { url, entetes } = signerRequete(c, methode, cle, options);
+  return fetch(url, {
+    method: methode, headers: entetes,
+    body: methode === "PUT" ? new Uint8Array(options.corps || Buffer.alloc(0)) : undefined,
+    signal: AbortSignal.timeout(60000)
+  });
+}
+async function expliquerS3(r) {
+  const texte = await r.text().catch(() => "");
+  const code = (/<Code>([^<]+)<\/Code>/.exec(texte) || [])[1];
+  const details = {
+    NoSuchBucket: "ce bucket n'existe pas dans cette région",
+    InvalidAccessKeyId: "clé d'accès inconnue",
+    SignatureDoesNotMatch: "clé secrète incorrecte",
+    AccessDenied: "accès refusé — la clé n'a pas les droits sur ce bucket"
+  };
+  return `${r.status}${code ? ` ${code}` : ""}${code && details[code] ? ` : ${details[code]}` : ""}`;
+}
+
+async function listerDistantes(c = lireConfigScaleway()) {
+  const r = await requeteS3(c, "GET", "", { requete: { "list-type": "2", prefix: SCW_PREFIXE, "max-keys": "1000" } });
+  if (!r.ok) throw new Error(`Liste impossible (${await expliquerS3(r)})`);
+  const xml = await r.text();
+  const objets = [];
+  for (const m of xml.matchAll(/<Contents>([\s\S]*?)<\/Contents>/g)) {
+    const bloc = m[1];
+    const cle = (/<Key>([^<]+)<\/Key>/.exec(bloc) || [])[1] || "";
+    objets.push({
+      nom: cle.slice(SCW_PREFIXE.length),
+      octets: Number((/<Size>(\d+)<\/Size>/.exec(bloc) || [])[1] || 0),
+      modifie: (/<LastModified>([^<]+)<\/LastModified>/.exec(bloc) || [])[1] || ""
+    });
+  }
+  return objets.sort((a, b) => b.nom.localeCompare(a.nom));
+}
+async function deposerSauvegarde(nom, c = lireConfigScaleway()) {
+  const chemin = path.join(BACKUP_DIR, path.basename(nom));
+  if (!fs.existsSync(chemin)) throw new Error("Sauvegarde introuvable");
+  const r = await requeteS3(c, "PUT", SCW_PREFIXE + nom, { corps: fs.readFileSync(chemin) });
+  if (!r.ok) throw new Error(`Dépôt refusé (${await expliquerS3(r)})`);
+}
+async function supprimerDistante(nom, c = lireConfigScaleway()) {
+  const r = await requeteS3(c, "DELETE", SCW_PREFIXE + nom);
+  if (!r.ok && r.status !== 404) throw new Error(`Suppression refusée (${await expliquerS3(r)})`);
+}
+
+/* Ce que la clé a l'air d'être, sans jamais l'afficher en clair. */
+function allureDesCles(c = lireConfigScaleway()) {
+  return {
+    acces: c.accesId ? `${c.accesId.slice(0, 6)}…${c.accesId.slice(-2)} (${c.accesId.length} car.)` : "—",
+    accesOk: /^SCW[A-Z0-9]{17}$/.test(c.accesId),
+    secretLongueur: c.secret.length,
+    secretOk: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(c.secret)
+  };
+}
+/* Le bucket refuse : est-ce la clé, ou le bucket ? La liste des buckets que
+   la clé voit départage, et le message dit quoi corriger. */
+async function diagnostiquerScaleway(c) {
+  try {
+    const r = await requeteS3(c, "GET", "", { service: true });
+    if (!r.ok) {
+      const code = (/<Code>([^<]+)<\/Code>/.exec(await r.text().catch(() => "")) || [])[1] || r.status;
+      const a = allureDesCles(c);
+      const forme = [
+        a.accesOk ? null : `la clé d'accès ${a.acces} n'a pas la forme attendue (SCW + 17 caractères, 20 en tout)`,
+        a.secretOk ? null : `la clé secrète enregistrée fait ${a.secretLongueur} caractère(s) au lieu des 36 d'un UUID (8-4-4-4-12)`
+      ].filter(Boolean);
+      return `La clé elle-même est refusée par Scaleway (${code}).` + (forme.length
+        ? ` À corriger d'abord : ${forme.join(" ; ")}. Recollez les deux valeurs telles quelles depuis la console Scaleway.`
+        : ` Les deux valeurs ont pourtant la bonne forme : il reste le droit IAM — la clé API doit relever d'une politique portant ObjectStorageFullAccess (IAM → Politiques) sur le projet du bucket. Une clé créée sans politique est acceptée par Scaleway mais ne peut rien faire.`);
+    }
+    const noms = [...(await r.text()).matchAll(/<Name>([^<]+)<\/Name>/g)].map((m) => m[1]);
+    if (noms.includes(c.bucket)) return `La clé voit bien le bucket « ${c.bucket} » mais ne peut pas lire dedans : le droit IAM manque sur ce projet, ou une politique de bucket le bloque.`;
+    return noms.length
+      ? `La clé est acceptée, mais elle ne voit pas de bucket « ${c.bucket} » en ${c.region}. Elle voit : ${noms.join(", ")}. Vérifiez le nom exact et la région — ou le projet préféré de la clé (à la création d'une clé API, Scaleway demande le projet à utiliser pour Object Storage : ce doit être celui du bucket).`
+      : `La clé est acceptée, mais elle ne voit aucun bucket en ${c.region}. Le bucket est-il dans une autre région, ou dans un autre projet que le projet préféré de la clé ?`;
+  } catch (e) { return `Diagnostic impossible : ${e.message}`; }
+}
+/* Vérifie les accès : liste, dépose un témoin, le retire. */
+async function testerScaleway(c) {
+  let objets;
+  try { objets = (await listerDistantes(c)).length; }
+  catch (e) { throw new Error(`${e.message}. ${await diagnostiquerScaleway(c)}`); }
+  const temoin = `${SCW_PREFIXE}.temoin-${Date.now()}`;
+  const r = await requeteS3(c, "PUT", temoin, { corps: Buffer.from("pascal-sun") });
+  if (!r.ok) throw new Error(`Dépôt refusé (${await expliquerS3(r)})`);
+  await requeteS3(c, "DELETE", temoin);
+  return { objets };
+}
+/* Met le bucket au niveau du serveur, puis élague au-delà du quota. */
+let scwEnCours = false;
+async function synchroniserDistantes() {
+  const c = lireConfigScaleway();
+  if (!scalewayConfigure(c) || scwEnCours) return { envoyees: 0 };
+  scwEnCours = true;
+  try {
+    const distantes = new Set((await listerDistantes(c)).map((o) => o.nom));
+    const locales = fs.readdirSync(BACKUP_DIR).filter((f) => f.endsWith(".json.gz")).sort();
+    const manquantes = locales.filter((f) => !distantes.has(f));
+    for (const f of manquantes) await deposerSauvegarde(f, c);
+    const apres = await listerDistantes(c);
+    for (const o of apres.slice(SCW_MAX_DISTANTES)) await supprimerDistante(o.nom, c);
+    noterScaleway(true, manquantes.length, `${apres.length} sauvegarde(s) chez Scaleway`);
+    return { envoyees: manquantes.length };
+  } catch (e) {
+    const detail = `${e.message}. ${await diagnostiquerScaleway(c)}`;
+    noterScaleway(false, 0, detail);
+    throw new Error(detail);
+  } finally { scwEnCours = false; }
+}
+function etatScaleway() {
+  const c = lireConfigScaleway();
+  return { configure: scalewayConfigure(c), bucket: c.bucket, region: c.region, accesId: c.accesId, allure: allureDesCles(c), dernier: c.dernier };
+}
+/* Après chaque sauvegarde du jour, et toutes les 30 min en rattrapage. */
+setTimeout(() => synchroniserDistantes().catch(() => {}), 60e3);
+setInterval(() => synchroniserDistantes().catch(() => {}), 30 * 60e3);
+
+app.get("/api/sauvegardes/scaleway", requireAuth, async (req, res) => {
+  const etat = etatScaleway();
+  if (req.query.liste === "1" && etat.configure) {
+    try { return res.json({ ...etat, distantes: await listerDistantes() }); }
+    catch (e) { return res.json({ ...etat, distantes: [], erreurListe: e.message }); }
+  }
+  res.json(etat);
+});
+app.put("/api/sauvegardes/scaleway", requireAuth, (req, res) => {
+  const b = req.body || {};
+  const c = { accesId: String(b.accesId || "").trim(), secret: String(b.secret || ""), bucket: String(b.bucket || "").trim(), region: String(b.region || "fr-par").trim() || "fr-par" };
+  if (!c.accesId || !c.bucket) return res.status(400).json({ error: "Clé d'accès et nom du bucket requis" });
+  if (!/^[a-z0-9.-]{3,63}$/.test(c.bucket)) return res.status(400).json({ error: "Nom de bucket invalide (minuscules, chiffres, tirets)" });
+  if (!/^[a-z]{2}-[a-z]{3}$/.test(c.region)) return res.status(400).json({ error: "Région attendue : fr-par, nl-ams ou pl-waw" });
+  ecrireConfigScaleway(c);
+  res.json({ ok: true, etat: etatScaleway() });
+});
+app.post("/api/sauvegardes/scaleway", requireAuth, async (req, res) => {
+  const b = req.body || {};
+  try {
+    if (b.action === "tester") {
+      const e = lireConfigScaleway();
+      const c = { accesId: String(b.accesId || "").trim() || e.accesId, secret: String(b.secret || "").trim() || e.secret, bucket: String(b.bucket || "").trim() || e.bucket, region: String(b.region || "").trim() || e.region };
+      if (!scalewayConfigure(c)) return res.status(400).json({ error: "Configuration incomplète" });
+      return res.json({ ok: true, ...(await testerScaleway(c)) });
+    }
+    if (b.action === "synchroniser") {
+      if (!scalewayConfigure()) return res.status(400).json({ error: "Scaleway n'est pas configuré" });
+      const r = await synchroniserDistantes();
+      return res.json({ ok: true, ...r, etat: etatScaleway() });
+    }
+    res.status(400).json({ error: "Action inconnue" });
+  } catch (e) { res.status(502).json({ error: e.message }); }
 });
 
 /* ------------------------------------------------- notifications push -- */

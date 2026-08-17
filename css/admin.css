@@ -1032,3 +1032,7 @@ button { font-family: var(--sans); cursor: pointer; }
 @media (max-width: 900px) { .ev-stat-grid { grid-template-columns: 1fr; } }
 .ev-stat-grid h4 { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 8px; }
 .ev-chart svg { width: 100%; height: auto; display: block; }
+.scw-badge { display: inline-block; margin-left: 8px; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: .06em; vertical-align: middle; background: var(--paper-deep); color: var(--ink-faint); }
+.scw-badge.ok { background: #e6f4ea; color: #1e7b3a; }
+.scw-badge.ko { background: rgba(212,89,58,.12); color: var(--accent); }
+.scw-alerte { background: #fff6e0; color: #8a5a00; padding: 8px 12px; border-radius: 6px; font-weight: 600; }

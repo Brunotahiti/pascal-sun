@@ -1516,8 +1516,67 @@
         if (t.dataset.tab === "certificats") ouvrirCertificats();
         if (t.dataset.tab === "clients") renderClients();
         if (t.dataset.tab === "idees") renderIdees();
-        if (t.dataset.tab === "donnees") { renderBackups(); refreshMailNote(); }
+        if (t.dataset.tab === "donnees") { renderBackups(); refreshMailNote(); chargerScaleway(); }
       }));
+
+    /* ------ copie hors serveur : Scaleway ------ */
+    async function chargerScaleway() {
+      const badge = $("#scw-badge"), etat = $("#scw-etat"), allure = $("#scw-allure");
+      let d;
+      try { d = await fetch("/api/sauvegardes/scaleway?liste=1").then((r) => r.json()); }
+      catch { badge.textContent = "indisponible"; return; }
+      const ko = (d.dernier && !d.dernier.ok) || Boolean(d.erreurListe);
+      badge.textContent = !d.configure ? "non configurée" : ko ? "en échec" : "active";
+      badge.className = "scw-badge " + (!d.configure ? "off" : ko ? "ko" : "ok");
+      $("#scw-sync").hidden = !d.configure;
+      $("#scw-ouvrir").textContent = d.configure ? "Modifier les accès" : "Configurer";
+      $("#scw-secret-note").textContent = d.configure ? "— vide : inchangée" : "";
+      const quand = (iso) => new Date(iso).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+      if (d.configure) {
+        let t = `Bucket ${d.bucket} (${d.region})`;
+        if (d.distantes) t += ` · ${d.distantes.length} sauvegarde${d.distantes.length > 1 ? "s" : ""} là-bas${d.distantes[0] ? `, dernière ${d.distantes[0].nom.replace(/^pascal-sun-|\.json\.gz$/g, "")}` : ""}`;
+        if (d.erreurListe) t += ` · liste impossible : ${d.erreurListe}`;
+        if (d.dernier) t += ` · dernière synchronisation ${quand(d.dernier.quand)} : ${d.dernier.detail}`;
+        etat.textContent = t;
+        etat.style.color = d.dernier && !d.dernier.ok ? "var(--accent)" : "";
+        $("#scw-acces").value = d.accesId || ""; $("#scw-bucket").value = d.bucket || ""; $("#scw-region").value = d.region || "fr-par";
+      } else etat.textContent = "";
+      const a = d.allure || {};
+      if (d.configure && (!a.accesOk || !a.secretOk)) {
+        allure.hidden = false;
+        allure.textContent = "⚠ Les clés enregistrées n'ont pas la forme attendue : " +
+          [!a.accesOk ? `clé d'accès ${a.acces} au lieu de SCW + 17 caractères` : null,
+           !a.secretOk ? `clé secrète de ${a.secretLongueur} caractère(s) au lieu des 36 d'un UUID (8-4-4-4-12)` : null].filter(Boolean).join(" ; ") +
+          ". Recollez-les depuis la console Scaleway.";
+      } else allure.hidden = true;
+    }
+    const scwCorps = () => ({ accesId: $("#scw-acces").value, secret: $("#scw-secret").value, bucket: $("#scw-bucket").value, region: $("#scw-region").value });
+    $("#scw-ouvrir").addEventListener("click", () => { const f = $("#scw-form"); f.hidden = !f.hidden; $("#scw-ouvrir").textContent = f.hidden ? ($("#scw-sync").hidden ? "Configurer" : "Modifier les accès") : "Fermer"; });
+    $("#scw-tester").addEventListener("click", async () => {
+      $("#scw-msg").textContent = "Test en cours…";
+      const r = await fetch("/api/sauvegardes/scaleway", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "tester", ...scwCorps() }) });
+      const d = await r.json();
+      $("#scw-msg").textContent = r.ok ? `Accès vérifiés ✓ — ${d.objets} sauvegarde${d.objets > 1 ? "s" : ""} déjà là-bas.` : `Échec : ${d.error}`;
+    });
+    $("#scw-enregistrer").addEventListener("click", async () => {
+      const r = await fetch("/api/sauvegardes/scaleway", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(scwCorps()) });
+      const d = await r.json();
+      if (!r.ok) { $("#scw-msg").textContent = `Échec : ${d.error}`; return; }
+      $("#scw-secret").value = "";
+      $("#scw-msg").textContent = "Accès enregistrés ✓ — envoi de ce qui manque…";
+      $("#scw-form").hidden = true;
+      const s2 = await fetch("/api/sauvegardes/scaleway", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "synchroniser" }) });
+      const d2 = await s2.json();
+      $("#scw-msg").textContent = s2.ok ? `${d2.envoyees} sauvegarde${d2.envoyees > 1 ? "s" : ""} déposée${d2.envoyees > 1 ? "s" : ""} chez Scaleway ✓` : `Copie échouée : ${d2.error}`;
+      chargerScaleway();
+    });
+    $("#scw-sync").addEventListener("click", async () => {
+      $("#scw-msg").textContent = "Envoi…";
+      const r = await fetch("/api/sauvegardes/scaleway", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "synchroniser" }) });
+      const d = await r.json();
+      $("#scw-msg").textContent = r.ok ? `${d.envoyees} sauvegarde${d.envoyees > 1 ? "s" : ""} déposée${d.envoyees > 1 ? "s" : ""} chez Scaleway ✓` : `Copie échouée : ${d.error}`;
+      chargerScaleway();
+    });
 
     async function refreshMailNote() {
       const st = await fetch("/api/mail-status").then((r) => r.json()).catch(() => ({ enabled: false }));

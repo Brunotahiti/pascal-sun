@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/admin.css?v=54">
+  <link rel="stylesheet" href="css/admin.css?v=55">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='38' fill='%2316130f'/></svg>">
 </head>
 <body>
@@ -333,6 +333,30 @@
           </div>
           <p class="compose-note">Le mot de passe est conservé de façon chiffrée sur le serveur, jamais dans le code du site. Une fois saisi ici, il survit à toutes les mises à jour.</p>
         </div>
+        <div class="compose-panel" style="margin-bottom: 22px;" id="scw-panel">
+          <h3>☁️ Copie hors serveur — Scaleway <span class="scw-badge" id="scw-badge">…</span></h3>
+          <p class="compose-note">Les sauvegardes du serveur sont aussi déposées dans un « bucket » Scaleway (Object Storage, Paris) : elles survivent à la perte du serveur. Ce qui manque là-bas est rattrapé automatiquement après chaque sauvegarde et toutes les 30 minutes. 120 sauvegardes gardées là-bas.</p>
+          <p class="compose-note" id="scw-etat"></p>
+          <p class="compose-note scw-alerte" id="scw-allure" hidden></p>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="ghost-btn" id="scw-sync" hidden>☁️ Envoyer maintenant</button>
+            <button class="ghost-btn" id="scw-ouvrir">Configurer</button>
+          </div>
+          <div id="scw-form" hidden style="margin-top:14px;">
+            <p class="compose-note" style="background:var(--paper-deep); padding:10px 12px; border-radius:6px;">Chez Scaleway : créez un <b>bucket</b> (Object Storage, région Paris, visibilité privée), puis une <b>clé API</b> (IAM → Clés API) rattachée à une politique <b>ObjectStorageFullAccess</b> sur le projet du bucket. La clé secrète n'est affichée qu'une fois par Scaleway : collez-la ici, elle ne sera jamais réaffichée.</p>
+            <div class="cert-form">
+              <label class="cf-champ span2">Clé d'accès (Access key)<input id="scw-acces" placeholder="SCW…" autocomplete="off"></label>
+              <label class="cf-champ span2">Clé secrète (Secret key) <small id="scw-secret-note"></small><input id="scw-secret" type="password" autocomplete="new-password"></label>
+              <label class="cf-champ span2">Nom du bucket<input id="scw-bucket" placeholder="pascal-sun-sauvegardes" autocomplete="off"></label>
+              <label class="cf-champ span2">Région<select id="scw-region"><option value="fr-par">fr-par — Paris</option><option value="nl-ams">nl-ams — Amsterdam</option><option value="pl-waw">pl-waw — Varsovie</option></select></label>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+              <button class="ghost-btn" id="scw-tester">🔍 Tester les accès</button>
+              <button class="solid-btn" id="scw-enregistrer">Enregistrer</button>
+            </div>
+          </div>
+          <p class="compose-status" id="scw-msg"></p>
+        </div>
         <pre class="report-box" id="report-box" hidden></pre>
         <h3 style="font-family:var(--serif); font-size:22px; font-weight:600; margin:26px 0 12px;">Sauvegardes automatiques</h3>
         <div id="backup-list"></div>
@@ -410,7 +434,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="js/data.js?v=54"></script>
-  <script src="js/admin.js?v=54"></script>
+  <script src="js/data.js?v=55"></script>
+  <script src="js/admin.js?v=55"></script>
 </body>
 </html>
