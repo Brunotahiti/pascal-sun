@@ -47,14 +47,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=55/?v=56/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=56/?v=57/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=56"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=57"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -324,7 +324,14 @@ depuis Tahiti — un certificat daté du 14 s'afficherait « 13 ».
   avec diagnostic (clé refusée ? bucket introuvable ? droit IAM ?). Clés dans
   `data/scaleway.json` (ou `SCW_ACCESS_KEY` / `SCW_SECRET_KEY` / `SCW_BUCKET` /
   `SCW_REGION` en variables d'environnement, prioritaires). Le secret n'est
-  jamais renvoyé au navigateur.
+  jamais renvoyé au navigateur. **À côté des données, l'archive complète du
+  programme** (`pascal-sun/programme/pascal-sun-programme-<date>-<empreinte>.tar.gz`,
+  ~95 Mo) : tout le code déployé sauf `node_modules`, `data/uploads/`,
+  `data/mail.json`, `data/scaleway.json`, un `configuration.env` (variables du
+  conteneur) et un `LISEZMOI.txt` de remise en route. Tar+gzip écrits en flux
+  par `archiverProgramme()` (aucun binaire), refaite seulement si l'empreinte
+  (chemins, tailles, dates) a changé, 8 gardées. Bouton « 📦 Redéposer le
+  programme complet » pour forcer.
 - **Rapport mensuel** le 1er du mois (ventes, CA, visiteurs, pays)
 - Notifications push : commandes, idées, portraits, alertes œuvre
 

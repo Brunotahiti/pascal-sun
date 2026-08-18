@@ -1529,6 +1529,7 @@
       badge.textContent = !d.configure ? "non configurée" : ko ? "en échec" : "active";
       badge.className = "scw-badge " + (!d.configure ? "off" : ko ? "ko" : "ok");
       $("#scw-sync").hidden = !d.configure;
+      $("#scw-prog").hidden = !d.configure;
       $("#scw-ouvrir").textContent = d.configure ? "Modifier les accès" : "Configurer";
       $("#scw-secret-note").textContent = d.configure ? "— vide : inchangée" : "";
       const quand = (iso) => new Date(iso).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
@@ -1537,6 +1538,8 @@
         if (d.distantes) t += ` · ${d.distantes.length} sauvegarde${d.distantes.length > 1 ? "s" : ""} là-bas${d.distantes[0] ? `, dernière ${d.distantes[0].nom.replace(/^pascal-sun-|\.json\.gz$/g, "")}` : ""}`;
         if (d.erreurListe) t += ` · liste impossible : ${d.erreurListe}`;
         if (d.dernier) t += ` · dernière synchronisation ${quand(d.dernier.quand)} : ${d.dernier.detail}`;
+        if (d.programmes && d.programmes.length) t += ` · programme complet : ${d.programmes.length} archive${d.programmes.length > 1 ? "s" : ""}, dernière ${d.programmes[0].nom.replace(/^pascal-sun-programme-/, "").replace(/-[0-9a-f]{16}\.tar\.gz$/, "")} (${(d.programmes[0].octets / 1048576).toFixed(0)} Mo)`;
+        else if (d.configure && d.distantes) t += " · programme complet : pas encore déposé (il part à la prochaine synchronisation)";
         etat.textContent = t;
         etat.style.color = d.dernier && !d.dernier.ok ? "var(--accent)" : "";
         $("#scw-acces").value = d.accesId || ""; $("#scw-bucket").value = d.bucket || ""; $("#scw-region").value = d.region || "fr-par";
@@ -1568,6 +1571,13 @@
       const s2 = await fetch("/api/sauvegardes/scaleway", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "synchroniser" }) });
       const d2 = await s2.json();
       $("#scw-msg").textContent = s2.ok ? `${d2.envoyees} sauvegarde${d2.envoyees > 1 ? "s" : ""} déposée${d2.envoyees > 1 ? "s" : ""} chez Scaleway ✓` : `Copie échouée : ${d2.error}`;
+      chargerScaleway();
+    });
+    $("#scw-prog").addEventListener("click", async () => {
+      $("#scw-msg").textContent = "Archive du programme en cours (code, photos, configuration)… une à deux minutes.";
+      const r = await fetch("/api/sauvegardes/scaleway", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "programme" }) });
+      const d = await r.json();
+      $("#scw-msg").textContent = r.ok ? `Programme complet déposé chez Scaleway ✓ — ${d.nom} (${(d.octets / 1048576).toFixed(0)} Mo)` : `Dépôt échoué : ${d.error}`;
       chargerScaleway();
     });
     $("#scw-sync").addEventListener("click", async () => {

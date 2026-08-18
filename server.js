@@ -569,17 +569,164 @@ async function synchroniserDistantes() {
     for (const f of manquantes) await deposerSauvegarde(f, c);
     const apres = await listerDistantes(c);
     for (const o of apres.slice(SCW_MAX_DISTANTES)) await supprimerDistante(o.nom, c);
-    noterScaleway(true, manquantes.length, `${apres.length} sauvegarde(s) chez Scaleway`);
-    return { envoyees: manquantes.length };
+    // et le programme complet, s'il a changé
+    let prog = { depose: false, nb: 0 };
+    try { prog = await deposerProgramme(c); }
+    catch (e) { noterScaleway(false, manquantes.length, `${apres.length} sauvegarde(s) chez Scaleway, mais programme non déposé : ${e.message}`); throw e; }
+    noterScaleway(true, manquantes.length, `${apres.length} sauvegarde(s) et ${prog.nb} archive(s) du programme chez Scaleway${prog.depose ? " — programme redéposé (il avait changé)" : ""}`);
+    return { envoyees: manquantes.length, programme: prog };
   } catch (e) {
     const detail = `${e.message}. ${await diagnostiquerScaleway(c)}`;
     noterScaleway(false, 0, detail);
     throw new Error(detail);
   } finally { scwEnCours = false; }
 }
+/* ---- archive complète du programme ----
+   Le code du site (tout ce qui est déployé, sauf node_modules), les photos et
+   fichiers envoyés depuis l'admin (data/uploads), et la configuration
+   (mail.json, scaleway.json, variables d'environnement) : de quoi remonter le
+   site à partir du seul bucket. L'archive n'est refaite et déposée que si
+   quelque chose a changé (empreinte des chemins, tailles et dates). Écriture
+   tar + gzip en flux, sans binaire externe. */
+const SCW_PREFIXE_PROGRAMME = "pascal-sun/programme/";
+const SCW_MAX_PROGRAMMES = 8;
+const EXCLUS_RACINE = new Set(["node_modules", "data", ".git", ".DS_Store"]);
+const ENV_CONFIG = ["ADMIN_PASSWORD", "APP_SECRET", "SITE_URL", "PORT", "UMAMI_URL", "UMAMI_USER", "UMAMI_PASSWORD", "UMAMI_WEBSITE_ID",
+  "VAPID_PUBLIC", "VAPID_PRIVATE", "SMTP_HOST", "SMTP_PORT", "SMTP_USER", "ARTIST_NOTIFY", "STRIPE_SECRET_KEY",
+  "SCW_ACCESS_KEY", "SCW_SECRET_KEY", "SCW_BUCKET", "SCW_REGION"];
+
+function* parcourir(dossier, base, exclus) {
+  let entrees = [];
+  try { entrees = fs.readdirSync(dossier, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name)); } catch { return; }
+  for (const e of entrees) {
+    if (exclus && exclus.has(e.name)) continue;
+    const abs = path.join(dossier, e.name), rel = base ? `${base}/${e.name}` : e.name;
+    if (e.isDirectory()) yield* parcourir(abs, rel, null);
+    else if (e.isFile()) yield { abs, rel };
+  }
+}
+function fichiersProgramme() {
+  const liste = [...parcourir(__dirname, "", EXCLUS_RACINE)];
+  for (const f of parcourir(path.join(DATA_DIR, "uploads"), "data/uploads", null)) liste.push(f);
+  for (const n of ["mail.json", "scaleway.json"]) {
+    const abs = path.join(DATA_DIR, n);
+    if (fs.existsSync(abs)) liste.push({ abs, rel: `data/${n}` });
+  }
+  return liste;
+}
+function configurationEnv() {
+  return "# Variables d'environnement du conteneur pascal-sun au moment de l'archive\n" +
+    "# (à repasser au projet Docker lors d'une remise en route)\n" +
+    ENV_CONFIG.filter((k) => process.env[k] !== undefined).map((k) => `${k}=${process.env[k]}`).join("\n") + "\n";
+}
+function empreinteProgramme() {
+  const h = crypto.createHash("sha256");
+  for (const f of fichiersProgramme()) {
+    try { const st = fs.statSync(f.abs); h.update(`${f.rel}|${st.size}|${Math.floor(st.mtimeMs)}\n`); } catch { /* fichier disparu entre-temps */ }
+  }
+  h.update(configurationEnv());
+  return h.digest("hex").slice(0, 16);
+}
+/* En-tête tar (ustar) d'un fichier. */
+function enteteTar(nom, taille, mtime) {
+  const b = Buffer.alloc(512, 0);
+  let name = nom, prefix = "";
+  if (Buffer.byteLength(name) > 100) {
+    const i = name.lastIndexOf("/", 155);
+    prefix = name.slice(0, i); name = name.slice(i + 1);
+  }
+  b.write(name, 0, 100); b.write("0000644\0", 100, 8); b.write("0000000\0", 108, 8); b.write("0000000\0", 116, 8);
+  b.write(taille.toString(8).padStart(11, "0") + "\0", 124, 12);
+  b.write(Math.floor(mtime / 1000).toString(8).padStart(11, "0") + "\0", 136, 12);
+  b.write("        ", 148, 8); b.write("0", 156, 1); b.write("ustar\0", 257, 6); b.write("00", 263, 2);
+  b.write("root", 265, 32); b.write("root", 297, 32); b.write(prefix, 345, 155);
+  let somme = 0; for (const x of b) somme += x;
+  b.write(somme.toString(8).padStart(6, "0") + "\0 ", 148, 8);
+  return b;
+}
+async function archiverProgramme(destination) {
+  const gz = zlib.createGzip({ level: 6 });
+  const sortie = fs.createWriteStream(destination);
+  const fini = new Promise((res, rej) => { sortie.on("finish", res); sortie.on("error", rej); gz.on("error", rej); });
+  gz.pipe(sortie);
+  const ecrire = (buf) => new Promise((res) => { if (!gz.write(buf)) gz.once("drain", res); else res(); });
+  const ajouterContenu = async (rel, contenu, mtime) => {
+    await ecrire(enteteTar(rel, contenu.length, mtime));
+    await ecrire(contenu);
+    const reste = contenu.length % 512; if (reste) await ecrire(Buffer.alloc(512 - reste, 0));
+  };
+  for (const f of fichiersProgramme()) {
+    let st; try { st = fs.statSync(f.abs); } catch { continue; }
+    await ecrire(enteteTar(f.rel, st.size, st.mtimeMs));
+    await new Promise((res, rej) => {
+      const lecture = fs.createReadStream(f.abs);
+      lecture.on("data", (chunk) => { if (!gz.write(chunk)) { lecture.pause(); gz.once("drain", () => lecture.resume()); } });
+      lecture.on("end", res); lecture.on("error", rej);
+    });
+    const reste = st.size % 512; if (reste) await ecrire(Buffer.alloc(512 - reste, 0));
+  }
+  await ajouterContenu("configuration.env", Buffer.from(configurationEnv()), Date.now());
+  await ajouterContenu("LISEZMOI.txt", Buffer.from(
+`Archive complète du site pascal-sun.com — ${new Date().toISOString()}
+
+Contenu :
+  • le code du site tel que déployé (server.js, pages HTML, css/, js/, img/, videos/, Dockerfile, docker-compose.yml, package.json…)
+  • data/uploads/ : les photos et fichiers envoyés depuis l'admin
+  • data/mail.json, data/scaleway.json : mot de passe email et clés Scaleway
+  • configuration.env : les variables d'environnement du conteneur
+
+Les données (catalogue, commandes, clients, certificats, réponses aux invitations…)
+sont dans les sauvegardes quotidiennes pascal-sun-AAAA-MM-JJ.json.gz, à côté.
+
+Remise en route : décompresser cette archive dans un dossier, y déposer le
+contenu de la dernière sauvegarde JSON dans data/ (fichiers catalogue.json,
+orders.json… tels qu'exportés), passer les variables de configuration.env au
+projet Docker, puis « docker compose up ». Voir PROJET.md.
+`), Date.now());
+  await ecrire(Buffer.alloc(1024, 0));
+  gz.end();
+  await fini;
+}
+async function listerProgrammes(c = lireConfigScaleway()) {
+  const r = await requeteS3(c, "GET", "", { requete: { "list-type": "2", prefix: SCW_PREFIXE_PROGRAMME, "max-keys": "1000" } });
+  if (!r.ok) throw new Error(`Liste impossible (${await expliquerS3(r)})`);
+  const xml = await r.text(); const objets = [];
+  for (const m of xml.matchAll(/<Contents>([\s\S]*?)<\/Contents>/g)) {
+    const bloc = m[1];
+    const cle = (/<Key>([^<]+)<\/Key>/.exec(bloc) || [])[1] || "";
+    objets.push({ nom: cle.slice(SCW_PREFIXE_PROGRAMME.length), octets: Number((/<Size>(\d+)<\/Size>/.exec(bloc) || [])[1] || 0), modifie: (/<LastModified>([^<]+)<\/LastModified>/.exec(bloc) || [])[1] || "" });
+  }
+  return objets.filter((o) => o.nom).sort((a, b) => b.nom.localeCompare(a.nom));
+}
+/* Dépose l'archive du programme si son empreinte a changé depuis la dernière. */
+async function deposerProgramme(c = lireConfigScaleway(), forcer = false) {
+  const empreinte = empreinteProgramme();
+  const conf = readJSON(SCW_FILE, {});
+  const distants = await listerProgrammes(c);
+  const dejaLa = distants.some((o) => o.nom.includes(`-${empreinte}.tar.gz`));
+  if (dejaLa && !forcer) return { depose: false, empreinte, nb: distants.length };
+  const nom = `pascal-sun-programme-${new Date().toISOString().slice(0, 10)}-${empreinte}.tar.gz`;
+  const tmp = path.join(require("os").tmpdir(), nom);
+  try {
+    await archiverProgramme(tmp);
+    const r = await requeteS3(c, "PUT", SCW_PREFIXE_PROGRAMME + nom, { corps: fs.readFileSync(tmp) });
+    if (!r.ok) throw new Error(`Dépôt du programme refusé (${await expliquerS3(r)})`);
+    const taille = fs.statSync(tmp).size;
+    conf.programme = { quand: new Date().toISOString(), nom, empreinte, octets: taille };
+    writeJSON(SCW_FILE, conf);
+    const apres = await listerProgrammes(c);
+    for (const o of apres.slice(SCW_MAX_PROGRAMMES)) {
+      const rr = await requeteS3(c, "DELETE", SCW_PREFIXE_PROGRAMME + o.nom);
+      if (!rr.ok && rr.status !== 404) break;
+    }
+    return { depose: true, empreinte, nom, octets: taille, nb: Math.min(apres.length, SCW_MAX_PROGRAMMES) };
+  } finally { try { fs.unlinkSync(tmp); } catch { /* déjà parti */ } }
+}
+
 function etatScaleway() {
   const c = lireConfigScaleway();
-  return { configure: scalewayConfigure(c), bucket: c.bucket, region: c.region, accesId: c.accesId, allure: allureDesCles(c), dernier: c.dernier };
+  const conf = readJSON(SCW_FILE, {});
+  return { configure: scalewayConfigure(c), bucket: c.bucket, region: c.region, accesId: c.accesId, allure: allureDesCles(c), dernier: c.dernier, programme: conf.programme || null };
 }
 /* Après chaque sauvegarde du jour, et toutes les 30 min en rattrapage. */
 setTimeout(() => synchroniserDistantes().catch(() => {}), 60e3);
@@ -588,8 +735,8 @@ setInterval(() => synchroniserDistantes().catch(() => {}), 30 * 60e3);
 app.get("/api/sauvegardes/scaleway", requireAuth, async (req, res) => {
   const etat = etatScaleway();
   if (req.query.liste === "1" && etat.configure) {
-    try { return res.json({ ...etat, distantes: await listerDistantes() }); }
-    catch (e) { return res.json({ ...etat, distantes: [], erreurListe: e.message }); }
+    try { return res.json({ ...etat, distantes: await listerDistantes(), programmes: await listerProgrammes() }); }
+    catch (e) { return res.json({ ...etat, distantes: [], programmes: [], erreurListe: e.message }); }
   }
   res.json(etat);
 });
@@ -610,6 +757,11 @@ app.post("/api/sauvegardes/scaleway", requireAuth, async (req, res) => {
       const c = { accesId: String(b.accesId || "").trim() || e.accesId, secret: String(b.secret || "").trim() || e.secret, bucket: String(b.bucket || "").trim() || e.bucket, region: String(b.region || "").trim() || e.region };
       if (!scalewayConfigure(c)) return res.status(400).json({ error: "Configuration incomplète" });
       return res.json({ ok: true, ...(await testerScaleway(c)) });
+    }
+    if (b.action === "programme") {
+      if (!scalewayConfigure()) return res.status(400).json({ error: "Scaleway n'est pas configuré" });
+      const r = await deposerProgramme(lireConfigScaleway(), true);
+      return res.json({ ok: true, ...r, etat: etatScaleway() });
     }
     if (b.action === "synchroniser") {
       if (!scalewayConfigure()) return res.status(400).json({ error: "Scaleway n'est pas configuré" });
