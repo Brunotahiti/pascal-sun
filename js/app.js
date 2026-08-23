@@ -333,7 +333,7 @@
         </div>
       </div>
       <div class="wrap bottom">
-        <span>${t("footer_rights")}</span>
+        <span>${t("footer_rights")} · ${t("footer_tahiti")} ${ARTIST_TAHITI}</span>
         <span>
           ${t("footer_made")} ·
           <a class="made-by" href="https://manaprocess.com" target="_blank" rel="noopener" aria-label="Réalisé par Manaprocess — ouvrir manaprocess.com">${t("footer_realise")} <span class="mp-logo">Mana<span class="mp-et">&amp;</span>process</span></a> ·

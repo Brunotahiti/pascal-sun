@@ -766,6 +766,7 @@ var I18N = {
     inv_absente: "Cette invitation n'est plus disponible.",
     footer_rights: "© 2026 Pascal Sun — Tous droits réservés.",
     footer_realise: "Réalisé par",
+    footer_tahiti: "N° Tahiti",
     footer_made: "Tahiti, Polynésie française",
     toast_added: "ajoutée à votre panier",
     toast_removed: "retirée du panier",
@@ -1030,6 +1031,7 @@ var I18N = {
     inv_absente: "This invitation is no longer available.",
     footer_rights: "© 2026 Pascal Sun — All rights reserved.",
     footer_realise: "Made by",
+    footer_tahiti: "Tahiti reg. no.",
     footer_made: "Tahiti, French Polynesia",
     toast_added: "added to your cart",
     toast_removed: "removed from cart",
@@ -1048,3 +1050,6 @@ const ARTIST_EMAIL = "contact@pascal-sun.com";
 const ARTIST_PHONE = "87 78 25 78";
 const ARTIST_PHONE_TEL = "+68987782578";      // indicatif Polynésie française
 const ARTIST_EMAIL_PERSO = "sun.pascal09@gmail.com";
+/* Immatriculation de l'artiste en Polynésie française : mentions légales
+   (CGV, pied de page) et emails de commande, qui valent justificatif. */
+const ARTIST_TAHITI = "T257691";

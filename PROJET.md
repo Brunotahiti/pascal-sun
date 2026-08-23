@@ -47,14 +47,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=58/?v=59/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=59/?v=60/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=59"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=60"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -493,8 +493,10 @@ allers-retours dans la session) :
 
 ## 8 bis. Idées non réalisées
 
-- Compléter les **mentions légales** dans les CGV (numéro Tahiti, adresse) —
-  marquées entre crochets dans `cgv.html`.
+- Compléter les **mentions légales** dans les CGV : il ne manque plus que
+  l'**adresse postale**, marquée entre crochets dans `cgv.html`. Le numéro
+  Tahiti (**T257691**) est renseigné — CGV, pied de page et emails de commande
+  (`ARTIST_TAHITI` dans `js/data.js` et `server.js`).
 - Vérifier avec Pascal les **dimensions et prix** que j'ai estimés.
 - Soumettre le **sitemap** dans Google Search Console (propriété déjà vérifiée).
 - Idées en réserve : paiement carte (Stripe), alerte « nouvelle œuvre » par

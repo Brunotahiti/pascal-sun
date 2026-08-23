@@ -1039,6 +1039,7 @@ les originaux et tirages numérotés).
 
 À très vite,
 Pascal Sun — Tahiti
+N° Tahiti ${ARTIST_TAHITI}
 https://pascal-sun.com`);
 
   if (order.mode === "galerie" && evGalerie && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(evGalerie.contact_email || "").trim())) {
@@ -1168,6 +1169,9 @@ app.get("/api/commande/:id/paiement", (req, res) => {
 
 const ENVOIS_FILE = path.join(DATA_DIR, "envois-invitations.json");
 const SITE_URL = process.env.SITE_URL || "https://pascal-sun.com";
+/* Immatriculation de l'artiste en Polynésie française — mentions légales des
+   emails de commande, qui valent justificatif d'achat. */
+const ARTIST_TAHITI = process.env.ARTIST_TAHITI || "T257691";
 
 function dateLongueFR(iso) {
   const [y, m, d] = String(iso || "").split("-").map(Number);
