@@ -47,14 +47,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=56/?v=57/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=57/?v=58/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=57"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=58"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -131,6 +131,7 @@ img/oeuvres/           toiles, 3 tailles WebP (480/960/1600)
 img/atelier/           photos d'atelier + pascal-peint-*.webp
 img/signature.png      signature manuscrite détourée
 videos/atelier-*.mp4   3 vidéos compressées
+fonts/ClashDisplay-600.woff2  police du logotype Manaprocess (pied de page)
 sw.js                  service worker (PWA)
 manifest.webmanifest   application installable
 ```
@@ -338,6 +339,13 @@ depuis Tahiti — un certificat daté du 14 s'afficherait « 13 ».
 ---
 
 ## 6. Décisions de conception à respecter
+
+0. **Signature du réalisateur** en pied de page : « Réalisé par » + le logotype
+   Manaprocess tel quel — `Mana&process`, Clash Display 600 (interlettrage
+   −0,02 em), esperluette `#f9a8d4`, blanc sur bleu `#002fa7` — cliquable vers
+   https://manaprocess.com (`.mp-logo` dans `css/style.css`, valeurs relevées
+   sur manaprocess.com). Ne pas le remplacer par une image ni changer ces
+   couleurs.
 
 1. **Un seul cadre** autour des toiles : cadre noir fin + **passe-partout blanc**
    (`--mat-color` dans `css/style.css`, blanc comme une toile tendue — il vaut

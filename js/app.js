@@ -336,7 +336,7 @@
         <span>${t("footer_rights")}</span>
         <span>
           ${t("footer_made")} ·
-          <a class="made-by" href="https://manaprocess.com" target="_blank" rel="noopener">Réalisé par Manaprocess.com</a> ·
+          <a class="made-by" href="https://manaprocess.com" target="_blank" rel="noopener" aria-label="Réalisé par Manaprocess — ouvrir manaprocess.com">${t("footer_realise")} <span class="mp-logo">Mana<span class="mp-et">&amp;</span>process</span></a> ·
           <a href="/admin" rel="nofollow">Admin</a>
         </span>
       </div>`;
