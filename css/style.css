@@ -1360,19 +1360,16 @@ figure.portrait:hover, .artist-hero:hover {
 .site-footer .bottom a.made-by:hover { color: #cfc8bc; text-decoration: none; }
 .mp-logo {
   display: inline-block;
-  padding: 4px 10px 5px;
-  border-radius: 6px;
-  background: #002fa7;
   color: #fff;
   font-family: "Clash Display", "Manrope", system-ui, sans-serif;
   font-weight: 600;
   font-size: 15px;
   line-height: 1;
   letter-spacing: -.02em;
-  transition: transform .25s var(--ease), box-shadow .25s var(--ease);
+  transition: transform .25s var(--ease);
 }
 .mp-logo .mp-et { color: #f9a8d4; margin: 0 1px; }
-.site-footer .made-by:hover .mp-logo { transform: translateY(-1px); box-shadow: 0 6px 16px -6px rgba(0, 47, 167, .8); }
+.site-footer .bottom a.made-by:hover .mp-logo { transform: translateY(-1px); }
 
 /* --------------------------------------------------------------- toast -- */
 
