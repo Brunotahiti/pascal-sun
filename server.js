@@ -45,11 +45,11 @@ function seedCatalogue() {
     const artworks = typeof sandbox.normalizeArtworks === "function"
       ? sandbox.normalizeArtworks(sandbox.ARTWORKS || [])
       : (sandbox.ARTWORKS || []);
-    fs.writeFileSync(CATALOGUE_FILE, JSON.stringify({
+    writeJSON(CATALOGUE_FILE, {
       artworks,
       events: sandbox.EVENTS || [],
       uiTexts: { fr: {}, en: {} }
-    }, null, 2));
+    });
     console.log("Catalogue initial semé depuis js/data.js");
   } catch (e) {
     console.error("seed catalogue:", e.message);
@@ -57,10 +57,42 @@ function seedCatalogue() {
 }
 seedCatalogue();
 
+/* Lecture et écriture des données du site.
+
+   L'écriture est **atomique** : on écrit dans un fichier voisin, on force son
+   passage sur le disque, puis on le renomme par-dessus l'ancien — le
+   renommage, lui, est indivisible. Une coupure de courant ou un redémarrage
+   au mauvais moment laisse donc soit l'ancien fichier entier, soit le
+   nouveau ; jamais un fichier à moitié écrit.
+
+   À la lecture, un fichier illisible n'est jamais avalé en silence : il
+   serait rendu « vide », et la première écriture qui suit effacerait pour de
+   bon ce qu'il restait. On le met de côté sous .corrompu-<date>, on le crie
+   dans le journal, et on prévient Pascal. */
+let alerteDonnees = null;    // branché plus bas, une fois les emails prêts
 const readJSON = (file, fallback) => {
-  try { return JSON.parse(fs.readFileSync(file, "utf8")); } catch { return fallback; }
+  let brut;
+  try { brut = fs.readFileSync(file, "utf8"); }
+  catch { return fallback; }                       // le fichier n'existe pas encore : cas normal
+  try { return JSON.parse(brut); }
+  catch (e) {
+    const copie = `${file}.corrompu-${new Date().toISOString().replace(/[:.]/g, "-")}`;
+    try { fs.copyFileSync(file, copie); } catch { /* on fait au mieux */ }
+    console.error(`DONNÉES ILLISIBLES : ${path.basename(file)} (${e.message}). Copie mise de côté : ${path.basename(copie)}`);
+    if (alerteDonnees) alerteDonnees(file, copie, e);
+    return fallback;
+  }
 };
-const writeJSON = (file, data) => fs.writeFileSync(file, JSON.stringify(data, null, 2));
+const writeJSON = (file, data) => {
+  const temporaire = `${file}.tmp-${process.pid}`;
+  const contenu = JSON.stringify(data, null, 2);
+  const fd = fs.openSync(temporaire, "w");
+  try {
+    fs.writeFileSync(fd, contenu);
+    fs.fsyncSync(fd);          // le contenu est vraiment sur le disque…
+  } finally { fs.closeSync(fd); }
+  fs.renameSync(temporaire, file);   // …et seulement ensuite il prend la place de l'ancien
+};
 
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
@@ -154,7 +186,7 @@ app.put("/api/catalogue", requireAuth, (req, res) => {
     return res.status(400).json({ error: "artworks-array-required" });
   }
   const previous = readJSON(CATALOGUE_FILE, { artworks: [] }).artworks || [];
-  fs.writeFileSync(CATALOGUE_FILE, JSON.stringify(body, null, 2));
+  writeJSON(CATALOGUE_FILE, body);
   res.json({ ok: true });
   // Annonce des nouvelles œuvres aux abonnés (après réponse, sans bloquer)
   setTimeout(() => announceNewArtworks(previous, body.artworks).catch(() => {}), 500);
@@ -338,6 +370,42 @@ function consignesPaiement(order, catalogue) {
   return "";
 }
 
+/* Fichier de données illisible : Pascal doit l'apprendre tout de suite, la
+   dernière sauvegarde étant alors la seule source sûre. Au plus une alerte par
+   fichier et par jour, pour ne pas noyer la boîte. */
+const alertesEnvoyees = new Set();
+alerteDonnees = (file, copie, e) => {
+  const cle = `${path.basename(file)}-${new Date().toISOString().slice(0, 10)}`;
+  if (alertesEnvoyees.has(cle)) return;
+  alertesEnvoyees.add(cle);
+  const nom = path.basename(file);
+  setTimeout(() => {
+    sendPush("⚠️ Fichier de données illisible", `${nom} — la dernière sauvegarde fait foi.`);
+    sendMail(ARTIST_NOTIFY, `⚠️ Données illisibles : ${nom}`,
+`Le fichier ${nom} n'a pas pu être relu (${e.message}).
+
+Il a été mis de côté tel quel sous ${path.basename(copie)} — rien n'est effacé.
+Le site continue de tourner, mais avec ce fichier considéré comme vide : les
+informations qu'il contenait ne s'affichent plus tant qu'il n'est pas restauré.
+
+À faire : remonter la dernière sauvegarde (admin → Sauvegardes), ou
+prévenir Manaprocess. L'exercice de restauration décrit dans le dossier du
+projet remet le site d'aplomb à partir d'une sauvegarde.
+
+→ ${SITE_URL}/admin`);
+  }, 1000);
+};
+
+/* Même règle que le site : une fiche en brouillon ou incomplète n'existe pas
+   pour le public — ni annonce aux abonnés, ni page dans le plan du site. */
+function publiable(a) {
+  if (!a || a.statut === "brouillon") return false;
+  if (!a.titre || a.titre === "Nouvelle œuvre" || !a.image) return false;
+  const aVendre = (a.statut || "disponible") !== "vendu";
+  const prix = a.prixEUR > 0 || (a.produits || []).some((p) => p.actif !== false && p.prixEUR > 0);
+  return aVendre ? prix : true;
+}
+
 /* --------------------------------------------- sauvegardes quotidiennes -- */
 /* Chaque nuit (heure de Tahiti), une archive compressée de toutes les
    données est écrite dans data/backups/. Les 30 dernières sont conservées.
@@ -391,7 +459,9 @@ const nomSauvegarde = ({ jour, creneau }) => `pascal-sun-${jour}-${String(crenea
 function makeBackup(cible = creneauCourant()) {
   try {
     const file = path.join(BACKUP_DIR, nomSauvegarde(cible));
-    fs.writeFileSync(file, zlib.gzipSync(JSON.stringify(collectData())));
+    const tmp = `${file}.tmp`;
+    fs.writeFileSync(tmp, zlib.gzipSync(JSON.stringify(collectData())));
+    fs.renameSync(tmp, file);        // une archive tronquée serait pire que pas d'archive
     const olds = fs.readdirSync(BACKUP_DIR).filter((f) => f.endsWith(".json.gz")).sort();
     olds.slice(0, Math.max(0, olds.length - SAUVEGARDES_GARDEES)).forEach((f) => fs.unlinkSync(path.join(BACKUP_DIR, f)));
     console.log("Sauvegarde écrite :", path.basename(file));
@@ -1465,7 +1535,7 @@ async function announceNewArtworks(previous, next) {
   if (!mailEnabled()) return;
   const before = new Set((previous || []).map((a) => a.id));
   const fresh = (next || [])
-    .filter((a) => !before.has(a.id) && (a.statut || "disponible") === "disponible")
+    .filter((a) => !before.has(a.id) && (a.statut || "disponible") === "disponible" && publiable(a))
     .slice(0, 3);
   if (!fresh.length) return;
 
@@ -2011,7 +2081,7 @@ async function optimiserPhotosExistantes() {
     }
   }
 
-  if (traitees) fs.writeFileSync(CATALOGUE_FILE, JSON.stringify(catalogue, null, 2));
+  if (traitees) writeJSON(CATALOGUE_FILE, catalogue);
   return { traitees, echecs, avantKo: Math.round(avant / 1024), apresKo: Math.round(apres / 1024) };
 }
 
@@ -2024,6 +2094,35 @@ app.post("/api/images/optimiser", requireAuth, async (_req, res) => {
 /* --------------------------------------------------------------- static -- */
 
 app.use("/uploads", express.static(UPLOADS_DIR, { maxAge: "7d", immutable: true }));
+
+/* Plan du site, construit à la volée depuis le catalogue : une œuvre ajoutée
+   dans l'admin y entre le jour même, une fiche en brouillon n'y figure pas.
+   Le fichier statique d'autrefois se démodait dès la première nouveauté. */
+app.get("/sitemap.xml", (_req, res) => {
+  const catalogue = readJSON(CATALOGUE_FILE, { artworks: [], events: [] });
+  const jour = new Date().toISOString().slice(0, 10);
+  const pages = [
+    ["/", "weekly", "1.0"],
+    ["/galerie.html", "weekly", "0.9"],
+    ["/expositions.html", "weekly", "0.8"],
+    ["/journal.html", "weekly", "0.7"],
+    ["/portrait.html", "monthly", "0.8"],
+    ["/artiste.html", "monthly", "0.7"],
+    ["/contact.html", "yearly", "0.5"],
+    ["/idees.html", "monthly", "0.6"],
+    ["/cgv.html", "yearly", "0.3"]
+  ];
+  const oeuvres = (catalogue.artworks || []).filter(publiable)
+    .map((a) => [`/oeuvre.html?id=${encodeURIComponent(a.id)}`, "monthly", a.statut === "vendu" ? "0.5" : "0.8"]);
+  const urls = [...pages, ...oeuvres].map(([chemin, freq, prio]) =>
+    `  <url><loc>${SITE_URL}${chemin.replace(/&/g, "&amp;")}</loc><lastmod>${jour}</lastmod><changefreq>${freq}</changefreq><priority>${prio}</priority></url>`).join("\n");
+  res.type("application/xml").send(
+`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls}
+</urlset>
+`);
+});
 
 app.get("/admin", (_req, res) => res.sendFile(path.join(__dirname, "admin.html")));
 

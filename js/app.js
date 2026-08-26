@@ -32,6 +32,18 @@
   const produitLabel = (key) => t(({ original: "prod_original", tirage: "prod_tirage", affiche: "prod_affiche" })[key] || key);
   const imgLarge = (a) => (a.images && a.images.large) || a.image;
   const colName = (key) => (COLLECTIONS[key] ? COLLECTIONS[key][store.lang] || COLLECTIONS[key].fr : key);
+
+  /* Une fiche n'entre en vitrine que si elle est finie : pas en brouillon, un
+     titre, une photo, et un prix — pour une œuvre encore à vendre. Une fiche
+     commencée puis laissée de côté dans l'admin ne doit jamais se retrouver
+     en ligne à 0 F. */
+  function publiable(a) {
+    if (!a || a.statut === "brouillon") return false;
+    if (!a.titre || a.titre === "Nouvelle œuvre" || !a.image) return false;
+    const aVendre = (a.statut || "disponible") !== "vendu";
+    const prix = a.prixEUR > 0 || (a.produits || []).some((p) => p.actif !== false && p.prixEUR > 0);
+    return aVendre ? prix : true;
+  }
   /* Les collections présentées lors d'un vernissage : petites pastilles qui
      ouvrent la galerie sur la collection. */
   function collectionsHTML(ev) {
@@ -1345,7 +1357,7 @@
       const r = await fetch("/api/catalogue", { cache: "no-cache" });
       if (!r.ok) return;
       const data = await r.json();
-      if (Array.isArray(data.artworks) && data.artworks.length) ARTWORKS = data.artworks;
+      if (Array.isArray(data.artworks) && data.artworks.length) ARTWORKS = data.artworks.filter(publiable);
       if (Array.isArray(data.events)) EVENTS = data.events;
       if (Array.isArray(data.posts)) POSTS = data.posts;
       if (Array.isArray(data.avis)) AVIS = data.avis;

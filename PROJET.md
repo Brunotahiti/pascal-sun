@@ -47,14 +47,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=61/?v=62/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=62/?v=63/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=62"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=63"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -193,6 +193,24 @@ La toile en tête d'accueil **change à chaque visite** : `oeuvreEnTete()` dans
 `localStorage.ps_hero`, plutôt que de tirer au sort — ainsi toutes les œuvres
 passent à leur tour. La sélection « Œuvres récentes » exclut la toile déjà
 montrée en tête, pour ne pas afficher deux fois la même image sur la page.
+
+### Fiches publiables
+Une œuvre n'entre en vitrine que si elle est finie : pas en **brouillon**
+(nouveau statut dans l'admin), un titre autre que « Nouvelle œuvre », une
+photo, et un prix si elle est encore à vendre. La règle est écrite deux fois,
+volontairement — `publiable()` dans `js/app.js` (affichage) et dans
+`server.js` (annonce aux abonnés, plan du site) — car les deux doivent tenir
+même si l'un des fichiers change. L'admin signale en jaune chaque fiche non
+publiée et ce qui lui manque.
+
+### Écriture des données
+`writeJSON()` écrit dans un fichier voisin, force son passage sur le disque
+(`fsync`), puis le renomme par-dessus l'ancien : une coupure laisse toujours
+un fichier entier, jamais un fichier à moitié écrit. Les sauvegardes `.json.gz`
+suivent la même règle. À la lecture, un fichier illisible n'est **jamais**
+avalé en silence — il serait rendu vide et la première écriture l'effacerait :
+il est copié en `.corrompu-<date>`, crié dans le journal, et Pascal reçoit un
+email + une notification.
 
 ### Images
 Toute photo envoyée depuis l'admin est déclinée **côté serveur** (`sharp`) en
@@ -548,6 +566,10 @@ allers-retours dans la session) :
   Tahiti (**T257691**) est renseigné — CGV, pied de page et emails de commande
   (`ARTIST_TAHITI` dans `js/data.js` et `server.js`).
 - Vérifier avec Pascal les **dimensions et prix** que j'ai estimés.
-- Soumettre le **sitemap** dans Google Search Console (propriété déjà vérifiée).
+- Soumettre le **sitemap** dans Google Search Console (propriété déjà vérifiée) :
+  c'est le seul geste qui reste, il demande une connexion au compte Google.
+  Le plan lui-même est désormais **construit à la volée** (`/sitemap.xml` dans
+  `server.js`) depuis le catalogue : 62 URLs, dont toutes les fiches d'œuvres
+  publiables — l'ancien fichier statique en déclarait 13 sur 54.
 - Idées en réserve : paiement carte (Stripe), alerte « nouvelle œuvre » par
   SMS, version en reo Tahiti, avis clients vérifiés, page presse.

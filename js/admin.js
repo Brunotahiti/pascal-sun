@@ -148,8 +148,11 @@
       .map((c) => `<option value="${esc(c.key)}" ${a.collection === c.key ? "selected" : ""}>${esc(c.fr)}</option>`)
       .join("");
     const dernier = catalogue.artworks.length - 1;
+    const manques = manquesFiche(a);
+    const horsLigne = !publiable(a);
     return `
-    <article class="aw-card" data-i="${i}">
+    <article class="aw-card ${horsLigne ? "aw-brouillon" : ""}" data-i="${i}">
+      ${horsLigne ? `<div class="aw-alerte">📝 Pas en ligne — ${a.statut === "brouillon" ? "cette fiche est en brouillon" : `il manque ${manques.join(", ")}`}. Le site ne montre que les fiches finies.</div>` : ""}
       <div class="aw-rang">
         <span class="rang-num">${i + 1}<sup>${i === 0 ? "re" : "e"}</sup></span>
         <button type="button" class="ghost-btn" data-act="aw-haut" title="Placer en tête" ${i === 0 ? "disabled" : ""}>⇧</button>
@@ -176,6 +179,7 @@
         <div class="aw-flags">
           <label class="flag">Statut
             <select data-k="statut">
+              <option value="brouillon" ${a.statut === "brouillon" ? "selected" : ""}>📝 Brouillon — pas encore en ligne</option>
               <option value="disponible" ${(a.statut || "disponible") === "disponible" ? "selected" : ""}>Disponible</option>
               <option value="reserve" ${a.statut === "reserve" ? "selected" : ""}>Réservée</option>
               <option value="vendu" ${a.statut === "vendu" || a.vendu ? "selected" : ""}>Vendue</option>
@@ -205,8 +209,33 @@
     </article>`;
   }
 
+  /* Même règle que le site : dit si la fiche est réellement en vitrine. */
+  function publiable(a) {
+    if (!a || a.statut === "brouillon") return false;
+    if (!a.titre || a.titre === "Nouvelle œuvre" || !a.image) return false;
+    const aVendre = (a.statut || "disponible") !== "vendu";
+    const prix = a.prixEUR > 0 || (a.produits || []).some((p) => p.actif !== false && p.prixEUR > 0);
+    return aVendre ? prix : true;
+  }
+  function manquesFiche(a) {
+    const m = [];
+    if (!a.titre || a.titre === "Nouvelle œuvre") m.push("un titre");
+    if (!a.image) m.push("une photo");
+    if ((a.statut || "disponible") !== "vendu" && !(a.prixEUR > 0)) m.push("un prix");
+    if (!a.dimensions) m.push("les dimensions");
+    return m;
+  }
+
   function renderArtworks() {
     $("#artwork-list").innerHTML = catalogue.artworks.map(artworkCard).join("");
+    const caches = catalogue.artworks.filter((a) => !publiable(a)).length;
+    const note = $("#aw-note");
+    if (note) {
+      note.hidden = !caches;
+      note.textContent = caches
+        ? `${caches} fiche${caches > 1 ? "s" : ""} n'${caches > 1 ? "apparaissent" : "apparaît"} pas sur le site : brouillon, ou informations manquantes (signalées en jaune ci-dessous).`
+        : "";
+    }
   }
 
   function slugify(s) {
