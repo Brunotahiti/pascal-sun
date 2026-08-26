@@ -159,8 +159,8 @@
         <button type="button" class="ghost-btn" data-act="aw-up" title="Monter d'un rang" ${i === 0 ? "disabled" : ""}>↑</button>
         <button type="button" class="ghost-btn" data-act="aw-down" title="Descendre d'un rang" ${i === dernier ? "disabled" : ""}>↓</button>
       </div>
-      <div class="aw-photo">
-        <img src="${esc(a.image)}" alt="">
+      <div class="aw-photo ${a.image ? "" : "vide"}">
+        ${a.image ? `<img src="${esc(a.image)}" alt="">` : `<span class="aw-photo-vide">Aucune photo<br><small>Importez la photo de la toile</small></span>`}
         <div class="photo-btns">
           <button type="button" class="replace-btn" data-act="photo">Remplacer</button>
           <button type="button" class="replace-btn crop" data-act="recrop">✂ Recadrer</button>
@@ -402,7 +402,17 @@
       a.image = res.path;
       // le serveur renvoie les trois tailles : le site sert la bonne à chacun
       a.images = res.images || null;
-      $("img", photoBox).src = res.path;
+      /* L'orientation se lit sur la photo, elle ne se devine pas : c'est elle
+         qui donne le sens de la toile en 3D, en réalité augmentée et au mur.
+         Une orientation supposée « paysage » sur une toile en hauteur faisait
+         apparaître l'œuvre rognée. */
+      a.orientation = await new Promise((res2) => {
+        const img = new Image();
+        img.onload = () => res2(img.naturalHeight > img.naturalWidth ? "portrait" : "landscape");
+        img.onerror = () => res2(a.orientation || "landscape");
+        img.src = URL.createObjectURL(blob);
+      });
+      renderArtworks();
       markDirty();
       toast(res.images
         ? "Photo mise à jour en trois tailles — pensez à enregistrer."
@@ -1778,21 +1788,29 @@
     });
 
     $("#add-artwork").addEventListener("click", () => {
+      /* Rien d'inventé : ni prix, ni dimensions, ni photo d'une autre toile.
+         La fiche naît en brouillon — invisible sur le site tant qu'elle
+         n'est pas complète — et l'orientation se déduira de la photo. */
       catalogue.artworks.unshift({
         id: "nouvelle-oeuvre-" + Date.now().toString(36),
-        titre: "Nouvelle œuvre",
-        collection: "ocean",
+        titre: "",
+        collection: (catalogue.collections && catalogue.collections[0] || { key: "ocean" }).key,
         annee: new Date().getFullYear(),
         technique_fr: "Acrylique sur toile",
         technique_en: "Acrylic on canvas",
-        dimensions: "80 × 60 cm",
-        orientation: "landscape",
-        prixEUR: 1000,
+        dimensions: "",
+        prixEUR: 0,
+        statut: "brouillon",
         vendu: false,
         nouveaute: true,
-        image: "img/retour-du-pecheur.svg",
+        image: "",
         desc_fr: "",
-        desc_en: ""
+        desc_en: "",
+        produits: [
+          { key: "original", actif: true, prixEUR: 0, stock: 1, certificat: true },
+          { key: "tirage", actif: false, prixEUR: 0, stock: 30, edition: 30, certificat: true },
+          { key: "affiche", actif: false, prixEUR: 0, stock: 100, certificat: false }
+        ]
       });
       renderArtworks();
       markDirty();

@@ -47,14 +47,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=62/?v=63/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=63/?v=64/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=63"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=64"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -193,6 +193,17 @@ La toile en tête d'accueil **change à chaque visite** : `oeuvreEnTete()` dans
 `localStorage.ps_hero`, plutôt que de tirer au sort — ainsi toutes les œuvres
 passent à leur tour. La sélection « Œuvres récentes » exclut la toile déjà
 montrée en tête, pour ne pas afficher deux fois la même image sur la page.
+
+### Orientation et proportions des toiles
+**La photo fait foi.** L'orientation est déduite de la photo à l'envoi
+(`applyNewPhoto()` dans `js/admin.js`) et la visionneuse recale les proportions
+de la toile sur le rapport réel de l'image (`mesurerImage()` dans
+`js/viewer.js`) : les dimensions en centimètres ne servent plus qu'à l'échelle.
+Sans cela, une orientation supposée « paysage » sur une toile en hauteur
+faisait apparaître l'œuvre **rognée** en 3D et déformée en AR — c'était le cas
+de 27 des 54 œuvres, toutes créées avec l'ancien défaut `orientation:
+"landscape"`. Les fonds sont en `contain` (jamais `cover`) : mieux vaut une
+marge qu'une œuvre coupée.
 
 ### Fiches publiables
 Une œuvre n'entre en vitrine que si elle est finie : pas en **brouillon**

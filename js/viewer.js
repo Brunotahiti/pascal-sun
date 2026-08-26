@@ -84,6 +84,13 @@
 
     injectLaunchButtons();
     buildModal();
+    /* La photo est l'œuvre : c'est elle qui donne le rapport de la toile.
+       Les dimensions saisies servent à l'échelle (taille apparente au mur),
+       mais si leur rapport ne colle pas à celui de la photo — orientation
+       oubliée, hauteur et largeur inversées — la toile serait rognée ou
+       étirée. On recale donc les proportions sur l'image dès qu'elle est
+       mesurée, en gardant sa plus grande dimension en centimètres. */
+    mesurerImage();
   }
 
   function parseDims(str, orientation) {
@@ -95,6 +102,27 @@
     if (orientation === "portrait" && w > h) [w, h] = [h, w];
     if (orientation === "landscape" && h > w) [w, h] = [h, w];
     return { w, h };
+  }
+
+  /* Recale dims sur le rapport réel de la photo (au-delà de 2 % d'écart). */
+  function mesurerImage() {
+    const img = new Image();
+    img.onload = () => {
+      if (!img.naturalWidth || !img.naturalHeight) return;
+      const rImage = img.naturalWidth / img.naturalHeight;
+      const rDims = dims.w / dims.h;
+      if (Math.abs(rImage - rDims) / rDims <= 0.02) return;   // déjà d'accord
+      const grand = Math.max(dims.w, dims.h);
+      dims = rImage >= 1
+        ? { w: grand, h: Math.round(grand / rImage) }
+        : { w: Math.round(grand * rImage), h: grand };
+      /* si une vue est déjà ouverte, on la redessine avec les bonnes
+         proportions plutôt que de la laisser fausse */
+      document.querySelectorAll("[data-pane]").forEach((p) => { if (p.dataset.ready) p.dataset.ready = ""; });
+      const actif = document.querySelector(".viewer-tab.active");
+      if (actif) actif.click();
+    };
+    img.src = art.imageHD;
   }
 
   /* -------------------------------------------------- boutons fiche -- */
@@ -190,7 +218,7 @@
       <div class="v3d-scene" style="width:${W}px;height:${H}px">
         <div class="canvas3d" style="width:${W}px;height:${H}px">
           <div class="face front" style="width:${W}px;height:${H}px;transform:translateZ(${D / 2}px);background:${WOOD}">
-            <div class="frame-inner" style="position:absolute;inset:${F}px;background-image:linear-gradient(112deg, rgba(255,255,255,0) 34%, rgba(255,255,255,.16) 44%, rgba(255,255,255,0) 54%), url('${art.imageHD}');background-size:cover;background-position:center;box-shadow:inset 0 0 ${F * 2}px rgba(0,0,0,.3), 0 0 0 1px rgba(247,243,236,.18)"></div>
+            <div class="frame-inner" style="position:absolute;inset:${F}px;background-image:linear-gradient(112deg, rgba(255,255,255,0) 34%, rgba(255,255,255,.16) 44%, rgba(255,255,255,0) 54%), url('${art.imageHD}');background-size:contain;background-repeat:no-repeat;background-position:center;box-shadow:inset 0 0 ${F * 2}px rgba(0,0,0,.3), 0 0 0 1px rgba(247,243,236,.18)"></div>
           </div>
           <div class="face back" style="width:${W}px;height:${H}px;transform:rotateY(180deg) translateZ(${D / 2}px)"></div>
           <div class="face edge" style="width:${D}px;height:${H}px;left:${W - D / 2}px;transform:translateX(-50%) rotateY(90deg);background:${WOOD}"></div>
@@ -203,12 +231,16 @@
 
     const scene = pane.querySelector(".v3d-scene");
     const box = pane.querySelector(".canvas3d");
+    /* une vue reconstruite (proportions recalées sur la photo) laissait
+       tourner l'ancienne rotation dans le vide : on l'arrête d'abord */
+    if (pane._auto) { clearInterval(pane._auto); clearTimeout(pane._idle); }
     let rx = -6, ry = 22, dragging = false, px = 0, py = 0, idle = null;
 
     function apply() { box.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`; }
     apply();
 
     let auto = setInterval(() => { if (!dragging) { ry += 0.25; apply(); } }, 40);
+    pane._auto = auto;
 
     scene.addEventListener("pointerdown", (e) => {
       dragging = true; px = e.clientX; py = e.clientY;
@@ -224,7 +256,8 @@
     });
     scene.addEventListener("pointerup", () => {
       dragging = false;
-      idle = setTimeout(() => { auto = setInterval(() => { if (!dragging) { ry += 0.25; apply(); } }, 40); }, 3500);
+      idle = setTimeout(() => { auto = setInterval(() => { if (!dragging) { ry += 0.25; apply(); } }, 40); pane._auto = auto; }, 3500);
+      pane._idle = idle;
     });
 
     pane.querySelector(".v3d-presets").addEventListener("click", (e) => {
@@ -233,7 +266,8 @@
       const [x, y] = b.dataset.rot.split(",").map(Number);
       rx = x; ry = y; apply();
       clearInterval(auto); clearTimeout(idle);
-      idle = setTimeout(() => { auto = setInterval(() => { if (!dragging) { ry += 0.25; apply(); } }, 40); }, 4000);
+      idle = setTimeout(() => { auto = setInterval(() => { if (!dragging) { ry += 0.25; apply(); } }, 40); pane._auto = auto; }, 4000);
+      pane._idle = idle;
     });
   }
 
