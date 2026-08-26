@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/admin.css?v=60">
+  <link rel="stylesheet" href="css/admin.css?v=61">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='38' fill='%2316130f'/></svg>">
 </head>
 <body>
@@ -358,6 +358,16 @@
           </div>
           <p class="compose-status" id="scw-msg"></p>
         </div>
+        <div class="compose-panel" style="margin-bottom: 22px;" id="verifs-panel">
+          <h3>🔐 Sécurité &amp; vérifications <span class="scw-badge" id="verifs-badge">…</span></h3>
+          <p class="compose-note">Deux gestes d'entretien, rappelés par email quand l'échéance approche : <b>remonter une sauvegarde</b> de temps en temps pour vérifier qu'elle est bien exploitable, et <b>changer les mots de passe et les clés</b> à intervalle régulier. Rien n'est automatique ici : vous faites le geste, vous le notez, l'échéance repart.</p>
+          <div id="verifs-liste"></div>
+          <p class="compose-status" id="verifs-msg"></p>
+          <details class="verifs-histo" id="verifs-histo-box">
+            <summary>Ce qui a déjà été fait</summary>
+            <div id="verifs-histo"></div>
+          </details>
+        </div>
         <pre class="report-box" id="report-box" hidden></pre>
         <h3 style="font-family:var(--serif); font-size:22px; font-weight:600; margin:26px 0 12px;">Sauvegardes automatiques</h3>
         <div id="backup-list"></div>
@@ -435,7 +445,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="js/data.js?v=60"></script>
-  <script src="js/admin.js?v=60"></script>
+  <script src="js/data.js?v=61"></script>
+  <script src="js/admin.js?v=61"></script>
 </body>
 </html>

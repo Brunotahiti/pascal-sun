@@ -357,7 +357,8 @@ function collectData() {
     invitations: readJSON(INVIT_STATS_FILE, {}),
     contacts: readJSON(NEWSLETTER_FILE, []),
     commissions: readJSON(COMMISSIONS_FILE, []),
-    idees: readJSON(IDEAS_FILE, [])
+    idees: readJSON(IDEAS_FILE, []),
+    verifications: readJSON(VERIFS_FILE, {})
   };
 }
 
@@ -1563,6 +1564,110 @@ setInterval(async () => {
   fs.writeFileSync(REPORT_FILE, tag);
   if (mailEnabled()) { await monthlyReport(now); sendPush("📊 Rapport mensuel envoyé", "Le bilan du mois vient de partir par email."); }
 }, 3600e3);
+
+/* --------------------------------- vérifications de sécurité (registre) -- */
+/* Une sauvegarde qu'on n'a jamais restaurée n'est qu'une promesse, et un
+   secret qui ne change jamais finit par circuler. Ce registre garde la date
+   du dernier exercice de restauration et de la dernière rotation de chaque
+   secret, rappelle les échéances (email + notification), et n'accepte que des
+   dates : aucun secret n'est stocké ici. */
+const VERIFS_FILE = path.join(DATA_DIR, "verifications.json");
+const SECRETS = [
+  { cle: "admin", nom: "Mot de passe de l'espace admin", mois: 6,
+    ou: "Variable ADMIN_PASSWORD du projet Docker (voir PROJET.md), puis redéploiement.",
+    effet: "Vous seul êtes concerné : il faudra vous reconnecter à l'admin." },
+  { cle: "app_secret", nom: "Clé de signature des sessions (APP_SECRET)", mois: 12,
+    ou: "Variable APP_SECRET — une longue suite tirée au sort (openssl rand -hex 32).",
+    effet: "Déconnecte l'admin ouvert ailleurs. Sans effet pour les visiteurs." },
+  { cle: "mail", nom: "Mot de passe de la boîte contact@pascal-sun.com", mois: 12,
+    ou: "Chez l'hébergeur du mail, puis à re-saisir ci-dessus dans « ✉️ Emails automatiques ».",
+    effet: "Les emails automatiques s'arrêtent tant qu'il n'est pas re-saisi ici." },
+  { cle: "scaleway", nom: "Clés de la copie hors serveur (Scaleway)", mois: 12,
+    ou: "Console Scaleway → IAM → Clés API : créer la nouvelle, la coller ci-dessus, puis supprimer l'ancienne.",
+    effet: "Aucun, si la nouvelle clé est testée avant de retirer l'ancienne." },
+  { cle: "vapid", nom: "Clés des notifications (VAPID)", mois: 24,
+    ou: "npx web-push generate-vapid-keys, puis variables VAPID_PUBLIC / VAPID_PRIVATE.",
+    effet: "⚠️ Toutes les notifications push cessent : chacun doit les réactiver depuis l'admin." }
+];
+const EXERCICE_MOIS = 3;   // un exercice de restauration par trimestre
+
+function lireVerifs() {
+  const v = readJSON(VERIFS_FILE, {});
+  return { exercice: v.exercice || null, secrets: v.secrets || {}, historique: v.historique || [] };
+}
+const moisApres = (iso, mois) => { const d = new Date(iso); d.setMonth(d.getMonth() + mois); return d; };
+function etatVerifs() {
+  const v = lireVerifs();
+  const maintenant = Date.now();
+  const echeance = (date, mois) => {
+    if (!date) return { fait: null, du: null, retard: null, jamais: true };
+    const limite = moisApres(date, mois);
+    return { fait: date, du: limite.toISOString(), retard: Math.round((maintenant - limite) / 86400e3), jamais: false };
+  };
+  return {
+    exercice: { ...echeance(v.exercice, EXERCICE_MOIS), tousLesMois: EXERCICE_MOIS },
+    secrets: SECRETS.map((s) => ({ ...s, ...echeance(v.secrets[s.cle], s.mois) })),
+    historique: v.historique.slice(0, 20)
+  };
+}
+app.get("/api/verifications", requireAuth, (_req, res) => res.json(etatVerifs()));
+app.post("/api/verifications", requireAuth, (req, res) => {
+  const b = req.body || {};
+  const quoi = String(b.quoi || "");
+  const note = String(b.note || "").slice(0, 300);
+  const v = lireVerifs();
+  const quand = new Date().toISOString();
+  if (quoi === "exercice") v.exercice = quand;
+  else if (SECRETS.some((s) => s.cle === quoi)) v.secrets[quoi] = quand;
+  else return res.status(400).json({ error: "verification-inconnue" });
+  const libelle = quoi === "exercice" ? "Exercice de restauration"
+    : `Rotation — ${(SECRETS.find((s) => s.cle === quoi) || {}).nom}`;
+  v.historique = [{ quand, quoi, libelle, note }, ...(v.historique || [])].slice(0, 60);
+  writeJSON(VERIFS_FILE, v);
+  res.json({ ok: true, etat: etatVerifs() });
+});
+
+/* Rappel : une fois par jour, si une échéance est dépassée. Un seul message
+   par jour, qui récapitule tout ce qui est en retard. */
+const RAPPEL_VERIF_FILE = path.join(DATA_DIR, "last-rappel-verifs.txt");
+async function rappelVerifications() {
+  const e = etatVerifs();
+  const enRetard = [];
+  if (e.exercice.jamais || e.exercice.retard > 0) {
+    enRetard.push(e.exercice.jamais
+      ? "• Exercice de restauration : jamais fait"
+      : `• Exercice de restauration : ${e.exercice.retard} jour(s) de retard`);
+  }
+  e.secrets.forEach((s) => {
+    if (s.jamais) enRetard.push(`• ${s.nom} : jamais changé`);
+    else if (s.retard > 0) enRetard.push(`• ${s.nom} : ${s.retard} jour(s) de retard`);
+  });
+  if (!enRetard.length) return false;
+  const jour = new Date().toISOString().slice(0, 10);
+  try { if (fs.readFileSync(RAPPEL_VERIF_FILE, "utf8") === jour) return false; } catch { /* première fois */ }
+  fs.writeFileSync(RAPPEL_VERIF_FILE, jour);
+  await sendMail(ARTIST_NOTIFY, "🔐 Entretien du site : quelques vérifications à faire",
+`Ia ora na Pascal,
+
+Le site va bien. Deux ou trois gestes d'entretien attendent tout de même :
+
+${enRetard.join("\n")}
+
+L'exercice de restauration consiste à remonter une sauvegarde sur une copie,
+pour vérifier qu'elle est bien exploitable. Il ne touche pas au site :
+
+    ADMIN_PASSWORD='votre mot de passe' node tools/exercice-restauration.js
+
+Les rotations de secrets (mots de passe et clés) sont expliquées une par une
+dans l'admin : Sauvegardes → 🔐 Sécurité & vérifications. Chaque geste fait,
+un bouton le note et l'échéance repart.
+
+→ ${SITE_URL}/admin`);
+  sendPush("🔐 Entretien du site", `${enRetard.length} vérification(s) à faire — voir l'admin.`);
+  return true;
+}
+setTimeout(() => { if (mailEnabled()) rappelVerifications().catch(() => {}); }, 120e3);
+setInterval(() => { if (mailEnabled()) rappelVerifications().catch(() => {}); }, 12 * 3600e3);
 
 app.get("/api/rapport", requireAuth, async (_req, res) => {
   try { res.json(await monthlyReport()); }

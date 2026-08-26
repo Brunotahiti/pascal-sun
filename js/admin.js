@@ -1516,8 +1516,59 @@
         if (t.dataset.tab === "certificats") ouvrirCertificats();
         if (t.dataset.tab === "clients") renderClients();
         if (t.dataset.tab === "idees") renderIdees();
-        if (t.dataset.tab === "donnees") { renderBackups(); refreshMailNote(); chargerScaleway(); }
+        if (t.dataset.tab === "donnees") { renderBackups(); refreshMailNote(); chargerScaleway(); chargerVerifs(); }
       }));
+
+    /* ------ sécurité : exercice de restauration et rotations de secrets ------ */
+    async function chargerVerifs() {
+      let d;
+      try { d = await fetch("/api/verifications").then((r) => r.json()); }
+      catch { $("#verifs-badge").textContent = "indisponible"; return; }
+      const jours = (n) => `${n} jour${n > 1 ? "s" : ""}`;
+      const dateFr = (iso) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+      const ligne = (o) => {
+        const enRetard = o.jamais || o.retard > 0;
+        const etat = o.jamais ? "jamais fait"
+          : o.retard > 0 ? `à refaire — ${jours(o.retard)} de retard`
+          : `fait le ${dateFr(o.fait)} · prochain avant le ${dateFr(o.du)}`;
+        return `
+        <div class="verif-row ${enRetard ? "du" : "ok"}">
+          <div class="verif-txt">
+            <strong>${esc(o.nom)}</strong>
+            <span class="verif-etat">${etat}</span>
+            ${o.ou ? `<small>${esc(o.ou)}</small>` : ""}
+            ${o.effet ? `<small class="verif-effet">Conséquence : ${esc(o.effet)}</small>` : ""}
+          </div>
+          <button type="button" class="ghost-btn" data-verif="${esc(o.cle)}">${o.bouton}</button>
+        </div>`;
+      };
+      const ex = { ...d.exercice, cle: "exercice", bouton: "✓ Je l'ai fait",
+        nom: `Exercice de restauration — tous les ${d.exercice.tousLesMois} mois`,
+        ou: "Depuis le dossier du site : ADMIN_PASSWORD='…' node tools/exercice-restauration.js — la sauvegarde est remontée sur une copie, le site en production n'est pas touché.",
+        effet: "" };
+      const secrets = d.secrets.map((s2) => ({ ...s2, bouton: "✓ Changé", nom: `${s2.nom} — tous les ${s2.mois} mois` }));
+      $("#verifs-liste").innerHTML = ligne(ex) + secrets.map(ligne).join("");
+      const retards = [ex, ...secrets].filter((o) => o.jamais || o.retard > 0).length;
+      const badge = $("#verifs-badge");
+      badge.textContent = retards ? `${retards} à faire` : "à jour";
+      badge.className = "scw-badge " + (retards ? "ko" : "ok");
+      $("#verifs-histo-box").hidden = !(d.historique || []).length;
+      $("#verifs-histo").innerHTML = (d.historique || []).map((h) =>
+        `<div class="verif-histo-row"><span>${new Date(h.quand).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" })}</span> ${esc(h.libelle)}${h.note ? ` — ${esc(h.note)}` : ""}</div>`).join("");
+    }
+    $("#verifs-liste").addEventListener("click", async (e) => {
+      const b = e.target.closest("[data-verif]");
+      if (!b) return;
+      const quoi = b.dataset.verif;
+      const quand = quoi === "exercice"
+        ? "Noter que l'exercice de restauration vient d'être fait ?"
+        : "Noter que ce mot de passe / cette clé vient d'être changé ?";
+      if (!confirm(quand)) return;
+      const note = prompt("Une note, si vous voulez (facultatif) :", "") || "";
+      const r = await fetch("/api/verifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ quoi, note }) });
+      $("#verifs-msg").textContent = r.ok ? "Noté ✓ — l'échéance repart." : "Impossible de noter la vérification.";
+      chargerVerifs();
+    });
 
     /* ------ copie hors serveur : Scaleway ------ */
     async function chargerScaleway() {

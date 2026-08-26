@@ -47,14 +47,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=60/?v=61/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=61/?v=62/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=61"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=62"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -148,6 +148,7 @@ manifest.webmanifest   application installable
 | `push.json` | abonnements aux notifications |
 | `mail.json` | identifiants SMTP |
 | `scaleway.json` | clés et bucket Scaleway de la copie hors serveur (+ dernier résultat de synchro) |
+| `verifications.json` | dates du dernier exercice de restauration et des rotations de secrets |
 | `backups/` | sauvegardes quotidiennes (30 jours) |
 | `uploads/` | photos envoyées depuis l'admin |
 
@@ -463,6 +464,50 @@ depuis Tahiti — un certificat daté du 14 s'afficherait « 13 ».
   l'erreur dans un `catch` muet : `causeCamera()` la traduit en message clair.
 
 ---
+
+## 6 ter. Entretien : exercice de restauration et rotation des secrets
+
+Suivi dans **admin → Sauvegardes → « 🔐 Sécurité & vérifications »** : chaque
+geste fait se note d'un bouton, l'échéance repart, et un email (+ notification)
+rappelle ce qui traîne — au plus une fois par jour, tout regroupé. Le registre
+vit dans `data/verifications.json` (des dates, jamais un secret) et part dans
+les sauvegardes.
+
+### Exercice de restauration — tous les trimestres
+
+```bash
+ADMIN_PASSWORD='…' node tools/exercice-restauration.js
+```
+
+Télécharge la dernière sauvegarde de la production, la restaure dans un dossier
+temporaire, démarre **une copie du site** sur le port 5099 avec ces données, et
+vérifie : pages servies, catalogue complet (même nombre d'œuvres que dans la
+sauvegarde), commandes et clients restaurés, données sensibles toujours
+protégées par mot de passe. La production n'est ni arrêtée ni modifiée — elle
+n'est lue que pour récupérer l'archive. Tout est nettoyé à la fin ;
+`--garder` laisse la copie en ligne pour l'inspecter à la main (mot de passe
+admin de la copie : `exercice`). On peut aussi lui passer un fichier de
+sauvegarde en argument, sans rien demander à la production.
+
+Il distingue deux choses : un **échec** (la sauvegarde ne remonte pas — à
+traiter tout de suite) et un **avertissement** sur la qualité des données
+(fiche laissée en brouillon, œuvre sans photo) — utile, mais sans rapport avec
+la sauvegarde.
+
+### Rotation des secrets
+
+| Secret | Rythme | Où le changer | Conséquence |
+|---|---|---|---|
+| `ADMIN_PASSWORD` | 6 mois | variable du projet Docker + redéploiement | reconnexion à l'admin |
+| `APP_SECRET` | 12 mois | idem (`openssl rand -hex 32`) | déconnecte les sessions admin ouvertes |
+| Mot de passe email | 12 mois | chez l'hébergeur du mail, puis admin → « ✉️ Emails automatiques » | emails à l'arrêt tant qu'il n'est pas re-saisi |
+| Clés Scaleway | 12 mois | console Scaleway → IAM ; **tester la nouvelle avant de supprimer l'ancienne** | aucune, si l'ordre est respecté |
+| Clés VAPID | 24 mois | `npx web-push generate-vapid-keys` | ⚠️ toutes les notifications push cessent, chacun doit les réactiver |
+
+⚠️ Les secrets vivent dans les variables d'environnement du projet Docker (et
+`data/mail.json`, `data/scaleway.json` sur le volume) — **jamais dans le
+dépôt**. Après changement, repasser la liste complète de la section 3 : un
+redéploiement qui oublie une variable la remet à sa valeur par défaut.
 
 ## 7. Méthode de travail attendue
 
