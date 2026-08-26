@@ -361,14 +361,38 @@ function collectData() {
   };
 }
 
-function makeBackup() {
+/* Trois sauvegardes par jour, aux heures creuses de Tahiti : au réveil, en
+   début d'après-midi et le soir. Chacune part aussitôt chez Scaleway. Le nom
+   porte le créneau, si bien que le tri par nom reste chronologique à la
+   journée près — les anciennes sauvegardes quotidiennes (sans créneau) se
+   rangent en fin de leur journée — et la rotation continue de fonctionner. */
+const CRENEAUX_TAHITI = [6, 14, 22];
+const SAUVEGARDES_GARDEES = 90;      // trois par jour → trente jours sur le serveur
+
+/* Date et heure à Tahiti (UTC−10), sans dépendre du fuseau du serveur. */
+function maintenantTahiti(d = new Date()) {
+  const t = new Date(d.getTime() - 10 * 3600e3);
+  return { jour: t.toISOString().slice(0, 10), heure: t.getUTCHours() };
+}
+/* Créneau en cours : le dernier passé dans la journée tahitienne. */
+function creneauCourant(d = new Date()) {
+  const { jour, heure } = maintenantTahiti(d);
+  const passes = CRENEAUX_TAHITI.filter((h) => heure >= h);
+  if (!passes.length) {
+    // avant le premier créneau : c'est encore le dernier de la veille
+    const veille = new Date(new Date(`${jour}T00:00:00Z`).getTime() - 86400e3).toISOString().slice(0, 10);
+    return { jour: veille, creneau: CRENEAUX_TAHITI[CRENEAUX_TAHITI.length - 1] };
+  }
+  return { jour, creneau: passes[passes.length - 1] };
+}
+const nomSauvegarde = ({ jour, creneau }) => `pascal-sun-${jour}-${String(creneau).padStart(2, "0")}h.json.gz`;
+
+function makeBackup(cible = creneauCourant()) {
   try {
-    const stamp = new Date().toISOString().slice(0, 10);
-    const file = path.join(BACKUP_DIR, `pascal-sun-${stamp}.json.gz`);
+    const file = path.join(BACKUP_DIR, nomSauvegarde(cible));
     fs.writeFileSync(file, zlib.gzipSync(JSON.stringify(collectData())));
-    // rotation : on garde les 30 plus récentes
     const olds = fs.readdirSync(BACKUP_DIR).filter((f) => f.endsWith(".json.gz")).sort();
-    olds.slice(0, Math.max(0, olds.length - 30)).forEach((f) => fs.unlinkSync(path.join(BACKUP_DIR, f)));
+    olds.slice(0, Math.max(0, olds.length - SAUVEGARDES_GARDEES)).forEach((f) => fs.unlinkSync(path.join(BACKUP_DIR, f)));
     console.log("Sauvegarde écrite :", path.basename(file));
     setTimeout(() => synchroniserDistantes().catch(() => {}), 2000);   // copie chez Scaleway
     return file;
@@ -378,13 +402,15 @@ function makeBackup() {
   }
 }
 
-/* Vérification toutes les heures : sauvegarde si celle du jour manque. */
+/* Vérification toutes les vingt minutes : sauvegarde si celle du créneau
+   en cours manque. Un serveur redémarré ou arrêté un moment rattrape ainsi
+   le créneau qu'il a manqué, sans jamais en refaire deux fois le même. */
 function backupTick() {
-  const stamp = new Date().toISOString().slice(0, 10);
-  if (!fs.existsSync(path.join(BACKUP_DIR, `pascal-sun-${stamp}.json.gz`))) makeBackup();
+  const cible = creneauCourant();
+  if (!fs.existsSync(path.join(BACKUP_DIR, nomSauvegarde(cible)))) makeBackup(cible);
 }
 setTimeout(backupTick, 30e3);
-setInterval(backupTick, 3600e3);
+setInterval(backupTick, 20 * 60e3);
 
 app.get("/api/backup", requireAuth, (_req, res) => {
   const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
@@ -730,7 +756,7 @@ function etatScaleway() {
 }
 /* Après chaque sauvegarde du jour, et toutes les 30 min en rattrapage. */
 setTimeout(() => synchroniserDistantes().catch(() => {}), 60e3);
-setInterval(() => synchroniserDistantes().catch(() => {}), 30 * 60e3);
+setInterval(() => synchroniserDistantes().catch(() => {}), 2 * 3600e3);   // filet de rattrapage
 
 app.get("/api/sauvegardes/scaleway", requireAuth, async (req, res) => {
   const etat = etatScaleway();

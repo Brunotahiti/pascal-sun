@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/admin.css?v=59">
+  <link rel="stylesheet" href="css/admin.css?v=60">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='38' fill='%2316130f'/></svg>">
 </head>
 <body>
@@ -309,7 +309,7 @@
         <div class="pane-head">
           <div>
             <h2>Sauvegardes &amp; rapport</h2>
-            <p>Une sauvegarde complète (catalogue, commandes, clients, idées) est créée automatiquement chaque jour et conservée 30 jours sur le serveur. Vous pouvez aussi en télécharger une à tout moment.</p>
+            <p>Une sauvegarde complète (catalogue, commandes, clients, idées) est créée automatiquement <strong>trois fois par jour</strong> — au réveil, en début d'après-midi et le soir, heure de Tahiti — et conservée 30 jours sur le serveur. Chacune part aussitôt chez Scaleway. Vous pouvez aussi en télécharger une à tout moment.</p>
           </div>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <a class="solid-btn" href="/api/backup" download>⬇ Télécharger la sauvegarde</a>
@@ -335,7 +335,7 @@
         </div>
         <div class="compose-panel" style="margin-bottom: 22px;" id="scw-panel">
           <h3>☁️ Copie hors serveur — Scaleway <span class="scw-badge" id="scw-badge">…</span></h3>
-          <p class="compose-note">Les sauvegardes du serveur sont aussi déposées dans un « bucket » Scaleway (Object Storage, Paris) : elles survivent à la perte du serveur. Ce qui manque là-bas est rattrapé automatiquement après chaque sauvegarde et toutes les 30 minutes. 120 sauvegardes gardées là-bas — et, à côté, <b>l'archive complète du programme</b> (le code du site, les photos envoyées depuis l'admin, la configuration), refaite dès que quelque chose change : de quoi tout remonter à partir du seul bucket.</p>
+          <p class="compose-note">Les sauvegardes du serveur sont aussi déposées dans un « bucket » Scaleway (Object Storage, Paris) : elles survivent à la perte du serveur. Ce qui manque là-bas est rattrapé automatiquement après chaque sauvegarde, et un filet repasse toutes les deux heures. 120 sauvegardes gardées là-bas — quarante jours, à trois par jour — et, à côté, <b>l'archive complète du programme</b> (le code du site, les photos envoyées depuis l'admin, la configuration), refaite dès que quelque chose change : de quoi tout remonter à partir du seul bucket.</p>
           <p class="compose-note" id="scw-etat"></p>
           <p class="compose-note scw-alerte" id="scw-allure" hidden></p>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -435,7 +435,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="js/data.js?v=59"></script>
-  <script src="js/admin.js?v=59"></script>
+  <script src="js/data.js?v=60"></script>
+  <script src="js/admin.js?v=60"></script>
 </body>
 </html>

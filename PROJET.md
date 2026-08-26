@@ -47,14 +47,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=59/?v=60/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=60/?v=61/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=60"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=61"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -317,11 +317,16 @@ depuis Tahiti — un certificat daté du 14 s'afficherait « 13 ».
 ### Automatismes
 - Commande → original **réservé**, stock décompté, confirmation au client avec **lien du certificat**, alerte à Pascal (email + push)
 - Nouvelle œuvre enregistrée → **annonce automatique** aux abonnés
-- **Sauvegarde quotidienne** (30 jours conservés), **copiée chez Scaleway
+- **Sauvegarde trois fois par jour** (créneaux 6 h / 14 h / 22 h, heure de
+  Tahiti — `CRENEAUX_TAHITI` dans `server.js` ; nom
+  `pascal-sun-AAAA-MM-JJ-HHh.json.gz`, 90 gardées = 30 jours ; un tick toutes
+  les 20 min rattrape un créneau manqué sans jamais le refaire deux fois),
+  **copiée chez Scaleway
   Object Storage** si configuré (admin → Sauvegardes → « ☁️ Copie hors
   serveur ») : même mécanique que Polynet (`lib/sauvegarde-distante.ts`),
   signature S3 v4 maison dans `server.js`, préfixe `pascal-sun/`, 120 gardées
-  là-bas, synchro après chaque sauvegarde et toutes les 30 min, test des accès
+  là-bas (quarante jours à trois par jour), copie après chaque sauvegarde avec
+  un filet de rattrapage toutes les 2 h, test des accès
   avec diagnostic (clé refusée ? bucket introuvable ? droit IAM ?). Clés dans
   `data/scaleway.json` (ou `SCW_ACCESS_KEY` / `SCW_SECRET_KEY` / `SCW_BUCKET` /
   `SCW_REGION` en variables d'environnement, prioritaires). Le secret n'est
