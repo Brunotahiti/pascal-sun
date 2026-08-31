@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/admin.css?v=63">
+  <link rel="stylesheet" href="css/admin.css?v=64">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='38' fill='%2316130f'/></svg>">
 </head>
 <body>
@@ -40,6 +40,7 @@
         <button class="tab" data-tab="livraison">Livraison &amp; paiement</button>
         <button class="tab" data-tab="eclairage">Éclairage</button>
         <button class="tab" data-tab="textes">Textes &amp; boutons</button>
+        <button class="tab" data-tab="qrcode">QR code</button>
         <button class="tab" data-tab="stats">Statistiques</button>
         <button class="tab" data-tab="donnees">Sauvegardes</button>
       </nav>
@@ -391,6 +392,49 @@
         <div class="texts-grid" id="texts-grid"></div>
       </section>
 
+      <!-- QR CODE -->
+      <section class="pane" data-pane="qrcode">
+        <div class="pane-head">
+          <div>
+            <h2>QR code à partager</h2>
+            <p>Le carré à imprimer sur vos cartons de vernissage, vos cartes de visite, une affichette à côté d'une toile en galerie : on le photographie avec un téléphone et le site s'ouvre. Les visites qui en viennent apparaissent dans les statistiques sous « QR code ».</p>
+          </div>
+        </div>
+
+        <div class="qr-zone">
+          <div class="qr-reglages">
+            <label class="cf-champ">Où mène le QR code
+              <select id="qr-page">
+                <option value="accueil">Page d'accueil</option>
+                <option value="galerie">La galerie (toutes les œuvres)</option>
+                <option value="expositions">Les vernissages</option>
+                <option value="artiste">L'artiste</option>
+                <option value="portrait">Portrait sur commande</option>
+                <option value="contact">Contact</option>
+                <option value="oeuvre">Une œuvre précise…</option>
+                <option value="vernissage">Une invitation de vernissage…</option>
+              </select>
+            </label>
+            <label class="cf-champ" id="qr-oeuvre-champ" hidden>Laquelle
+              <select id="qr-oeuvre"></select>
+            </label>
+            <label class="cf-champ" id="qr-vernissage-champ" hidden>Lequel
+              <select id="qr-vernissage"></select>
+            </label>
+            <p class="compose-note">Adresse encodée : <code id="qr-url">…</code></p>
+            <div class="qr-btns">
+              <a class="solid-btn" id="qr-png" href="#" download>⬇ Télécharger l'image (PNG)</a>
+              <a class="ghost-btn" id="qr-svg" href="#" download>⬇ Pour l'imprimeur (SVG)</a>
+              <button type="button" class="ghost-btn" id="qr-imprimer">🖨 Imprimer l'affichette</button>
+            </div>
+            <p class="compose-note">Le PNG convient pour un email, les réseaux ou une impression courante. Le SVG reste net à n'importe quelle taille : c'est celui à donner à un imprimeur pour une affiche ou une banderole.</p>
+          </div>
+          <div class="qr-apercu">
+            <div class="qr-cadre" id="qr-cadre"><p class="metric-empty">Préparation…</p></div>
+          </div>
+        </div>
+      </section>
+
       <!-- STATS -->
       <section class="pane" data-pane="stats">
         <div class="pane-head">
@@ -446,7 +490,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="js/data.js?v=63"></script>
-  <script src="js/admin.js?v=63"></script>
+  <script src="js/data.js?v=64"></script>
+  <script src="js/admin.js?v=64"></script>
 </body>
 </html>

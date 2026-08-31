@@ -2,7 +2,7 @@
   "name": "pascal-sun-galerie",
   "version": "1.0.0",
   "private": true,
-  "description": "Galerie en ligne de Pascal Sun \u2014 site + espace admin",
+  "description": "Galerie en ligne de Pascal Sun — site + espace admin",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -12,7 +12,11 @@
     "express": "^4.19.2",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.13",
-    "web-push": "^3.6.7",
-    "sharp": "^0.33.5"
+    "qrcode-generator": "^2.0.4",
+    "sharp": "^0.33.5",
+    "web-push": "^3.6.7"
+  },
+  "devDependencies": {
+    "jsqr": "^1.4.0"
   }
 }

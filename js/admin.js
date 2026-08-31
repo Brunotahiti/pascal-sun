@@ -1556,7 +1556,66 @@
         if (t.dataset.tab === "clients") renderClients();
         if (t.dataset.tab === "idees") renderIdees();
         if (t.dataset.tab === "donnees") { renderBackups(); refreshMailNote(); chargerScaleway(); chargerVerifs(); }
+        if (t.dataset.tab === "qrcode") { remplirCiblesQR(); rafraichirQR(); }
       }));
+
+    /* ------ QR code à partager ------ */
+    function qrParams() {
+      const page = $("#qr-page").value;
+      if (page === "oeuvre") return `oeuvre=${encodeURIComponent($("#qr-oeuvre").value || "")}`;
+      if (page === "vernissage") return `vernissage=${encodeURIComponent($("#qr-vernissage").value || "")}`;
+      return `page=${encodeURIComponent(page)}`;
+    }
+    async function rafraichirQR() {
+      const p = qrParams();
+      $("#qr-oeuvre-champ").hidden = $("#qr-page").value !== "oeuvre";
+      $("#qr-vernissage-champ").hidden = $("#qr-page").value !== "vernissage";
+      $("#qr-png").href = `/api/qrcode.png?${p}&taille=1200`;
+      $("#qr-svg").href = `/api/qrcode.svg?${p}`;
+      $("#qr-cadre").innerHTML = `<img src="/api/qrcode.svg?${p}" alt="QR code du site">`;
+      try {
+        const d = await fetch(`/api/qrcode/cible?${p}`).then((r) => r.json());
+        $("#qr-url").textContent = d.url;
+      } catch { $("#qr-url").textContent = "—"; }
+    }
+    function remplirCiblesQR() {
+      $("#qr-oeuvre").innerHTML = catalogue.artworks.filter(publiable)
+        .map((a) => `<option value="${esc(a.id)}">${esc(a.titre)}</option>`).join("");
+      $("#qr-vernissage").innerHTML = (catalogue.events || [])
+        .map((e) => `<option value="${esc(e.id)}">${esc(e.titre)}</option>`).join("");
+    }
+    ["#qr-page", "#qr-oeuvre", "#qr-vernissage"].forEach((sel) =>
+      $(sel).addEventListener("change", rafraichirQR));
+    /* Affichette prête à coller : le QR en grand, ce qu'on y trouve, l'adresse. */
+    $("#qr-imprimer").addEventListener("click", () => {
+      const url = $("#qr-url").textContent;
+      const f = document.createElement("iframe");
+      f.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0";
+      document.body.appendChild(f);
+      const d = f.contentDocument;
+      d.open();
+      d.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Pascal Sun — QR code</title>
+        <style>
+          @page { size: A4; margin: 18mm; }
+          body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; text-align: center; color: #16130f; }
+          h1 { font-family: Georgia, serif; font-size: 34pt; margin: 0 0 2mm; font-weight: 500; }
+          .sous { letter-spacing: .32em; text-transform: uppercase; font-size: 9pt; color: #8c8478; margin-bottom: 14mm; }
+          img { width: 108mm; height: 108mm; }
+          .invite { font-family: Georgia, serif; font-style: italic; font-size: 15pt; margin: 10mm 0 3mm; }
+          .url { font-size: 10pt; color: #8c8478; word-break: break-all; }
+          .pied { margin-top: 12mm; font-size: 9pt; color: #8c8478; }
+        </style></head><body>
+        <h1>Pascal Sun</h1>
+        <div class="sous">Peintre · Tahiti</div>
+        <img src="/api/qrcode.svg?${qrParams()}" alt="">
+        <p class="invite">Photographiez ce carré pour découvrir les œuvres</p>
+        <p class="url">${esc(url)}</p>
+        <p class="pied">pascal-sun.com — œuvres originales, tirages et affiches, expédiées dans le monde entier</p>
+        </body></html>`);
+      d.close();
+      const lancer = () => { f.contentWindow.focus(); f.contentWindow.print(); setTimeout(() => f.remove(), 1500); };
+      if (d.readyState === "complete") setTimeout(lancer, 400); else f.onload = () => setTimeout(lancer, 400);
+    });
 
     /* ------ sécurité : exercice de restauration et rotations de secrets ------ */
     async function chargerVerifs() {

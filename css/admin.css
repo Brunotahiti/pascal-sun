@@ -1057,3 +1057,13 @@ button { font-family: var(--sans); cursor: pointer; }
 .aw-photo.vide { display: grid; place-items: center; background: var(--paper-deep); border: 1px dashed var(--line); min-height: 150px; }
 .aw-photo-vide { text-align: center; font-size: 13px; font-weight: 700; color: var(--ink-faint); line-height: 1.5; }
 .aw-photo-vide small { font-weight: 400; font-size: 11.5px; }
+
+/* ---- QR code à partager ---- */
+.qr-zone { display: grid; grid-template-columns: 1.1fr .9fr; gap: 26px; align-items: start; }
+@media (max-width: 900px) { .qr-zone { grid-template-columns: 1fr; } }
+.qr-reglages { display: grid; gap: 14px; }
+.qr-reglages code { background: var(--paper-deep); padding: 3px 7px; border-radius: 4px; font-size: 12.5px; word-break: break-all; }
+.qr-btns { display: flex; flex-wrap: wrap; gap: 10px; }
+.qr-apercu { display: grid; place-items: center; }
+.qr-cadre { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 18px; box-shadow: 0 10px 30px -18px rgba(22,19,15,.5); }
+.qr-cadre img { display: block; width: min(300px, 60vw); height: auto; }

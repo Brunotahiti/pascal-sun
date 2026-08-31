@@ -80,6 +80,10 @@
           <div class="cert-seal">
             <span>Galerie</span><strong>Pascal Sun</strong><span>pascal-sun.com</span>
           </div>
+          <div class="cert-qr">
+            <img src="/api/certificat/qrcode.svg?c=${encodeURIComponent(d.ref)}" alt="" onerror="this.closest('.cert-qr').remove()">
+            <small>${t("cert_qr")}</small>
+          </div>
         </footer>
       </div>`;
 

@@ -47,14 +47,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=63/?v=64/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=64/?v=65/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=64"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=65"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -327,6 +327,25 @@ HTML**, à la charte du site : bandeau lagon fait de bandes de couleur (aucune
 image à charger), affiche encadrée si elle existe, date et lieu, bouton vers la
 page d'invitation. `sendMail()` accepte désormais un 4ᵉ argument `html` ; sans
 lui, tous les autres emails restent en texte simple.
+
+### QR codes
+Onglet **QR code** de l'admin : un carré à imprimer (carton de vernissage,
+carte de visite, affichette à côté d'une toile), qui mène à l'accueil, à la
+galerie, à une œuvre ou à une invitation — toujours avec `?s=qr`, si bien que
+les visites venues du QR se distinguent dans les statistiques. Trois sorties :
+PNG (usage courant), SVG (imprimeur, net à toute taille), et une affichette A4
+prête à imprimer. Dessin par `qrcode-generator` (aucune dépendance), correction
+d'erreur **H** — un QR imprimé se salit et se lit de biais.
+
+Le **certificat d'authenticité** porte le sien, à côté du cachet : il mène à la
+page publique de ce certificat, celle qui prouve l'authenticité
+(`/api/certificat/qrcode.svg?c=<réf>`). Cette route est **publique** — le
+document est lu par l'acquéreur, non connecté — mais ne fabrique un QR que pour
+une **référence qui existe** (`certificatExiste()`), jamais à la demande.
+⚠️ Vérifier un QR imprimé se fait sur le **PDF rendu en haute résolution** :
+à 72 dpi il est illisible et l'on croit à tort qu'il est raté. Il l'a été à
+150, 200, 300 et 600 dpi (`pdftoppm -r <dpi>` puis décodage `jsqr`), et le
+certificat tient toujours sur une seule page A4.
 
 ### Certificats d'authenticité
 Deux origines, une seule page publique `certificat.html?c=<réf>` :

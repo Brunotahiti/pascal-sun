@@ -55,7 +55,8 @@ function seedCatalogue() {
     console.error("seed catalogue:", e.message);
   }
 }
-seedCatalogue();
+/* (l'appel est plus bas : seedCatalogue() se sert de writeJSON, déclaré
+   après — le lancer ici échouerait au tout premier démarrage, volume vide) */
 
 /* Lecture et écriture des données du site.
 
@@ -93,6 +94,10 @@ const writeJSON = (file, data) => {
   } finally { fs.closeSync(fd); }
   fs.renameSync(temporaire, file);   // …et seulement ensuite il prend la place de l'ancien
 };
+
+/* Premier démarrage sur un volume vide : le catalogue est semé depuis
+   js/data.js. Placé ici, après readJSON/writeJSON dont il se sert. */
+seedCatalogue();
 
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
@@ -2122,6 +2127,103 @@ app.get("/sitemap.xml", (_req, res) => {
 ${urls}
 </urlset>
 `);
+});
+
+/* ----------------------------------------------------------- QR code -- */
+/* Un carré à imprimer ou à projeter : sur un carton de vernissage, au dos
+   d'une carte, à côté d'une toile accrochée en galerie. Dessiné en SVG (net à
+   toutes les tailles, y compris en grand format d'imprimeur) et en PNG pour
+   les usages qui ne prennent que des images. La correction d'erreur est
+   volontairement haute : un QR imprimé se salit, se plie, ou se lit de biais. */
+const qrcode = require("qrcode-generator");
+
+function qrModules(texte, correction = "H") {
+  /* type 0 = le plus petit modèle qui accepte le texte */
+  const qr = qrcode(0, correction);
+  qr.addData(texte, "Byte");
+  qr.make();
+  const n = qr.getModuleCount();
+  const grille = [];
+  for (let y = 0; y < n; y++) {
+    const ligne = [];
+    for (let x = 0; x < n; x++) ligne.push(qr.isDark(y, x));
+    grille.push(ligne);
+  }
+  return grille;
+}
+
+function qrSVG(texte, { taille = 512, marge = 4, sombre = "#16130f", clair = "#ffffff" } = {}) {
+  const g = qrModules(texte);
+  const n = g.length;
+  const total = n + marge * 2;
+  /* un seul chemin pour tous les carrés : fichier léger, rendu net */
+  let d = "";
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) if (g[y][x]) d += `M${x + marge} ${y + marge}h1v1h-1z`;
+  }
+  const libelle = String(texte).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${taille}" height="${taille}" viewBox="0 0 ${total} ${total}" shape-rendering="crispEdges" role="img" aria-label="QR code vers ${libelle}">
+  <rect width="${total}" height="${total}" fill="${clair}"/>
+  <path d="${d}" fill="${sombre}"/>
+</svg>`;
+}
+
+/* PNG : sharp rastérise le SVG — pas de dessin pixel par pixel à la main. */
+async function qrPNG(texte, taille = 1024) {
+  if (!sharp) throw new Error("sharp indisponible");
+  return sharp(Buffer.from(qrSVG(texte, { taille }))).png().toBuffer();
+}
+
+/* L'adresse encodée : le site, éventuellement une page précise, toujours
+   marquée « venu du QR » pour que les statistiques le distinguent. */
+function cibleQR(query = {}) {
+  const chemins = {
+    accueil: "/", galerie: "/galerie.html", expositions: "/expositions.html",
+    artiste: "/artiste.html", portrait: "/portrait.html", contact: "/contact.html"
+  };
+  let chemin = chemins[String(query.page || "accueil")] || "/";
+  if (query.oeuvre) chemin = `/oeuvre.html?id=${encodeURIComponent(String(query.oeuvre))}`;
+  if (query.vernissage) chemin = `/invitation.html?e=${encodeURIComponent(String(query.vernissage))}`;
+  const separateur = chemin.includes("?") ? "&" : "?";
+  return `${SITE_URL}${chemin}${separateur}s=qr`;
+}
+
+app.get("/api/qrcode.svg", requireAuth, (req, res) => {
+  try {
+    res.type("image/svg+xml").set("Cache-Control", "no-store").send(qrSVG(cibleQR(req.query)));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.get("/api/qrcode.png", requireAuth, async (req, res) => {
+  try {
+    const url = cibleQR(req.query);
+    const png = await qrPNG(url, Math.min(2048, Math.max(256, Number(req.query.taille) || 1024)));
+    res.type("image/png").set("Cache-Control", "no-store")
+      .set("Content-Disposition", `attachment; filename="pascal-sun-qr-${String(req.query.page || "accueil")}.png"`)
+      .send(png);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.get("/api/qrcode/cible", requireAuth, (req, res) => res.json({ url: cibleQR(req.query) }));
+
+/* Une référence de certificat existe-t-elle ? Deux origines, comme pour la
+   page publique : les certificats émis à la main, et les lignes de commande. */
+function certificatExiste(ref) {
+  if (readJSON(CERTIFICATS_FILE, []).some((c) => c.ref === ref)) return true;
+  const m = String(ref).match(/^(.+)-(\d+)$/);
+  if (!m) return false;
+  const order = readJSON(ORDERS_FILE, []).find((o) => o.id === m[1]);
+  const line = order && order.lines[Number(m[2])];
+  return Boolean(order && line && line.key !== "affiche");
+}
+
+/* QR du certificat : il figure sur le document imprimé, donc il doit être
+   lisible sans être connecté. On ne fabrique pas de QR à la demande pour
+   n'importe quoi — seulement pour une référence qui existe vraiment, et il
+   mène à la page publique de ce certificat, celle qui prouve l'authenticité. */
+app.get("/api/certificat/qrcode.svg", (req, res) => {
+  const ref = String(req.query.c || "").slice(0, 60);
+  if (!ref || !certificatExiste(ref)) return res.status(404).json({ error: "certificat-introuvable" });
+  res.type("image/svg+xml").set("Cache-Control", "public, max-age=86400")
+    .send(qrSVG(`${SITE_URL}/certificat.html?c=${encodeURIComponent(ref)}&s=qr`, { taille: 240 }));
 });
 
 app.get("/admin", (_req, res) => res.sendFile(path.join(__dirname, "admin.html")));

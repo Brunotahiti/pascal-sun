@@ -180,3 +180,10 @@ body[data-page="certificat"] {
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .grain, .cursor-dot, .cursor-ring, .scroll-progress { display: none !important; }
 }
+
+/* QR de vérification : l'acquéreur le photographie et retombe sur ce même
+   certificat, en ligne — la preuve que le document n'est pas un décalque. */
+.cert-qr { display: grid; justify-items: center; gap: 4px; }
+.cert-qr img { width: 22mm; height: 22mm; display: block; }
+.cert-qr small { font-size: 7.5pt; letter-spacing: .06em; color: #8c8478; text-align: center; max-width: 30mm; line-height: 1.3; }
+@media print { .cert-qr img { width: 20mm; height: 20mm; } }
