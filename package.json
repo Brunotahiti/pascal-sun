@@ -5,7 +5,8 @@
   "description": "Galerie en ligne de Pascal Sun — site + espace admin",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test tests/*.test.js"
   },
   "dependencies": {
     "compression": "^1.7.4",

@@ -557,10 +557,50 @@ la sauvegarde.
 dépôt**. Après changement, repasser la liste complète de la section 3 : un
 redéploiement qui oublie une variable la remet à sa valeur par défaut.
 
+## 6 quater. Tests automatisés
+
+```bash
+npm test          # ~1,5 s — 31 scénarios, aucune dépendance de test (node:test)
+```
+
+`tests/serveur.test.js` démarre **un vrai serveur** sur un port libre et un
+volume vide (`tests/_serveur.js`), sans email ni notification, puis l'attaque
+comme le feraient un visiteur, un acheteur et l'admin : premier démarrage
+(semis du catalogue), connexion et force brute, toutes les routes admin sans
+cookie, faux cookie, en-têtes de protection, commande d'un original (réservé,
+total pris au catalogue et non au navigateur, certificat), double vente
+refusée, stock des tirages et borne à 20, frais de port par zone / grand
+format / retrait / seuil d'offre, réservation à la galerie du vernissage,
+consignes de paiement sans donnée personnelle, statuts de commande, certificats
+(affiche sans certificat, référence inventée, certificat manuel avec date
+non décalée), ouvertures et réponses d'invitation (dont le bug RSVP → commande
+qui plantait), formulaires publics et leur limite de 20/h, fiches inachevées
+hors du plan du site, collections renommées, sauvegarde complète, écriture
+atomique sans résidu, fichier corrompu mis de côté, registre des
+vérifications, clés Scaleway jamais renvoyées, QR codes décodés, pages servies.
+`tests/prix.test.js` fait travailler côte à côte les **trois** arrondis en
+francs (site, admin, serveur) sur une gamme de prix : ils doivent dire la
+même chose — c'est le piège n° 7 de la section 6, désormais surveillé.
+
+Deux précisions de méthode :
+- les formulaires publics sont limités à 20 appels/heure **par adresse** ; le
+  lanceur envoie chaque appel depuis une adresse `X-Forwarded-For` distincte
+  (le serveur fait confiance au premier mandataire, comme derrière Traefik).
+  En production, Traefik réécrit cet en-tête avec l'adresse réelle du client
+  (comportement par défaut, `forwardedHeaders.insecure` à `false`) — à ne pas
+  changer, sinon la limite serait contournable ;
+- `jsqr` (décodeur, pour vérifier les QR) est en `devDependencies` : absent
+  de l'image de production. Sans lui, le test QR s'arrête au SVG.
+
+**Ajouter un scénario** à chaque correction de bug : le test qui reproduit le
+bug d'abord, la correction ensuite. C'est ce qui empêche un bug de revenir.
+
 ## 7. Méthode de travail attendue
 
+- **`npm test` avant chaque déploiement** — 31 scénarios en 1,5 s.
 - Vérifier visuellement dans le navigateur avant de déployer (serveur local
-  `PORT=5000 ADMIN_PASSWORD=t APP_SECRET=t node server.js`).
+  `PORT=5050 ADMIN_PASSWORD=t APP_SECRET=t node server.js` — 5000 est pris
+  par macOS).
 - Mesurer plutôt que supposer (dimensions, luminosité des bords, nombre de
   pages PDF, en-têtes HTTP).
 - Déployer, puis **confirmer en production** avant d'annoncer que c'est fait.
