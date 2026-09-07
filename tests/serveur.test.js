@@ -349,6 +349,32 @@ test("QR codes : SVG valide, PNG décodable, cible marquée « venu du QR »", a
 });
 
 /* ------------------------------------------------------------- pages -- */
+test("aucun fichier interne n'est téléchargeable depuis le site", async () => {
+  /* Le site est servi depuis le dossier du projet : sans garde-fou, express
+     livre aussi le code, le dossier de projet et l'outillage. PROJET.md
+     contient les accès — il a été téléchargeable en production, c'est le
+     genre de porte qui doit rester fermée. */
+  const interdits = [
+    "/PROJET.md", "/README.md", "/server.js", "/package.json", "/package-lock.json",
+    "/Dockerfile", "/docker-compose.yml", "/nginx.conf",
+    "/tests/serveur.test.js", "/tests/_serveur.js", "/tools/exercice-restauration.js",
+    "/.git/config", "/.gitignore", "/.claude/settings.local.json",
+    "/data/catalogue.json", "/data/orders.json", "/data/mail.json", "/data/scaleway.json",
+    "/node_modules/express/package.json",
+    "/PROJET.MD", "/Projet.md",                    // la casse ne doit pas ouvrir la porte
+    "/%2e%2e/PROJET.md", "/./PROJET.md"            // ni un détour d'écriture
+  ];
+  for (const chemin of interdits) {
+    const r = await S.appel(chemin);
+    assert.equal(r.status, 404, `${chemin} doit être introuvable, a répondu ${r.status}`);
+    assert.equal(/PascalSun|APP_SECRET|VAPID_PRIVATE|SCW_SECRET/.test(r.texte), false, `${chemin} ne doit rien laisser filtrer`);
+  }
+  // et le site lui-même reste servi
+  for (const chemin of ["/", "/css/style.css", "/js/app.js", "/manifest.webmanifest", "/robots.txt", "/img/signature.png"]) {
+    assert.equal((await S.appel(chemin)).status, 200, `${chemin} doit rester servi`);
+  }
+});
+
 test("les pages du site répondent, l'admin est hors index, le plan du site est déclaré", async () => {
   for (const p of ["/", "/galerie.html", "/oeuvre.html?id=le-tressage", "/expositions.html", "/panier.html", "/cgv.html", "/invitation.html?e=vernissage-lagon", "/certificat.html?c=x"]) {
     assert.equal((await S.appel(p)).status, 200, p);

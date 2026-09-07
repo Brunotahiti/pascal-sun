@@ -2098,6 +2098,25 @@ app.post("/api/images/optimiser", requireAuth, async (_req, res) => {
 
 /* --------------------------------------------------------------- static -- */
 
+/* Le site est servi depuis le dossier du projet, où vivent aussi le code, le
+   dossier de projet et les fichiers d'outillage. Rien de tout cela ne regarde
+   les visiteurs : PROJET.md contient les accès, server.js la logique, et
+   package.json la liste de ce qui est installé. On ferme la porte d'abord, on
+   sert les pages ensuite. */
+const PRIVES = [
+  /^\/(server|sw-dev)\.js$/i,
+  /^\/(package(-lock)?\.json|Dockerfile|docker-compose\.ya?ml|nginx\.conf)$/i,
+  /^\/[^/]*\.(md|log|sh|env|bak|old|orig|yml|yaml|lock)$/i,
+  /^\/(tests?|tools|node_modules|data|\.git|\.claude|\.github)(\/|$)/i,
+  /^\/\./                                   // tout ce qui commence par un point
+];
+app.use((req, res, next) => {
+  let chemin;
+  try { chemin = decodeURIComponent(req.path); } catch { chemin = req.path; }
+  if (PRIVES.some((r) => r.test(chemin))) return res.status(404).type("txt").send("Not found");
+  next();
+});
+
 app.use("/uploads", express.static(UPLOADS_DIR, { maxAge: "7d", immutable: true }));
 
 /* Plan du site, construit à la volée depuis le catalogue : une œuvre ajoutée
