@@ -57,6 +57,65 @@ git add -A && git commit -m "…" && git push
 #    until curl -s https://pascal-sun.com/ | grep -q "?v=66"; do sleep 8; done
 ```
 
+### Déployer depuis le serveur — la voie directe (utilisée le 12/09/2026)
+
+Le gestionnaire de projet Hostinger n'est pas indispensable : tout se fait en
+SSH sur le VPS. C'est **plus rapide et plus sûr**, à une condition — le nom de
+projet compose.
+
+**Ce qu'il faut savoir avant de toucher à quoi que ce soit :**
+
+| Quoi | Valeur | Pourquoi ça compte |
+|---|---|---|
+| Nom de projet compose | `pascal-sun` | Hostinger l'a passé explicitement (`-p pascal-sun`). **C'est lui qui porte le volume**, pas le nom du dossier. |
+| Volume de données | `pascal-sun_pascal-sun-data` | Catalogue, commandes, certificats, photos, musiques. |
+| Dossier de travail de Hostinger | `/tmp/hstgr-*-dckr-mgr` | **Jetable** : il disparaît au redémarrage. Ne jamais s'appuyer dessus. |
+| Clone à demeure | `/opt/pascal-sun` | Créé le 12/09/2026, hors de `/tmp`. |
+
+⚠️ **`-p pascal-sun` est obligatoire.** Sans lui, compose fabrique un volume
+neuf et **vide** : le site repart avec le catalogue d'usine semé depuis
+`js/data.js`, et les vraies œuvres restent orphelines dans l'ancien volume.
+
+```bash
+# 1. filet de sécurité : garder l'image en service sous un autre nom
+docker image tag pascal-sun:latest pascal-sun:avant-<ce-qu-on-deploie>
+
+# 2. le code à jour, dans le clone à demeure
+cd /opt/pascal-sun
+git fetch origin master && git reset --hard origin/master
+
+# 3. le .env (il n'est pas dans le dépôt) — reconstitué depuis le conteneur
+#    en service, ce qui évite de retaper les mots de passe à la main
+docker inspect pascal-sun -f '{{range .Config.Env}}{{println .}}{{end}}' \
+  | grep -E '^(ADMIN_PASSWORD|APP_SECRET|UMAMI_|VAPID_|SMTP_|STRIPE_)' > .env
+chmod 600 .env
+cut -d= -f1 .env        # les noms, pas les valeurs : doit lister ~13 variables
+
+# 4. déployer
+docker compose -p pascal-sun up -d --build
+```
+
+**Vérifier en production, dans cet ordre** (un déploiement n'est pas fini avant) :
+
+```bash
+curl -s https://pascal-sun.com/ | grep -o '?v=[0-9]*' | sort -u   # la version bumpée
+docker inspect pascal-sun -f '{{range .Mounts}}{{.Name}}{{end}}'   # pascal-sun_pascal-sun-data
+docker logs pascal-sun --tail 12                                   # « en écoute sur :3000 »
+curl -s https://pascal-sun.com/api/catalogue | head -c 200          # les vraies œuvres
+```
+
+**Revenir en arrière**, si le conteneur refuse de démarrer ou que le site casse :
+
+```bash
+docker compose -p pascal-sun down
+docker image tag pascal-sun:avant-<ce-qu-on-deploie> pascal-sun:latest
+docker compose -p pascal-sun up -d          # sans --build
+```
+
+Si vous repassez un jour par l'interface Hostinger, elle recréera son dossier
+temporaire et rebâtira depuis GitHub : sans casse (les données sont dans le
+volume), mais `/opt/pascal-sun` ne sera plus la source de vérité.
+
 ### Variables d'environnement à repasser à chaque déploiement
 
 ```
@@ -498,6 +557,20 @@ pas rendre) : l'exclusion est dans `sw.js`, à côté de celle des vidéos.
 
 ### Pièges rencontrés (à ne pas refaire)
 
+- **Déployer sans `-p pascal-sun`** : le nom de projet compose est ce qui
+  rattache le conteneur au volume `pascal-sun_pascal-sun-data`. Lancer
+  `docker compose up` sans ce drapeau, ou depuis un autre dossier en comptant
+  sur le nom du dossier, fabrique un volume vide et remet le site au catalogue
+  d'usine. Les vraies données ne sont pas perdues — elles restent dans
+  l'ancien volume — mais le site, lui, est méconnaissable le temps qu'on s'en
+  aperçoive.
+- **Le dossier de déploiement de Hostinger est dans `/tmp`** : il ne survit pas
+  à un redémarrage. La voie directe passe par `/opt/pascal-sun` (section 3).
+- **`docker inspect --format` sans `{{end}}`** : un `{{range}}` non fermé donne
+  « template parsing error: unexpected EOF » et un fichier vide. Compose refuse
+  alors de démarrer faute de variables — sans toucher au conteneur en service,
+  heureusement.
+
 - **`position: sticky` posé sur le mauvais élément** : la règle collait à la fois
   `figure.portrait` (voulu : la petite photo accompagne la lecture de la bio) et
   `.artist-hero` (le grand bandeau en tête de page). Résultat : sur mobile et
@@ -652,6 +725,10 @@ bug d'abord, la correction ensuite. C'est ce qui empêche un bug de revenir.
 collections éditables et attribuées aux vernissages · nouvelle animation
 d'ouverture de l'invitation · envoi de l'invitation par email depuis l'admin ·
 ordre d'affichage des œuvres (triptyques).
+
+**Fait le 12/09/2026** : musique d'ambiance importée depuis l'admin
+(onglet Musique) et jouée sur le site d'une page à l'autre · procédure de
+déploiement direct depuis le serveur, avec retour arrière.
 
 **Reste à faire :**
 
