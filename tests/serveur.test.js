@@ -54,6 +54,7 @@ test("toutes les routes de l'admin refusent un visiteur non connecté", async ()
     ["/api/qrcode.svg"], ["/api/idees"], ["/api/rappels"], ["/api/commissions"], ["/api/stats/overview"],
     ["/api/catalogue", { methode: "PUT", corps: { artworks: [] } }],
     ["/api/orders/statut", { corps: { id: "x", statut: "payee" } }],
+    ["/api/musique", { corps: {} }], ["/api/musique", { methode: "DELETE" }],
     ["/api/verifications", { corps: { quoi: "exercice" } }]
   ];
   for (const [chemin, opt] of protegees) {
@@ -346,6 +347,71 @@ test("QR codes : SVG valide, PNG décodable, cible marquée « venu du QR »", a
   const lu = jsQR(new Uint8ClampedArray(data), info.width, info.height);
   assert.ok(lu, "le PNG se décode");
   assert.equal(lu.data, cible);
+});
+
+/* -------------------------------------------------------- musique -- */
+
+/* Un morceau d'ambiance est un fichier déposé depuis l'admin : le serveur
+   l'accepte s'il est bien un son et pas trop lourd, le sert au site, et
+   l'efface du disque quand Pascal le retire de la liste. */
+const envoyerMusique = async (nom, type, contenu) => {
+  const fd = new FormData();
+  fd.append("file", new Blob([contenu], { type }), nom);
+  const r = await fetch(S.base + "/api/musique", {
+    method: "POST", headers: { cookie, "X-Forwarded-For": "10.6.6.6" }, body: fd
+  });
+  return { status: r.status, json: await r.json().catch(() => null) };
+};
+
+test("musique d'ambiance : un morceau importé est servi au site, tout le reste est refusé", async () => {
+  const son = Buffer.concat([Buffer.from("ID3"), Buffer.alloc(2048, 7)]);
+  const ok = await envoyerMusique("Lagon_au-petit matin.mp3", "audio/mpeg", son);
+  assert.equal(ok.status, 200, "un MP3 est accepté");
+  assert.match(ok.json.path, /^\/uploads\/musique-\d+-[a-z0-9.-]+\.mp3$/, "rangé dans les envois, nom assaini");
+  assert.equal(ok.json.titre, "Lagon au petit matin", "le nom du fichier donne un titre présentable");
+  assert.equal(ok.json.poids, son.length);
+
+  const servi = await fetch(S.base + ok.json.path);
+  assert.equal(servi.status, 200, "le site peut le jouer");
+  assert.equal((await servi.arrayBuffer()).byteLength, son.length, "le fichier est rendu tel quel");
+
+  /* Ce qui n'est pas un son n'entre pas : ni par le type annoncé, ni par
+     l'extension — un fichier renommé « .mp3 » reste une image. */
+  const texte = await envoyerMusique("notes.txt", "text/plain", Buffer.from("do ré mi"));
+  assert.equal(texte.status, 400, "un texte est refusé");
+  assert.equal(texte.json.error, "format-non-accepte");
+  const photo = await envoyerMusique("toile.mp3", "image/jpeg", Buffer.alloc(64, 1));
+  assert.equal(photo.status, 400, "une photo déguisée en MP3 est refusée");
+  const sansExtension = await envoyerMusique("musique", "audio/mpeg", Buffer.alloc(64, 1));
+  assert.equal(sansExtension.status, 400, "un fichier sans extension connue est refusé");
+});
+
+test("musique d'ambiance : publiée avec le catalogue, effacée du disque quand elle est retirée", async () => {
+  const envoi = await envoyerMusique("houle-du-soir.mp3", "audio/mpeg", Buffer.alloc(4096, 3));
+  assert.equal(envoi.status, 200);
+
+  await publierCatalogue((c) => {
+    c.musique = { actif: true, volume: 30, auto: true, aleatoire: false,
+      pistes: [{ id: "m1", titre: "Houle du soir", src: envoi.json.path, poids: envoi.json.poids }] };
+  });
+  const publie = (await catalogue()).musique;
+  assert.equal(publie.actif, true, "le réglage revient au site");
+  assert.equal(publie.pistes[0].titre, "Houle du soir");
+  assert.equal(publie.pistes[0].src, envoi.json.path);
+
+  const retire = await S.appel(`/api/musique?src=${encodeURIComponent(envoi.json.path)}`, { methode: "DELETE", cookie });
+  assert.equal(retire.status, 200);
+  assert.equal((await S.appel(envoi.json.path)).status, 404, "le fichier a quitté le disque");
+
+  /* Le chemin demandé n'est jamais suivi : seul le nom du fichier compte, et
+     il doit être un son. Sans quoi un « src » bien tourné effacerait les
+     données du site. */
+  const detour = await S.appel("/api/musique?src=../catalogue.json", { methode: "DELETE", cookie });
+  assert.equal(detour.status, 400, "un détour d'écriture est refusé");
+  assert.ok(fs.existsSync(path.join(S.data, "catalogue.json")), "le catalogue est toujours là");
+  const dehors = await S.appel("/api/musique?src=../../secret.mp3", { methode: "DELETE", cookie });
+  assert.equal(dehors.status, 200, "le nom est retenu, le chemin jeté");
+  assert.ok((await catalogue()).artworks.length, "et rien du site n'a bougé");
 });
 
 /* ------------------------------------------------------------- pages -- */

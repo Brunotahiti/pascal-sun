@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/admin.css?v=64">
+  <link rel="stylesheet" href="css/admin.css?v=65">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='38' fill='%2316130f'/></svg>">
 </head>
 <body>
@@ -39,6 +39,7 @@
         <button class="tab" data-tab="journal">Journal &amp; avis</button>
         <button class="tab" data-tab="livraison">Livraison &amp; paiement</button>
         <button class="tab" data-tab="eclairage">Éclairage</button>
+        <button class="tab" data-tab="musique">🎵 Musique</button>
         <button class="tab" data-tab="textes">Textes &amp; boutons</button>
         <button class="tab" data-tab="qrcode">QR code</button>
         <button class="tab" data-tab="stats">Statistiques</button>
@@ -306,6 +307,32 @@
         <div class="eclr-toiles" id="eclr-toiles"></div>
       </section>
 
+      <!-- MUSIQUE -->
+      <section class="pane" data-pane="musique">
+        <div class="pane-head">
+          <div>
+            <h2>Musique d'ambiance</h2>
+            <p>Une musique de fond pendant que le visiteur parcourt le site. Importez ici les morceaux fabriqués ailleurs — par exemple une musique composée avec une intelligence artificielle (Gemini, Suno…) puis exportée en MP3. Le fichier est déposé sur le serveur tel quel : rien à convertir, et il part avec les sauvegardes.</p>
+          </div>
+          <button class="solid-btn" id="add-musique">+ Importer une musique</button>
+        </div>
+
+        <div class="compose-panel eclr-global">
+          <label class="flag"><input type="checkbox" id="mus-actif"> Faire jouer la musique sur le site</label>
+          <label class="flag"><input type="checkbox" id="mus-auto"> Dès l'arrivée du visiteur</label>
+          <label class="flag"><input type="checkbox" id="mus-aleatoire"> Ordre tiré au sort</label>
+          <label class="eclr-range">Volume
+            <input type="range" id="mus-volume" min="5" max="100" step="5">
+            <output for="mus-volume"></output>
+          </label>
+        </div>
+
+        <p class="compose-note" style="margin-top: 14px;">Les navigateurs interdisent tout son tant que le visiteur n'a rien touché : la musique démarre donc à son premier clic, jamais avant. Une pastille en bas à gauche de chaque page permet de la couper à tout moment — et s'il la coupe, elle ne revient plus, même en changeant de page.</p>
+        <p class="compose-note">N'importez que des musiques dont vous avez l'usage : les vôtres, celles que vous avez fait composer, ou des musiques libres de droits. Formats acceptés : MP3, M4A, AAC, OGG, WAV, FLAC — 20 Mo au plus par morceau, soit environ vingt minutes.</p>
+        <p class="compose-status" id="mus-status"></p>
+        <div class="mus-liste" id="mus-liste"></div>
+      </section>
+
       <!-- SAUVEGARDES -->
       <section class="pane" data-pane="donnees">
         <div class="pane-head">
@@ -490,7 +517,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="js/data.js?v=64"></script>
-  <script src="js/admin.js?v=64"></script>
+  <script src="js/data.js?v=65"></script>
+  <script src="js/admin.js?v=65"></script>
 </body>
 </html>

@@ -47,14 +47,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=64/?v=65/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=65/?v=66/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=65"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=66"; do sleep 8; done
 ```
 
 ### Variables d'environnement à repasser à chaque déploiement
@@ -112,7 +112,7 @@ panier.html            panier + livraison + paiement
 merci.html             confirmation de commande
 certificat.html?c=…    certificat d'authenticité imprimable (1 page A4)
 cgv.html               conditions générales de vente
-admin.html             espace d'administration (12 onglets)
+admin.html             espace d'administration (13 onglets)
 
 css/style.css          identité du site
 css/effects.css        curseur, grain, intro, marquee
@@ -120,7 +120,7 @@ css/viewer.css         visionneuse 3D / AR / salon
 css/certificat.css     certificat A4
 css/admin.css          espace admin
 
-js/data.js             DONNÉES : ARTWORKS, EVENTS, SHIPPING, ECLAIRAGE, ATELIER, I18N…
+js/data.js             DONNÉES : ARTWORKS, EVENTS, SHIPPING, ECLAIRAGE, ATELIER, MUSIQUE, I18N…
 js/app.js              moteur du site public
 js/viewer.js           vue 3D, réalité augmentée, mise en situation
 js/effects.js          intro « pinceau », curseur, boutons magnétiques
@@ -140,7 +140,7 @@ manifest.webmanifest   application installable
 
 | Fichier | Contenu |
 |---|---|
-| `catalogue.json` | œuvres, vernissages, journal, avis, Instagram, livraison, atelier, textes |
+| `catalogue.json` | œuvres, vernissages, journal, avis, Instagram, livraison, atelier, musique, textes |
 | `orders.json` | commandes |
 | `newsletter.json` | contacts / clients (CRM) |
 | `commissions.json` | demandes de portrait |
@@ -150,7 +150,7 @@ manifest.webmanifest   application installable
 | `scaleway.json` | clés et bucket Scaleway de la copie hors serveur (+ dernier résultat de synchro) |
 | `verifications.json` | dates du dernier exercice de restauration et des rotations de secrets |
 | `backups/` | sauvegardes quotidiennes (30 jours) |
-| `uploads/` | photos envoyées depuis l'admin |
+| `uploads/` | photos et musiques envoyées depuis l'admin |
 
 Au **premier démarrage seulement**, `catalogue.json` est semé depuis
 `js/data.js`. Ensuite c'est le fichier qui fait foi : **modifier `js/data.js`
@@ -177,14 +177,15 @@ curl -s -b /tmp/ck -X PUT https://pascal-sun.com/api/catalogue \
 - **Galerie** : filtres par collection, **projecteurs** avec interrupteur (fondu jour/nuit, 7 dispositions d'éclairage réparties comme dans une vraie salle)
 - **Fiche œuvre** : vue 3D (toile qui tourne, tranche et dos), **réalité augmentée** (caméra + photo souvenir), **mise en situation** dans un salon à l'échelle (tableau déplaçable)
 - **Boutique** : original / tirage limité / affiche, stocks et statuts automatiques, frais de port par zone, livraison ou retrait, virement ou PayPal
+- **Musique d'ambiance** : les morceaux déposés dans l'admin accompagnent la visite, d'une page à l'autre, coupables d'un clic
 - Vernissages, journal de l'atelier, portraits sur commande, boîte à idées, avis, Instagram, newsletter, CGV
 
-### Espace admin (12 onglets)
+### Espace admin (13 onglets)
 Œuvres (photos avec recadrage, prix, stocks, statuts) · Vernissages · Commandes
 (+ demandes de portrait, liens certificats) · **Certificats** (ventes hors
 site) · Clients (CRM, invitations,
 newsletter, export CSV) · Boîte à idées (+ notifications push) · Journal & avis
-(+ diaporama atelier, Instagram) · Livraison · **Éclairage** · Textes & boutons · Statistiques
+(+ diaporama atelier, Instagram) · Livraison · **Éclairage** · **Musique** · Textes & boutons · Statistiques
 (intégrées, proxy Umami) · Sauvegardes (téléchargement, rapport mensuel, config email)
 
 ### Accueil
@@ -362,6 +363,39 @@ Deux origines, une seule page publique `certificat.html?c=<réf>` :
 locale à l'affichage (`dateVente()` dans `js/admin.js`, même logique dans
 `js/certificat.js`). Passer par `new Date(iso)` ferait reculer la date d'un jour
 depuis Tahiti — un certificat daté du 14 s'afficherait « 13 ».
+
+### Musique d'ambiance
+Pascal importe ses morceaux dans **admin → Musique** : des fichiers son
+fabriqués ailleurs (une musique composée avec une IA, par exemple, exportée en
+MP3), envoyés par `POST /api/musique` et rangés dans `data/uploads/` — ils
+partent donc avec les sauvegardes. Le serveur n'accepte qu'un vrai fichier son
+(extension **mp3, m4a, aac, ogg, oga, opus, wav, flac, webm**, type MIME qui ne
+dit pas le contraire) et **20 Mo au plus**. Un morceau retiré de la liste est
+effacé du disque (`DELETE /api/musique`, qui ne retient que le **nom** du
+fichier demandé, jamais le chemin) : sans cela, le volume se remplirait de
+musiques que plus personne n'écoute. Les réglages vivent dans
+`catalogue.musique` : `actif`, `volume`, `auto`, `aleatoire`, `pistes`.
+
+Côté site, `lecteurMusique()` (`js/app.js`) pose une pastille en bas à gauche —
+trois barres qui dansent, le titre du morceau au survol. Trois principes, dans
+cet ordre :
+
+1. **Le visiteur décide.** Les navigateurs interdisent tout son avant un geste
+   de sa part : la musique démarre donc à son premier clic, jamais avant, et
+   si ce clic vise la pastille elle-même c'est elle qui décide (sans quoi la
+   musique démarrerait pour être coupée dans la foulée). Son choix est retenu
+   dans `localStorage.ps_musique` : coupée une fois, elle ne revient plus.
+2. **Elle survit au changement de page.** Le site est fait de pages séparées :
+   le morceau et la seconde en cours sont notés dans
+   `sessionStorage.ps_musique_pos`, et la lecture reprend là où elle en était.
+3. **Fondus à l'entrée comme à la sortie** — une musique qui démarre à plein
+   volume fait sursauter, et la couper net s'entend comme une panne.
+
+Une seule variable fait foi pour « ça doit jouer » : `veutJouer`. Un morceau
+qui se termine ou un fichier illisible ne doivent jamais rallumer ce que le
+visiteur vient de couper. ⚠️ Le service worker **ne met jamais la musique en
+cache** (fichiers lourds, et lus par tranches « Range » qu'un cache ne sait
+pas rendre) : l'exclusion est dans `sw.js`, à côté de celle des vidéos.
 
 ### Automatismes
 - Commande → original **réservé**, stock décompté, confirmation au client avec **lien du certificat**, alerte à Pascal (email + push)
@@ -560,7 +594,7 @@ redéploiement qui oublie une variable la remet à sa valeur par défaut.
 ## 6 quater. Tests automatisés
 
 ```bash
-npm test          # ~1,5 s — 31 scénarios, aucune dépendance de test (node:test)
+npm test          # ~1,5 s — 34 scénarios, aucune dépendance de test (node:test)
 ```
 
 `tests/serveur.test.js` démarre **un vrai serveur** sur un port libre et un
@@ -577,7 +611,10 @@ non décalée), ouvertures et réponses d'invitation (dont le bug RSVP → comma
 qui plantait), formulaires publics et leur limite de 20/h, fiches inachevées
 hors du plan du site, collections renommées, sauvegarde complète, écriture
 atomique sans résidu, fichier corrompu mis de côté, registre des
-vérifications, clés Scaleway jamais renvoyées, QR codes décodés, pages servies.
+vérifications, clés Scaleway jamais renvoyées, QR codes décodés, musique
+d'ambiance (un vrai son accepté et servi, un texte ou une photo déguisée en
+MP3 refusés, le fichier effacé quand le morceau est retiré, un « src » bien
+tourné qui n'atteint pas les données du site), pages servies.
 `tests/prix.test.js` fait travailler côte à côte les **trois** arrondis en
 francs (site, admin, serveur) sur une gamme de prix : ils doivent dire la
 même chose — c'est le piège n° 7 de la section 6, désormais surveillé.
@@ -597,7 +634,7 @@ bug d'abord, la correction ensuite. C'est ce qui empêche un bug de revenir.
 
 ## 7. Méthode de travail attendue
 
-- **`npm test` avant chaque déploiement** — 31 scénarios en 1,5 s.
+- **`npm test` avant chaque déploiement** — 34 scénarios en 1,5 s.
 - Vérifier visuellement dans le navigateur avant de déployer (serveur local
   `PORT=5050 ADMIN_PASSWORD=t APP_SECRET=t node server.js` — 5000 est pris
   par macOS).

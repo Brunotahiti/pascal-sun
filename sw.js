@@ -3,10 +3,10 @@
    - Pages & catalogue : réseau d'abord (contenu toujours frais),
      repli sur le cache hors-ligne.
    - Assets (css/js/img/polices) : cache d'abord, mise à jour en fond.
-   Les vidéos et l'admin ne sont jamais mis en cache.
+   Les vidéos, la musique d'ambiance et l'admin ne sont jamais mis en cache.
    ========================================================================= */
 
-const VERSION = "ps-v23";
+const VERSION = "ps-v24";
 const CORE = [
   "/", "/galerie.html", "/expositions.html", "/artiste.html",
   "/panier.html", "/contact.html", "/oeuvre.html", "/merci.html", "/invitation.html",
@@ -52,6 +52,11 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET" || url.origin !== location.origin) return;
   if (url.pathname.startsWith("/admin") || url.pathname.startsWith("/videos/")) return;
+  /* La musique d'ambiance est lue en flux — le navigateur la réclame par
+     tranches (« Range »), qu'un cache ne sait pas rendre — et pèse plusieurs
+     mégaoctets : elle reste au réseau, comme les vidéos. */
+  if (/\.(mp3|m4a|aac|ogg|oga|opus|wav|flac)$/i.test(url.pathname)) return;
+  if (e.request.headers.has("range")) return;
   // les visuels des œuvres sont toujours pris sur le réseau (ils évoluent)
   if (url.pathname.startsWith("/img/oeuvres/") || url.pathname.startsWith("/img/atelier/")) return;
   if (url.pathname.startsWith("/api/") && url.pathname !== "/api/catalogue") return;

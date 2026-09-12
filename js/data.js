@@ -470,6 +470,18 @@ var ATELIER = [
   "img/atelier/atelier-6.webp"
 ];
 
+/* ------------------------------------------------- musique d'ambiance -- */
+/* Les morceaux sont importés depuis l'admin (onglet Musique) : ce sont des
+   fichiers son déposés sur le serveur, pas des titres du commerce. Cette
+   valeur de départ est vide — c'est `catalogue.musique` qui fait foi. */
+var MUSIQUE = {
+  actif: false,        // la musique est-elle proposée sur le site ?
+  volume: 35,          // volume de départ, en %
+  auto: true,          // se met en route au premier geste du visiteur
+  aleatoire: false,    // ordre tiré au sort plutôt que suivi
+  pistes: []           // { id, titre, src, type, poids }
+};
+
 /* ------------------------------------------------------------ devises -- */
 
 const CURRENCIES = {
@@ -774,7 +786,11 @@ var I18N = {
     toast_removed: "retirée du panier",
     order_mail_subject: "Demande d'acquisition — Galerie Pascal Sun",
     works_count: "œuvres",
-    work_count: "œuvre"
+    work_count: "œuvre",
+    music_titre: "Musique d'ambiance",
+    music_jouer: "Écouter la musique d'ambiance",
+    music_couper: "Couper la musique",
+    music_suivant: "Morceau suivant"
   },
   en: {
     nav_home: "Home",
@@ -1041,7 +1057,11 @@ var I18N = {
     toast_removed: "removed from cart",
     order_mail_subject: "Acquisition request — Pascal Sun Gallery",
     works_count: "works",
-    work_count: "work"
+    work_count: "work",
+    music_titre: "Ambient music",
+    music_jouer: "Play the ambient music",
+    music_couper: "Mute the music",
+    music_suivant: "Next track"
   }
 };
 

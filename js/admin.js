@@ -88,6 +88,7 @@
     renderAtelier();
     renderShipping();
     renderEclairage();
+    renderMusique();
     renderTexts();
     wireChrome();
     markClean();
@@ -106,12 +107,16 @@
         ? data.eclairage
         : JSON.parse(JSON.stringify(ECLAIRAGE_DEFAUT)),
       atelier: (data && data.atelier) || JSON.parse(JSON.stringify(typeof ATELIER !== "undefined" ? ATELIER : [])),
+      musique: Object.assign(
+        { actif: false, volume: 35, auto: true, aleatoire: false, pistes: [] },
+        (data && data.musique) || {}),
       paiement: Object.assign({ titulaire: "", iban: "", bic: "", banque: "", paypal: "" }, (data && data.paiement) || {}),
       collections: (data && Array.isArray(data.collections) && data.collections.length)
         ? data.collections
         : collectionsEnListe(COLLECTIONS),
       uiTexts: (data && data.uiTexts) || { fr: {}, en: {} }
     };
+    if (!Array.isArray(catalogue.musique.pistes)) catalogue.musique.pistes = [];
     catalogue.uiTexts.fr = catalogue.uiTexts.fr || {};
     catalogue.uiTexts.en = catalogue.uiTexts.en || {};
     syncCollections();
@@ -604,6 +609,41 @@
         <img src="${esc(src)}" alt="">
         <button type="button" class="aw-delete" data-act="atelier-del">retirer</button>
       </div>`).join("");
+  }
+
+  /* ---------------------------------------------------------- musique -- */
+
+  /* Les morceaux d'ambiance : un lecteur pour les écouter avant de publier,
+     leur titre (c'est lui que le site affiche), et leur ordre de passage. */
+  const poidsLisible = (o) => !o ? "" : o > 1024 * 1024
+    ? `${Math.round(o / 1024 / 1024 * 10) / 10} Mo`
+    : `${Math.round(o / 1024)} Ko`;
+
+  function renderMusique() {
+    const m = catalogue.musique;
+    $("#mus-actif").checked = m.actif === true;
+    $("#mus-auto").checked = m.auto !== false;
+    $("#mus-aleatoire").checked = m.aleatoire === true;
+    $("#mus-volume").value = m.volume ?? 35;
+    $("#mus-volume").nextElementSibling.textContent = `${m.volume ?? 35} %`;
+
+    const dernier = m.pistes.length - 1;
+    $("#mus-liste").innerHTML = m.pistes.length
+      ? m.pistes.map((piste, i) => `
+        <article class="mus-row" data-mi="${i}">
+          <div class="mus-rang">
+            <button type="button" class="ghost-btn" data-act="mus-up" title="Monter d'un rang" ${i === 0 ? "disabled" : ""}>↑</button>
+            <span>${i + 1}</span>
+            <button type="button" class="ghost-btn" data-act="mus-down" title="Descendre d'un rang" ${i === dernier ? "disabled" : ""}>↓</button>
+          </div>
+          <div class="mus-champs">
+            <input data-mk="titre" value="${esc(piste.titre || "")}" placeholder="Titre du morceau" aria-label="Titre du morceau">
+            <small>${esc((piste.src || "").split("/").pop())}${piste.poids ? " · " + poidsLisible(piste.poids) : ""}</small>
+          </div>
+          <audio controls preload="none" src="${esc(piste.src || "")}"></audio>
+          <button type="button" class="aw-delete" data-act="mus-del">retirer</button>
+        </article>`).join("")
+      : `<p class="compose-note">Aucune musique pour l'instant. « Importer une musique » dépose un fichier son sur le serveur ; il est joué en fond dès que la case « Faire jouer la musique » est cochée.</p>`;
   }
 
   function renderPosts() { $("#post-list").innerHTML = catalogue.posts.map(postCard).join(""); }
@@ -2171,6 +2211,85 @@
       if (e.target.dataset.act === "atelier-del") {
         catalogue.atelier.splice(+e.target.closest("[data-ati]").dataset.ati, 1);
         renderAtelier(); markDirty();
+      }
+    });
+
+    /* ------ musique d'ambiance ------ */
+    const musFile = document.createElement("input");
+    musFile.type = "file"; musFile.accept = "audio/*"; musFile.multiple = true; musFile.hidden = true;
+    document.body.appendChild(musFile);
+    $("#add-musique").addEventListener("click", () => musFile.click());
+    musFile.addEventListener("change", async () => {
+      const etat = $("#mus-status");
+      const fichiers = Array.from(musFile.files);
+      let recus = 0;
+      for (const file of fichiers) {
+        etat.textContent = `Envoi de « ${file.name} »… (${recus + 1}/${fichiers.length})`;
+        try {
+          const fd = new FormData();
+          fd.append("file", file, file.name);
+          const r = await fetch("/api/musique", { method: "POST", body: fd });
+          const d = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(d.error || "envoi-impossible");
+          catalogue.musique.pistes.push({
+            id: "m" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+            titre: d.titre || file.name,
+            src: d.path, type: d.type || "", poids: d.poids || 0
+          });
+          recus++;
+        } catch (e) {
+          etat.textContent = e.message === "fichier-trop-lourd"
+            ? `« ${file.name} » dépasse 20 Mo : allégez-le (MP3 192 kbit/s) et recommencez.`
+            : e.message === "format-non-accepte"
+              ? `« ${file.name} » n'est pas un fichier son reconnu (MP3, M4A, AAC, OGG, WAV, FLAC).`
+              : `Échec de l'envoi de « ${file.name} ».`;
+          break;
+        }
+      }
+      musFile.value = "";
+      if (recus) {
+        etat.textContent = `${recus} morceau(x) importé(s) ✓ — pensez à enregistrer pour les publier.`;
+        if (!catalogue.musique.actif) {
+          catalogue.musique.actif = true;   // premier morceau : la musique est allumée d'office
+          toast("Musique activée sur le site.");
+        }
+        renderMusique();
+        markDirty();
+      }
+    });
+
+    $("#mus-actif").addEventListener("change", (e) => { catalogue.musique.actif = e.target.checked; markDirty(); });
+    $("#mus-auto").addEventListener("change", (e) => { catalogue.musique.auto = e.target.checked; markDirty(); });
+    $("#mus-aleatoire").addEventListener("change", (e) => { catalogue.musique.aleatoire = e.target.checked; markDirty(); });
+    $("#mus-volume").addEventListener("input", (e) => {
+      catalogue.musique.volume = +e.target.value;
+      e.target.nextElementSibling.textContent = `${e.target.value} %`;
+      markDirty();
+    });
+
+    const musListe = $("#mus-liste");
+    musListe.addEventListener("input", (e) => {
+      const row = e.target.closest("[data-mi]");
+      if (row && e.target.dataset.mk === "titre") {
+        catalogue.musique.pistes[+row.dataset.mi].titre = e.target.value;
+        markDirty();
+      }
+    });
+    musListe.addEventListener("click", async (e) => {
+      const row = e.target.closest("[data-mi]");
+      if (!row) return;
+      const i = +row.dataset.mi;
+      const pistes = catalogue.musique.pistes;
+      const act = e.target.dataset.act;
+      if (act === "mus-up" && i > 0) { pistes.splice(i - 1, 0, pistes.splice(i, 1)[0]); renderMusique(); markDirty(); }
+      if (act === "mus-down" && i < pistes.length - 1) { pistes.splice(i + 1, 0, pistes.splice(i, 1)[0]); renderMusique(); markDirty(); }
+      if (act === "mus-del") {
+        if (!confirm(`Retirer « ${pistes[i].titre || "ce morceau"} » ? Le fichier sera effacé du serveur.`)) return;
+        const [retiree] = pistes.splice(i, 1);
+        /* Le fichier part avec le morceau : sans cela, le volume se
+           remplirait de musiques que plus personne n'écoute. */
+        fetch(`/api/musique?src=${encodeURIComponent(retiree.src || "")}`, { method: "DELETE" }).catch(() => {});
+        renderMusique(); markDirty();
       }
     });
 
