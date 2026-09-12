@@ -1348,6 +1348,188 @@
     });
   }
 
+  /* ------------------------------------------------- musique d'ambiance -- */
+
+  /* Les morceaux déposés dans l'admin (onglet Musique) accompagnent la
+     visite. Trois principes, dans cet ordre :
+     • le visiteur décide — aucun son avant un geste de sa part, un bouton
+       toujours au même endroit pour couper, et son choix retenu ;
+     • la musique survit au changement de page : le site est fait de pages
+       séparées, la reprise se fait au morceau et à la seconde près ;
+     • on entre et on sort en fondu, jamais d'un coup. */
+  function lecteurMusique() {
+    const conf = Object.assign({ volume: 35, auto: true }, MUSIQUE || {});
+    const pistes = (conf.pistes || []).filter((p) => p && p.src);
+    if (!conf.actif || !pistes.length) return;
+
+    const CHOIX = "ps_musique";          // « on » / « off », d'une visite à l'autre
+    const REPRISE = "ps_musique_pos";    // morceau et minutage, le temps de la visite
+    const lire = (cle, sto) => { try { return sto.getItem(cle); } catch { return null; } };
+    const ecrire = (cle, val, sto) => { try { sto.setItem(cle, val); } catch { /* navigation privée */ } };
+
+    const volumeVoulu = Math.min(100, Math.max(0, Number(conf.volume) || 35)) / 100;
+    let reprise = {};
+    try { reprise = JSON.parse(lire(REPRISE, sessionStorage)) || {}; } catch { reprise = {}; }
+
+    let index = pistes[reprise.i] ? Number(reprise.i)
+      : (conf.aleatoire ? Math.floor(Math.random() * pistes.length) : 0);
+    let aReprendre = Number(reprise.t) || 0;
+    let fonduTimer = null, dernierEcrit = 0, gesteArme = false, echecs = 0;
+    /* La volonté du visiteur, et elle seule, dit si la musique doit jouer :
+       un morceau qui se termine ou un fichier illisible ne doivent jamais
+       rallumer ce qu'il vient de couper. */
+    let veutJouer = false;
+
+    const audio = new Audio();
+    audio.preload = "none";
+    audio.volume = 0;
+
+    /* Le bouton : trois barres qui dansent quand la musique joue, immobiles
+       quand elle est coupée. Le titre du morceau se déplie à côté. */
+    const box = document.createElement("div");
+    box.className = "musique";
+    box.id = "musique";
+    box.dataset.etat = "off";
+    box.innerHTML = `
+      <button class="mus-btn" id="mus-toggle" type="button" aria-pressed="false">
+        <span class="mus-barres" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="sr-only" id="mus-label"></span>
+      </button>
+      <div class="mus-detail">
+        <span class="mus-quoi">${esc(t("music_titre"))}</span>
+        <span class="mus-piste" id="mus-piste"></span>
+      </div>
+      <button class="mus-suivant" id="mus-suivant" type="button" title="${esc(t("music_suivant"))}" aria-label="${esc(t("music_suivant"))}" ${pistes.length > 1 ? "" : "hidden"}>⏭</button>`;
+    document.body.appendChild(box);
+
+    const btn = box.querySelector("#mus-toggle");
+
+    function affiche(joue) {
+      box.dataset.etat = joue ? "on" : "off";
+      btn.setAttribute("aria-pressed", joue ? "true" : "false");
+      const label = joue ? t("music_couper") : t("music_jouer");
+      btn.title = label;
+      btn.setAttribute("aria-label", label);
+      box.querySelector("#mus-label").textContent = label;
+      box.querySelector("#mus-piste").textContent = pistes[index].titre || "";
+    }
+
+    /* Entrée et sortie en fondu : une musique qui démarre à plein volume
+       fait sursauter, et la couper net s'entend comme une panne. */
+    function fondu(vers, duree) {
+      clearInterval(fonduTimer);
+      const depart = audio.volume;
+      const pas = 40, etapes = Math.max(1, Math.round(duree / pas));
+      let k = 0;
+      fonduTimer = setInterval(() => {
+        k++;
+        audio.volume = Math.min(1, Math.max(0, depart + (vers - depart) * (k / etapes)));
+        if (k >= etapes) clearInterval(fonduTimer);
+      }, pas);
+    }
+
+    function charge(i, seconde) {
+      index = ((i % pistes.length) + pistes.length) % pistes.length;
+      aReprendre = seconde || 0;
+      audio.src = pistes[index].src;
+      affiche(veutJouer);
+    }
+
+    /* Le minutage ne peut être posé qu'une fois la durée connue. */
+    audio.addEventListener("loadedmetadata", () => {
+      if (aReprendre > 0 && aReprendre < audio.duration - 1) audio.currentTime = aReprendre;
+      aReprendre = 0;
+    });
+
+    function jouer() {
+      veutJouer = true;
+      audio.play().then(() => {
+        if (!veutJouer) return audio.pause();   // coupée pendant le démarrage
+        echecs = 0;
+        affiche(true);
+        fondu(volumeVoulu, 900);
+      }).catch(() => {
+        /* Le navigateur attend un geste du visiteur avant tout son : on
+           s'accroche au premier qui vient, une seule fois. */
+        veutJouer = false;
+        affiche(false);
+        armerGeste();
+      });
+    }
+
+    function armerGeste() {
+      if (gesteArme) return;
+      gesteArme = true;
+      const gestes = ["pointerdown", "keydown", "touchstart"];
+      const partir = (ev) => {
+        gestes.forEach((e) => document.removeEventListener(e, partir));
+        gesteArme = false;
+        /* Si ce geste est justement un clic sur la pastille, c'est elle qui
+           décide : démarrer ici reviendrait à couper aussitôt après. */
+        if (ev && ev.target && box.contains(ev.target)) return;
+        if (lire(CHOIX, localStorage) !== "off") jouer();
+      };
+      gestes.forEach((e) => document.addEventListener(e, partir, { passive: true }));
+    }
+
+    function couper() {
+      veutJouer = false;
+      fondu(0, 400);
+      setTimeout(() => { if (!veutJouer) audio.pause(); }, 430);
+      affiche(false);
+    }
+
+    btn.addEventListener("click", () => {
+      if (veutJouer) { ecrire(CHOIX, "off", localStorage); couper(); }
+      else { ecrire(CHOIX, "on", localStorage); jouer(); }
+    });
+
+    box.querySelector("#mus-suivant").addEventListener("click", () => {
+      const suivant = conf.aleatoire && pistes.length > 1
+        ? (index + 1 + Math.floor(Math.random() * (pistes.length - 1))) % pistes.length
+        : index + 1;
+      charge(suivant, 0);
+      if (lire(CHOIX, localStorage) !== "off") { ecrire(CHOIX, "on", localStorage); jouer(); }
+    });
+
+    audio.addEventListener("ended", () => {
+      const suivant = conf.aleatoire && pistes.length > 1
+        ? (index + 1 + Math.floor(Math.random() * (pistes.length - 1))) % pistes.length
+        : index + 1;
+      charge(suivant, 0);
+      if (!veutJouer) return;
+      audio.play().then(() => { audio.volume = volumeVoulu; affiche(true); }).catch(() => affiche(false));
+    });
+
+    /* Un fichier manquant ou illisible ne doit pas arrêter la visite : on
+       passe au suivant. Si aucun ne se laisse lire, on se tait — plutôt que
+       de faire le tour de la liste indéfiniment. */
+    audio.addEventListener("error", () => {
+      if (++echecs >= pistes.length) { veutJouer = false; echecs = 0; return affiche(false); }
+      charge(index + 1, 0);
+      if (veutJouer) jouer();
+    });
+
+    const retenir = () => {
+      if (audio.paused) return;
+      ecrire(REPRISE, JSON.stringify({ i: index, t: Math.floor(audio.currentTime) }), sessionStorage);
+    };
+    audio.addEventListener("timeupdate", () => {
+      if (Date.now() - dernierEcrit < 4000) return;
+      dernierEcrit = Date.now();
+      retenir();
+    });
+    window.addEventListener("pagehide", retenir);
+
+    charge(index, aReprendre);
+    /* « off » : le visiteur a coupé, on ne le relance pas. Sinon, la musique
+       repart d'elle-même si elle jouait déjà, ou se propose dès l'arrivée si
+       Pascal l'a demandé. */
+    const choix = lire(CHOIX, localStorage);
+    if (choix === "on" || (choix !== "off" && conf.auto !== false)) jouer();
+    else affiche(false);
+  }
+
   /* ------------------------------------------------------------- init -- */
 
   /* Catalogue dynamique : les modifications faites dans l'espace admin
@@ -1365,6 +1547,7 @@
       if (data.shipping && Array.isArray(data.shipping.zones)) SHIPPING = data.shipping;
       if (data.eclairage && Array.isArray(data.eclairage.sources)) ECLAIRAGE = data.eclairage;
       if (Array.isArray(data.atelier) && data.atelier.length) ATELIER = data.atelier;
+      if (data.musique && typeof data.musique === "object") MUSIQUE = Object.assign({}, MUSIQUE, data.musique);
       if (data.paiement && typeof data.paiement === "object") PAIEMENT = Object.assign({}, PAIEMENT, data.paiement);
       if (Array.isArray(data.collections) && data.collections.length) {
         COLLECTIONS = collectionsDepuisListe(data.collections);
@@ -1408,6 +1591,7 @@
     }
 
     observeReveals();
+    lecteurMusique();
     document.dispatchEvent(new CustomEvent("ps-ready"));
     window.PS_READY = true;
 

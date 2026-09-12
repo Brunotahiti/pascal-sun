@@ -1854,3 +1854,143 @@ body.lights-on .rappel-form .field input, body.lights-on .rappel-form .field tex
 .sp-reserver .btn { display: inline-flex; align-items: center; gap: 10px; }
 .sp-reserver .bulb { width: 11px; height: 11px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #fff4d6, #ffbf5c 55%, #e8923c); box-shadow: 0 0 8px 2px rgba(255,191,92,.55); animation: bulb-breathe 2.6s ease-in-out infinite; }
 .sp-reserver .sp-texte { margin: 10px 0 0; font-size: 13px; }
+
+/* ---------------------------------------------------- musique d'ambiance -- */
+/* Une pastille en bas à gauche, toujours au même endroit : trois barres qui
+   dansent tant que la musique joue, le titre du morceau qui se déplie au
+   survol. Rien d'autre — la visite reste celle des toiles. */
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.musique {
+  position: fixed;
+  bottom: 22px;
+  left: 22px;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  max-width: calc(100vw - 44px);
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 14px 30px -18px rgba(22, 19, 15, .55);
+  transition: background .3s var(--ease), border-color .3s var(--ease);
+}
+
+.mus-btn {
+  flex: none;
+  width: 38px; height: 38px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink);
+  cursor: pointer;
+  transition: background .25s var(--ease);
+}
+.mus-btn:hover { background: var(--accent); }
+.mus-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.mus-barres { display: flex; align-items: flex-end; gap: 2.5px; height: 15px; }
+.mus-barres i {
+  width: 2.5px;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--paper);
+  transform: scaleY(.28);
+  transform-origin: bottom;
+  transition: transform .3s var(--ease);
+}
+.musique[data-etat="on"] .mus-barres i { animation: mus-danse 1.1s ease-in-out infinite; }
+.musique[data-etat="on"] .mus-barres i:nth-child(2) { animation-delay: .18s; }
+.musique[data-etat="on"] .mus-barres i:nth-child(3) { animation-delay: .36s; }
+@keyframes mus-danse {
+  0%, 100% { transform: scaleY(.28); }
+  50%      { transform: scaleY(1); }
+}
+
+/* Le détail reste replié : il s'ouvre au survol, au clavier, et le temps
+   d'un morceau qui commence. */
+.mus-detail {
+  display: grid;
+  min-width: 0;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: max-width .45s var(--ease), opacity .3s var(--ease), padding .45s var(--ease);
+}
+.musique:hover .mus-detail,
+.musique:focus-within .mus-detail { max-width: min(230px, 46vw); opacity: 1; padding: 0 10px 0 11px; }
+
+.mus-quoi {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  line-height: 1.5;
+}
+.mus-piste {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+.mus-suivant {
+  flex: none;
+  width: 0;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--ink-soft);
+  font-size: 13px;
+  opacity: 0;
+  overflow: hidden;
+  cursor: pointer;
+  transition: opacity .3s var(--ease), width .45s var(--ease), color .2s var(--ease);
+}
+.musique:hover .mus-suivant,
+.musique:focus-within .mus-suivant { width: 32px; opacity: 1; margin-right: 3px; }
+.mus-suivant:hover { color: var(--accent); }
+
+/* En salle (projecteurs allumés), la pastille se fond dans le mur sombre. */
+body.lights-on .musique {
+  background: color-mix(in srgb, #171410 86%, transparent);
+  border-color: #2c2620;
+}
+body.lights-on .mus-piste { color: #d9d2c6; }
+body.lights-on .mus-suivant { color: #9c9287; }
+body.lights-on .mus-btn { background: #f7f3ec; }
+body.lights-on .mus-barres i { background: #171410; }
+body.lights-on .mus-btn:hover { background: var(--accent); }
+body.lights-on .mus-btn:hover .mus-barres i { background: #fff; }
+
+@media (max-width: 600px) {
+  .musique { bottom: 16px; left: 16px; }
+  .musique:hover .mus-detail { max-width: 0; opacity: 0; padding: 0; }
+  .musique:focus-within .mus-detail { max-width: 46vw; opacity: 1; padding: 0 10px 0 11px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .musique[data-etat="on"] .mus-barres i { animation: none; transform: scaleY(.8); }
+  .mus-detail, .mus-suivant { transition: none; }
+}
+
+@media print { .musique { display: none; } }

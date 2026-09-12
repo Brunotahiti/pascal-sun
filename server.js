@@ -4,6 +4,7 @@
    - GET  /api/catalogue        catalogue éditable (œuvres + textes)
    - PUT  /api/catalogue        sauvegarde (admin)
    - POST /api/upload           photos des toiles (admin)
+   - POST /api/musique         musique d'ambiance du site (admin)
    - POST /api/login|logout     session admin (cookie signé)
    Données persistées dans DATA_DIR (volume Docker : /app/data).
    ========================================================================= */
@@ -2094,6 +2095,76 @@ app.post("/api/images/optimiser", requireAuth, async (_req, res) => {
   const bilan = await optimiserPhotosExistantes();
   if (bilan.erreur) return res.status(bilan.erreur === "sharp-indisponible" ? 503 : 400).json({ error: bilan.erreur });
   res.json(bilan);
+});
+
+/* ---------------------------------------------------- musique d'ambiance -- */
+
+/* Pascal dépose ici les morceaux qu'il a fabriqués ailleurs — une musique
+   d'ambiance composée par une intelligence artificielle, par exemple — et le
+   site les joue en fond pendant la visite. Le fichier est conservé tel quel :
+   les navigateurs lisent le MP3, l'AAC, l'OGG et le WAV, il n'y a rien à
+   convertir. Seule la taille est bornée, pour qu'une visite au téléphone ne
+   parte pas en fumée de données. */
+
+const AUDIO_EXT = /\.(mp3|m4a|aac|ogg|oga|opus|wav|flac|webm)$/i;
+const MUSIQUE_MAX_MO = 20;
+
+/* Le type annoncé par le navigateur est indicatif : selon l'appareil, un même
+   MP3 arrive en « audio/mpeg », en « application/octet-stream » ou sans type
+   du tout. C'est donc l'extension qui décide, le type ne servant qu'à écarter
+   ce qui est manifestement autre chose (une photo, un texte). */
+const audioAccepte = (file) => AUDIO_EXT.test(file.originalname || "")
+  && !/^(image|text|application\/(pdf|zip|json))/i.test(file.mimetype || "");
+
+const uploadAudio = multer({
+  storage: multer.diskStorage({
+    destination: UPLOADS_DIR,
+    filename: (_req, file, cb) => {
+      const safe = file.originalname.toLowerCase()
+        .replace(/[^a-z0-9.]+/g, "-").replace(/^-+|-+$/g, "").slice(-80);
+      cb(null, `musique-${Date.now()}-${safe || "musique.mp3"}`);
+    }
+  }),
+  limits: { fileSize: MUSIQUE_MAX_MO * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => cb(null, audioAccepte(file))
+});
+
+/* « lagon-au-petit-matin.mp3 » devient « Lagon au petit matin » : un titre
+   présentable d'emblée, que l'admin laisse tel quel ou réécrit. */
+const titreDepuisFichier = (nom) => {
+  const base = String(nom || "").replace(/\.[a-z0-9]+$/i, "").replace(/[-_]+/g, " ").trim();
+  if (!base) return "Musique";
+  return base.charAt(0).toUpperCase() + base.slice(1);
+};
+
+app.post("/api/musique", requireAuth, (req, res) => {
+  uploadAudio.single("file")(req, res, (err) => {
+    if (err) {
+      const trop = err.code === "LIMIT_FILE_SIZE";
+      return res.status(trop ? 413 : 400)
+        .json({ error: trop ? "fichier-trop-lourd" : "envoi-impossible", maxMo: MUSIQUE_MAX_MO });
+    }
+    if (!req.file) return res.status(400).json({ error: "format-non-accepte" });
+    res.json({
+      path: `/uploads/${req.file.filename}`,
+      titre: titreDepuisFichier(req.file.originalname),
+      type: req.file.mimetype || "",
+      poids: req.file.size
+    });
+  });
+});
+
+/* Un morceau retiré de la liste dans l'admin est aussi effacé du disque :
+   sans cela, le volume se remplirait de musiques que plus personne n'écoute.
+   Seul le nom du fichier est retenu de ce qui est demandé (jamais le chemin),
+   et il doit être un fichier son du dossier des envois. */
+app.delete("/api/musique", requireAuth, (req, res) => {
+  const nom = path.basename(String(req.query.src || ""));
+  if (!AUDIO_EXT.test(nom)) return res.status(400).json({ error: "fichier-invalide" });
+  const fichier = path.join(UPLOADS_DIR, nom);
+  if (path.dirname(fichier) !== UPLOADS_DIR) return res.status(400).json({ error: "fichier-invalide" });
+  fs.unlink(fichier, () => {});
+  res.json({ ok: true });
 });
 
 /* --------------------------------------------------------------- static -- */

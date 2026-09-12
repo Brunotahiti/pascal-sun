@@ -1067,3 +1067,27 @@ button { font-family: var(--sans); cursor: pointer; }
 .qr-apercu { display: grid; place-items: center; }
 .qr-cadre { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 18px; box-shadow: 0 10px 30px -18px rgba(22,19,15,.5); }
 .qr-cadre img { display: block; width: min(300px, 60vw); height: auto; }
+
+/* ---- musique d'ambiance ---- */
+.mus-liste { display: grid; gap: 10px; margin-top: 18px; }
+.mus-row {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) 260px auto;
+  align-items: center;
+  gap: 14px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+.mus-rang { display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; color: var(--ink-faint); }
+.mus-rang .ghost-btn { padding: 2px 6px; font-size: 12px; line-height: 1.2; }
+.mus-champs { display: grid; gap: 3px; min-width: 0; }
+.mus-champs input { font-size: 14px; font-weight: 600; }
+.mus-champs small { font-size: 11.5px; color: var(--ink-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mus-row audio { width: 100%; height: 34px; }
+.mus-row .aw-delete { white-space: nowrap; }
+@media (max-width: 900px) {
+  .mus-row { grid-template-columns: 64px minmax(0, 1fr) auto; }
+  .mus-row audio { grid-column: 1 / -1; }
+}
