@@ -345,6 +345,7 @@
         </div>
       </div>
       <div class="wrap bottom">
+        <span class="photos-droits">${t("footer_photos")}</span>
         <span>${t("footer_rights")} · ${t("footer_tahiti")} ${ARTIST_TAHITI}</span>
         <span>
           ${t("footer_made")} ·

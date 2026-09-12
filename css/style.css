@@ -1348,6 +1348,10 @@ figure.portrait:hover, .artist-hero:hover {
   color: #7d766a;
 }
 
+/* Droit d'auteur des photos : une ligne à elle seule, au-dessus du © et de
+   la signature, pour qu'elle se lise sans allonger la ligne du bas. */
+.site-footer .bottom .photos-droits { flex: 1 1 100%; }
+
 /* Signature du réalisateur : le logotype Manaprocess tel quel — Clash Display,
    esperluette rose, sur son bleu — cliquable vers manaprocess.com. */
 @font-face {
