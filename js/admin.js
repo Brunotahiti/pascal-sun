@@ -20,7 +20,8 @@
     { key: "contact_btn", label: "Bouton de contact" },
     { key: "quote",       label: "Citation", hint: "La phrase signature (accueil + page artiste)" },
     { key: "gallery_lede", label: "Introduction de la galerie" },
-    { key: "contact_lede", label: "Introduction du contact" }
+    { key: "contact_lede", label: "Introduction du contact" },
+    { key: "footer_photos", label: "Droit d'auteur des photos", hint: "En bas de chaque page, sous le catalogue" }
   ];
 
   let catalogue = { artworks: [], uiTexts: { fr: {}, en: {} } };

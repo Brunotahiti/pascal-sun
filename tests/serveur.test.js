@@ -448,4 +448,6 @@ test("les pages du site répondent, l'admin est hors index, le plan du site est 
   assert.ok((await S.appel("/admin")).texte.includes("noindex"));
   assert.ok((await S.appel("/robots.txt")).texte.includes("Sitemap: https://pascal-sun.com/sitemap.xml"));
   assert.ok((await S.appel("/cgv.html")).texte.includes("T257691"), "le numéro Tahiti est dans les mentions légales");
+  assert.ok((await S.appel("/js/data.js")).texte.includes("protégées par le droit d'auteur"),
+    "la mention de droit d'auteur des photos est servie au site");
 });

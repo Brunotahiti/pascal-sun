@@ -47,14 +47,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=65/?v=66/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=66/?v=67/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=66"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=67"; do sleep 8; done
 ```
 
 ### Déployer depuis le serveur — la voie directe (utilisée le 12/09/2026)
@@ -237,6 +237,7 @@ curl -s -b /tmp/ck -X PUT https://pascal-sun.com/api/catalogue \
 - **Fiche œuvre** : vue 3D (toile qui tourne, tranche et dos), **réalité augmentée** (caméra + photo souvenir), **mise en situation** dans un salon à l'échelle (tableau déplaçable)
 - **Boutique** : original / tirage limité / affiche, stocks et statuts automatiques, frais de port par zone, livraison ou retrait, virement ou PayPal
 - **Musique d'ambiance** : les morceaux déposés dans l'admin accompagnent la visite, d'une page à l'autre, coupables d'un clic
+- **Droit d'auteur des photos** : mention en pied de page de **toutes** les pages, sur sa propre ligne au-dessus du © (`footer_photos` dans `js/data.js`, FR et EN) — réécrivable dans admin → Textes & boutons. Le fond juridique, lui, est l'article 9 des CGV (« Propriété intellectuelle ») : la mention du pied de page le rend visible, elle ne le remplace pas
 - Vernissages, journal de l'atelier, portraits sur commande, boîte à idées, avis, Instagram, newsletter, CGV
 
 ### Espace admin (13 onglets)
@@ -728,7 +729,8 @@ ordre d'affichage des œuvres (triptyques).
 
 **Fait le 12/09/2026** : musique d'ambiance importée depuis l'admin
 (onglet Musique) et jouée sur le site d'une page à l'autre · procédure de
-déploiement direct depuis le serveur, avec retour arrière.
+déploiement direct depuis le serveur, avec retour arrière · mention du droit
+d'auteur des photos en pied de page.
 
 **Reste à faire :**
 
