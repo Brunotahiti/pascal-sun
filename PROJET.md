@@ -47,14 +47,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=66/?v=67/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=67/?v=68/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=67"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=68"; do sleep 8; done
 ```
 
 ### Déployer depuis le serveur — la voie directe (utilisée le 12/09/2026)
@@ -565,6 +565,17 @@ pas rendre) : l'exclusion est dans `sw.js`, à côté de celle des vidéos.
   d'usine. Les vraies données ne sont pas perdues — elles restent dans
   l'ancien volume — mais le site, lui, est méconnaissable le temps qu'on s'en
   aperçoive.
+- **`1fr` au lieu de `minmax(0, 1fr)` dans une grille CSS** : `1fr` ne descend
+  jamais sous la largeur du contenu. Un libellé long ou un champ de saisie
+  élargit sa colonne, la grille dépasse sa carte, et la carte sort de l'écran
+  sur téléphone — sans que la page, elle, défile horizontalement : le défaut
+  est donc invisible à un contrôle « la page déborde-t-elle ? ». C'est ce qui
+  coupait les indicateurs de vernissage en deux (onglet Statistiques) et
+  poussait les fiches hors de l'écran (onglet Vernissages). Mesurer
+  `scrollWidth > clientWidth` **sur les éléments**, pas seulement sur la page.
+- **`white-space: nowrap` sur un bouton d'action** : un libellé long (« Envoyer
+  l'invitation à ces adresses ») réclame alors 376 px dans une carte de 312 et
+  la pousse dehors. Sur téléphone, ces boutons s'autorisent deux lignes.
 - **Le dossier de déploiement de Hostinger est dans `/tmp`** : il ne survit pas
   à un redémarrage. La voie directe passe par `/opt/pascal-sun` (section 3).
 - **`docker inspect --format` sans `{{end}}`** : un `{{range}}` non fermé donne
