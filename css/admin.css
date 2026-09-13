@@ -147,7 +147,12 @@ button { font-family: var(--sans); cursor: pointer; }
   .tab { padding: 8px 13px; font-size: 11px; }
   .ghost-btn, .solid-btn { font-size: 11px; padding: 8px 13px; }
   .pane-head { flex-direction: column; align-items: stretch; }
-  .aw-fields { grid-template-columns: 1fr 1fr !important; }
+  .aw-fields { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  /* Les boutons d'action gardent leur libellé sur une seule ligne (« .solid-btn
+     white-space: nowrap ») : celui de l'envoi d'invitation réclamait 376 px
+     dans une carte de 312 et la poussait hors de l'écran. Sur téléphone, il
+     s'autorise donc deux lignes. */
+  .aw-card .solid-btn, .aw-card .ghost-btn { white-space: normal; max-width: 100%; }
   .save-bar { justify-content: center; }
 }
 .pane { display: none; }
@@ -214,9 +219,12 @@ button { font-family: var(--sans); cursor: pointer; }
 .aw-photo .replace-btn:hover { background: var(--accent); }
 .aw-photo .uploading { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(247,243,236,.8); font-weight: 700; font-size: 13px; letter-spacing: .1em; }
 
-.aw-fields { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 14px; align-content: start; }
-@media (max-width: 1000px) { .aw-fields { grid-template-columns: repeat(2, 1fr); } }
-.f { display: flex; flex-direction: column; gap: 5px; }
+/* minmax(0, 1fr) et non 1fr : un champ de saisie réclame une largeur
+   minimale que « 1fr » ne sait pas refuser — la grille s'élargissait alors
+   au-delà de sa carte, et la fiche débordait sur téléphone. */
+.aw-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 14px; align-content: start; }
+@media (max-width: 1000px) { .aw-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.f { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .f.span2 { grid-column: span 2; }
 .f.span4 { grid-column: 1 / -1; }
 .f label { font-size: 10.5px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-faint); }
@@ -295,11 +303,11 @@ button { font-family: var(--sans); cursor: pointer; }
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 14px;
   margin-bottom: 22px;
 }
-@media (max-width: 900px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 900px) { .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .kpi {
   background: #fff;
   border: 1px solid var(--line);
@@ -310,9 +318,16 @@ button { font-family: var(--sans); cursor: pointer; }
 .kpi.live .kpi-num { color: var(--paper); }
 .kpi.live .kpi-label { color: #b8b0a2; }
 .kpi-num { font-family: var(--serif); font-size: clamp(30px, 3.4vw, 42px); font-weight: 600; line-height: 1.1; }
-.kpi-label { font-size: 11.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-faint); margin-top: 6px; display: flex; align-items: center; gap: 7px; }
+/* Libellé en bloc, et non en ligne flexible : le texte coule autour de la
+   pastille « en ligne » au lieu de la reléguer sur une ligne à elle seule, et
+   la précision (« 3 sur la période ») descend sous le libellé — à côté, sur
+   un téléphone, elle se déchirait mot à mot. */
+.kpi-label { font-size: 11.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-faint); margin-top: 6px; }
+.kpi-label .pulse { display: inline-block; vertical-align: middle; margin: -2px 7px 0 0; }
+.kpi-label small { display: block; }
 .pulse {
   width: 9px; height: 9px; border-radius: 50%;
+  flex: none;
   background: #5dbb63;
   animation: pulse 1.6s ease-in-out infinite;
 }
@@ -1025,8 +1040,12 @@ button { font-family: var(--sans); cursor: pointer; }
 .ev-stat { margin-top: 16px; }
 .ev-stat-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
 .ev-stat-head h3 { margin-bottom: 2px; }
-.ev-kpis { grid-template-columns: repeat(3, 1fr); margin-bottom: 18px; }
-@media (max-width: 900px) { .ev-kpis { grid-template-columns: repeat(2, 1fr); } }
+.ev-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 18px; }
+@media (max-width: 900px) { .ev-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) {
+  .kpi-grid, .ev-kpis { grid-template-columns: 1fr; }
+  .kpi { padding: 16px 18px; }
+}
 .ev-kpis .kpi-label small { display: block; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--ink-faint); margin-top: 3px; font-size: 11.5px; }
 .ev-stat-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 22px; }
 @media (max-width: 900px) { .ev-stat-grid { grid-template-columns: 1fr; } }
