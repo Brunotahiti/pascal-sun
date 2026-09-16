@@ -47,14 +47,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=67/?v=68/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=68/?v=69/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=68"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=69"; do sleep 8; done
 ```
 
 ### Déployer depuis le serveur — la voie directe (utilisée le 12/09/2026)
@@ -447,11 +447,22 @@ cet ordre :
    dans `localStorage.ps_musique` : coupée une fois, elle ne revient plus.
 2. **Elle survit au changement de page.** Le site est fait de pages séparées :
    le morceau et la seconde en cours sont notés dans
-   `sessionStorage.ps_musique_pos`, et la lecture reprend là où elle en était.
+   `sessionStorage.ps_musique_pos`, et la lecture repart de là. ⚠️ Mais elle
+   repart **au premier geste du visiteur sur la nouvelle page**, pas toute
+   seule : la règle des navigateurs vaut par page chargée, et une page fraîche
+   n'hérite pas du geste fait sur la précédente. Mesuré au navigateur : à
+   l'arrivée sur la page suivante la pastille est éteinte, le premier clic la
+   rallume à la seconde exacte où on en était ; un simple défilement ne suffit
+   pas (la molette n'est pas un geste au sens des navigateurs). Il y a donc un
+   court silence à chaque changement de page, et on ne peut pas le supprimer
+   sans passer le site en navigation sans rechargement — un tout autre
+   chantier.
 3. **Fondus à l'entrée comme à la sortie** — une musique qui démarre à plein
    volume fait sursauter, et la couper net s'entend comme une panne.
 
-Une seule variable fait foi pour « ça doit jouer » : `veutJouer`. Un morceau
+Une seule variable fait foi pour « ça doit jouer » : `veutJouer`. Si le
+geste qui relance la musique est justement un clic sur la pastille, c'est elle
+qui décide (sans quoi la musique démarrerait pour être coupée dans la foulée). Un morceau
 qui se termine ou un fichier illisible ne doivent jamais rallumer ce que le
 visiteur vient de couper. ⚠️ Le service worker **ne met jamais la musique en
 cache** (fichiers lourds, et lus par tranches « Range » qu'un cache ne sait
