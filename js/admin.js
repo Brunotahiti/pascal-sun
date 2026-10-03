@@ -159,6 +159,7 @@
     return `
     <article class="aw-card ${horsLigne ? "aw-brouillon" : ""}" data-i="${i}">
       ${horsLigne ? `<div class="aw-alerte">📝 Pas en ligne — ${a.statut === "brouillon" ? "cette fiche est en brouillon" : `il manque ${manques.join(", ")}`}. Le site ne montre que les fiches finies.</div>` : ""}
+      ${!horsLigne && sansPrixAchetable(a) ? `<div class="aw-alerte">💰 En ligne, mais impossible à acheter — aucune déclinaison n'a de prix. Le prix de la fiche ci-dessus ne suffit pas : renseignez celui de l'<b>Original</b> (ou du tirage) plus bas, sinon le bouton d'achat reste inactif.</div>` : ""}
       <div class="aw-rang">
         <span class="rang-num">${i + 1}<sup>${i === 0 ? "re" : "e"}</sup></span>
         <button type="button" class="ghost-btn" data-act="aw-haut" title="Placer en tête" ${i === 0 ? "disabled" : ""}>⇧</button>
@@ -230,6 +231,16 @@
     if ((a.statut || "disponible") !== "vendu" && !(a.prixEUR > 0)) m.push("un prix");
     if (!a.dimensions) m.push("les dimensions");
     return m;
+  }
+
+  /* Le prix de la fiche et celui de l'original sont deux champs distincts :
+     remplir le premier et oublier le second laisse une toile que le site
+     affiche sans pouvoir la vendre. On le dit, plutôt que de le deviner. */
+  function sansPrixAchetable(a) {
+    if ((a.statut || "disponible") === "vendu") return false;
+    const actifs = (a.produits || []).filter((p) => p.actif !== false);
+    if (!actifs.length) return false;
+    return !actifs.some((p) => p.prixEUR > 0);
   }
 
   function renderArtworks() {

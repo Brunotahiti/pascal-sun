@@ -578,6 +578,8 @@
     // Déclinaisons disponibles à l'achat
     const produits = (a.produits || []).filter((p) => p.actif !== false);
     function prodDispo(p) {
+      /* Sans prix, rien n'est achetable : la fiche n'est pas finie. */
+      if (!(p.prixEUR > 0)) return false;
       if (p.key === "original") return a.statut === "disponible";
       return typeof p.stock !== "number" || p.stock > 0;
     }
@@ -593,6 +595,12 @@
     }
     const firstOk = produits.find(prodDispo);
     let selectedKey = firstOk ? firstOk.key : null;
+    /* « Épuisé » parle d'un tirage qui n'a plus d'exemplaires. Une toile
+       unique, elle, est vendue ou réservée : le bouton doit le dire, sans quoi
+       le visiteur croit à une rupture de stock sur une pièce unique. */
+    const indisponibleTxt = a.statut === "vendu" || a.vendu ? t("statut_vendu")
+      : a.statut === "reserve" ? t("statut_reserve")
+      : t("sold_out");
 
     const optionsHTML = produits.map((p) => {
       const ok = prodDispo(p);
@@ -626,7 +634,7 @@
         <div><dt>${t("spec_availability")}</dt><dd>${statutTxt}</dd></div>
       </dl>
       <div class="btn-row">
-        <button class="btn" id="acquire-btn" ${selectedKey ? "" : "disabled"}>${selectedKey ? t("add_to_cart") : t("sold_out")}</button>
+        <button class="btn" id="acquire-btn" ${selectedKey ? "" : "disabled"}>${selectedKey ? t("add_to_cart") : indisponibleTxt}</button>
         <a class="btn ghost" href="galerie.html">${t("back_gallery")}</a>
       </div>
       ${surPlaceHTML(a)}

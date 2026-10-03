@@ -140,6 +140,29 @@ test("frais de port : zone, grand format, retrait gratuit, offerts au-delà du s
   assert.equal((await ordres()).find((o) => o.id === offerte.orderId).livraisonEUR, 0, "offerte au-delà du seuil");
 });
 
+test("une déclinaison sans prix ne part pas à zéro franc", async () => {
+  /* Le prix de la fiche et celui de l'original sont deux champs distincts
+     dans l'admin. Rempli d'un côté, oublié de l'autre, la toile s'affiche
+     avec son prix mais son original vaut 0 : sans garde-fou, elle partirait
+     gratuitement, et serait réservée au passage. Vu en production sur cinq
+     fiches, dont une en ligne. */
+  await publierCatalogue((c) => {
+    const a = c.artworks[c.artworks.length - 1];
+    a.id = "sans-prix-sur-l-original";
+    a.statut = "disponible";
+    a.vendu = false;                                   // vraiment à vendre
+    a.prixEUR = 712;                                   // la fiche affiche un prix
+    a.produits = [{ key: "original", actif: true, prixEUR: 0, stock: 1, certificat: true }];
+  });
+
+  const r = await commande([{ id: "sans-prix-sur-l-original", key: "original", qty: 1 }]);
+  assert.equal(r.status, 409, "la commande est refusée");
+  assert.equal(r.json.error, "articles-indisponibles");
+
+  const apres = await oeuvre("sans-prix-sur-l-original");
+  assert.equal(apres.statut, "disponible", "et la toile n'a pas été réservée au passage");
+});
+
 test("commande invalide : sans email, sans article, article inconnu", async () => {
   const sansEmail = await S.appel("/api/orders", { corps: { items: [{ id: "le-tressage", key: "original", qty: 1 }], client: { name: "X" } } });
   assert.equal(sansEmail.status, 400);
