@@ -47,14 +47,14 @@ conteneurs derrière Traefik (HTTPS Let's Encrypt automatique).
 
 ```bash
 # 1. bump du cache (indispensable, sinon les navigateurs gardent l'ancien CSS/JS)
-for f in *.html; do sed -i '' 's/?v=68/?v=69/g' "$f"; done
+for f in *.html; do sed -i '' 's/?v=69/?v=70/g' "$f"; done
 # 2. commit + push
 git add -A && git commit -m "…" && git push
 # 3. recréer le projet Docker via l'API Hostinger (MCP) :
 #    VPS_createNewProjectV1 { virtualMachineId: 1565699, project_name: "pascal-sun",
 #      content: "https://github.com/Brunotahiti/pascal-sun", environment: … }
 # 4. attendre que la nouvelle version soit servie :
-#    until curl -s https://pascal-sun.com/ | grep -q "?v=69"; do sleep 8; done
+#    until curl -s https://pascal-sun.com/ | grep -q "?v=70"; do sleep 8; done
 ```
 
 ### Déployer depuis le serveur — la voie directe (utilisée le 12/09/2026)
@@ -569,6 +569,20 @@ pas rendre) : l'exclusion est dans `sw.js`, à côté de celle des vidéos.
 
 ### Pièges rencontrés (à ne pas refaire)
 
+- **Le prix de la fiche et celui de l'original sont deux champs distincts.**
+  Rempli en haut, oublié en bas, la toile s'affiche avec son prix mais son
+  original vaut 0 : le site la montre « Épuisé », et — avant la correction du
+  03/10/2026 — le serveur acceptait de la vendre **à zéro franc**, en la
+  réservant au passage. Trouvé sur cinq fiches en production, dont une en
+  ligne. Trois verrous désormais : le serveur refuse toute ligne sans prix
+  (`/api/orders`), le site ne propose pas une déclinaison sans prix, et l'admin
+  affiche un bandeau 💰 sur la fiche concernée. Un scénario de test le
+  reproduit.
+- **« Épuisé » sur une pièce unique** : le mot parle d'un tirage sans
+  exemplaires. Une toile vendue ou réservée doit l'annoncer avec son statut —
+  sinon le visiteur croit à une rupture de stock passagère sur une pièce qui
+  ne reviendra pas.
+
 - **Déployer sans `-p pascal-sun`** : le nom de projet compose est ce qui
   rattache le conteneur au volume `pascal-sun_pascal-sun-data`. Lancer
   `docker compose up` sans ce drapeau, ou depuis un autre dossier en comptant
@@ -690,7 +704,7 @@ redéploiement qui oublie une variable la remet à sa valeur par défaut.
 ## 6 quater. Tests automatisés
 
 ```bash
-npm test          # ~1,5 s — 34 scénarios, aucune dépendance de test (node:test)
+npm test          # ~1,5 s — 35 scénarios, aucune dépendance de test (node:test)
 ```
 
 `tests/serveur.test.js` démarre **un vrai serveur** sur un port libre et un
@@ -730,7 +744,7 @@ bug d'abord, la correction ensuite. C'est ce qui empêche un bug de revenir.
 
 ## 7. Méthode de travail attendue
 
-- **`npm test` avant chaque déploiement** — 34 scénarios en 1,5 s.
+- **`npm test` avant chaque déploiement** — 35 scénarios en 1,5 s.
 - Vérifier visuellement dans le navigateur avant de déployer (serveur local
   `PORT=5050 ADMIN_PASSWORD=t APP_SECRET=t node server.js` — 5000 est pris
   par macOS).

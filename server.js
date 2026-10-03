@@ -1039,6 +1039,11 @@ app.post("/api/orders", formLimit, (req, res) => {
     const produit = (art.produits || []).find((p) => p.key === it.key) ||
       (it.key === "original" ? { key: "original", prixEUR: art.prixEUR, stock: 1 } : null);
     if (!produit) continue;
+    /* Une déclinaison sans prix n'est pas à vendre : c'est une fiche qu'on n'a
+       pas fini de remplir, pas un cadeau. Sans ce garde-fou, une toile remise
+       en vente avant d'avoir reçu son prix partirait à zéro franc — et serait
+       réservée au passage. */
+    if (!(produit.prixEUR > 0)) continue;
     const qty = Math.max(1, Math.min(20, parseInt(it.qty, 10) || 1));
 
     if (it.key === "original") {
